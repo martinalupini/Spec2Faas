@@ -5,6 +5,7 @@ import os
 from autogen_core import TRACE_LOGGER_NAME
 from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
+from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from agents.Assistant import *
 
@@ -64,9 +65,14 @@ async def main():
     runtime = SingleThreadedAgentRuntime()
     await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
     runtime.start()  # Start processing messages in the background.
-    user_input = input("Hi! How can I help you?\n")
-    response = await runtime.send_message(Message(user_input), AgentId("assistant", "default"))
-    print(response.content)
+
+    response = Message("","request")
+    print("Hi! Write here your function to deploy or the specification of the function you want to write.\n")
+
+    while response.type == "request":
+        user_input = input()
+        response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
+        print(response.content)
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
 
