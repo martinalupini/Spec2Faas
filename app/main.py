@@ -4,6 +4,8 @@ import logging
 import os
 from autogen_core import TRACE_LOGGER_NAME
 from autogen_core import SingleThreadedAgentRuntime, AgentId
+from autogen_core.models import ModelFamily
+
 from agents.Assistant import *
 
 def load_env_variables():
@@ -46,11 +48,27 @@ def set_logging_config():
 
 
 async def main():
+    model_client = OpenAIChatCompletionClient(
+        model="gemini-2.0-flash",  # o "gemini-2.0-pro", "gemini-1.5-pro", ecc.
+        api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        # perché il modello non è “OpenAI”, serve descriverne le capacità:
+        model_info={
+            "family": ModelFamily.GEMINI_2_0_FLASH,
+            "function_calling": True,
+            "json_output": True,
+            "vision": False,
+            "structured_output" : True,
+        },
+    )
     runtime = SingleThreadedAgentRuntime()
-    await Assistant.register(runtime, "assistant", lambda: Assistant())
+    await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
     runtime.start()  # Start processing messages in the background.
-    await runtime.send_message(MyMessageType("Hello, World!"), AgentId("assistant", "default"))
+    user_input = input("Hi! How can I help you?\n")
+    response = await runtime.send_message(Message(user_input), AgentId("assistant", "default"))
+    print(response.content)
     await runtime.stop()  # Stop processing messages in the background.
+    await model_client.close()
 
 
 if __name__ == "__main__":
