@@ -6,8 +6,11 @@ from autogen_core import TRACE_LOGGER_NAME
 from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-
+from agents.coding_agents import Coder, TestDesigner, EntryPoint
 from agents.Assistant import *
+from agents.coding_agents.Coder import *
+from agents.coding_agents.EntryPoint import *
+from agents.coding_agents.TestDesigner import *
 
 def load_env_variables():
 
@@ -64,6 +67,9 @@ async def main():
     )
     runtime = SingleThreadedAgentRuntime()
     await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
+    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(model_client=model_client))
+    await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
+    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
     runtime.start()  # Start processing messages in the background.
 
     response = Message("","request")
@@ -72,7 +78,6 @@ async def main():
     while response.type == "request":
         user_input = input()
         response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
-        print(response.content)
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
 

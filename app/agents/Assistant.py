@@ -1,14 +1,7 @@
-from dataclasses import dataclass
-
-from autogen_core import MessageContext, RoutedAgent, message_handler
+from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
-
-
-@dataclass
-class Message:
-    content: str
-    type: str
-
+from .coding_agents.messages.MessagesTypes import Message
+from .coding_agents.utils.Utils import *
 
 class Assistant(RoutedAgent):
     def __init__(self, model_client: ChatCompletionClient) -> None:
@@ -16,7 +9,10 @@ class Assistant(RoutedAgent):
         self._system_messages = [SystemMessage(
             content="You are the entry point to a code generator and deployment app."
                     "This is what you have to do:"
-                    "1. Inspect the input received by the user. If it contains a specification of a function to code, translate it in English and return the translation with the word 'translation:' as incipit. "
+                    "1. Inspect the input received by the user. If it contains a specification of a function or it asks to code a function, translate it in English and return the translation. "
+                    "Make the translation clear and direct, so that an AI assistant can easily generate code from it."
+                    "Put the word 'translation' as incipit of the text. Return only one translation."
+                    "If it is already in English don't translate."
                     "Be as precise as possible with the translation."
                     "2. If it contains a function to deliver return the word 'deployment'."
                     "3. If the input does not fall in the previous two categories or the specification is unsure asks for a clarification."
@@ -26,6 +22,7 @@ class Assistant(RoutedAgent):
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
+        print_green(f"{self.id.type} received message. Staring to analyze user's prompt.")
         # Prepare input to the chat completion model.
         user_message = UserMessage(content=message.content, source="user")
         response = await self._model_client.create(
@@ -34,8 +31,15 @@ class Assistant(RoutedAgent):
 
         assert isinstance(response.content, str)
         if response.content.startswith("deployment"):
+            # TODO: send a message to the FaaS Deployer
+            #print("Assistant deployment")
             return Message(content=response.content, type="deployment")
         elif response.content.startswith("translation"):
-            return Message(content=response.content, type="translation")
+            #print("Assistant translation")
+            # The translation is complete so we can send a message to the Coder and the TestDesigner
+            await self._runtime.send_message(Message(response.content, type="request"), AgentId("entry_point", "default"))
+            return Message(content=response.content.removeprefix("translation:"), type="translation")
         else:
+            # We need more context from the user
+            #print("Assistant error")
             return Message(content=response.content, type="request")
