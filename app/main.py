@@ -1,0 +1,64 @@
+from pathlib import Path
+import asyncio
+import logging
+import os
+from autogen_core import TRACE_LOGGER_NAME
+from autogen_core import SingleThreadedAgentRuntime, AgentId
+from agents.Assistant import *
+
+def load_env_variables():
+
+    try:
+        # load environment variables from .env file (requires `pip install python-dotenv`)
+        from dotenv import load_dotenv
+
+        env_path = Path(__file__).resolve().parents[1] / ".env"
+
+        load_dotenv(dotenv_path=env_path)
+
+    except ImportError:
+        pass
+
+
+def set_logging_config():
+    log_path = os.getenv("LOG_PATH")
+
+    logging.basicConfig(level=logging.WARNING)
+    logger = logging.getLogger(TRACE_LOGGER_NAME)
+    logger.setLevel(logging.DEBUG)
+
+    # File's handler
+    file_handler = logging.FileHandler(log_path, mode="w", encoding="utf-8")
+    file_handler.setLevel(logging.DEBUG)
+
+    formatter = logging.Formatter("%(asctime)s [%(levelname)s] %(name)s - %(message)s")
+    file_handler.setFormatter(formatter)
+
+    logger.addHandler(file_handler)
+
+    # Forcing reconfiguration of logging
+    logging.basicConfig(level=logging.DEBUG, handlers=[file_handler], force=True)
+
+    logging.getLogger("autogen_core").setLevel(logging.DEBUG)
+    logging.getLogger(TRACE_LOGGER_NAME).setLevel(logging.DEBUG)
+
+    logging.getLogger(TRACE_LOGGER_NAME).propagate = True
+
+
+async def main():
+    runtime = SingleThreadedAgentRuntime()
+    await Assistant.register(runtime, "assistant", lambda: Assistant())
+    runtime.start()  # Start processing messages in the background.
+    await runtime.send_message(MyMessageType("Hello, World!"), AgentId("assistant", "default"))
+    await runtime.stop()  # Stop processing messages in the background.
+
+
+if __name__ == "__main__":
+
+    load_env_variables()
+    set_logging_config()
+
+    try:
+        asyncio.run(main())
+    finally:
+        logging.shutdown()
