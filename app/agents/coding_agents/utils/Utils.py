@@ -3,3 +3,5 @@ def print_purple(string):
 
 def print_green(string):
     print("\033[92m"+string+"\033[0m")
+
+def print_yellow(s): print("\033[93m {}\033[00m".format(s))
