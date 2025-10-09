@@ -13,3 +13,8 @@ class CodeMessage:
     function_signature: str
     code: str
     test: str
+
+@dataclass
+class DeployMessage:
+    """TODO"""
+    code:str
