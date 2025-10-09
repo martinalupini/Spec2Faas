@@ -56,20 +56,13 @@ async def register_function(url: str, payload: dict, timeout: int =20):
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
             print_yellow(f"Resp status: {resp.status} Resp text: {await resp.text()}")
-            try:
-                # Checking if the response is an error. Is so reaise a ClientResponseError
-                resp.raise_for_status()
-            except aiohttp.ClientResponseError:
-                text = await resp.text()
-                raise RuntimeError(f"Create failed ({resp.status}): {text}")
-
-            try:
-                print("1")
+            if resp.ok:
+                # If there are no errors content-type is json otherwise is text
                 return await resp.json()
-            except aiohttp.ContentTypeError:
-                print("2")
+            else:
                 text = await resp.text()
-                return {"status": "ok", "raw": text}
+                return {"status": resp.status, "text": text}
+
 
 class FaasDeployer(RoutedAgent):
     def __init__(self, model_client: ChatCompletionClient, tool_schema: List[Tool]) -> None:
