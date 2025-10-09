@@ -123,6 +123,7 @@ class FaasDeployer(RoutedAgent):
         )
         print_purple("The final response is: " + response.content)
         """
+        # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
         # Create a session of messages.
         prompt= "This is the code: " + message.code
         session: List[LLMMessage] = self._system_messages + [UserMessage(content=prompt, source="user")]
