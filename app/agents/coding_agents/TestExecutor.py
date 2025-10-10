@@ -7,7 +7,6 @@ class TestExecutor(RoutedAgent):
     def __init__(self, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled test executor")
         self._system_messages = [SystemMessage(
-            #prompt from https://github.com/huangd1999/AgentCoder/blob/main/prompts/zero_shot_test_designer_humaneval_prompt.txt
             content="You are a very skilled test executor."
                     "Given the function to test and the tests, create a code that will make them runnable."
 

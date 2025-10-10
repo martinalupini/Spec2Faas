@@ -34,7 +34,9 @@ def _pystring_to_tarBase64(py_code, filename) -> str:
     return base64.b64encode(mem.getvalue()).decode("ascii")
 
 async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int, handler:str) -> dict:
+    print_yellow("\nThis is the name:\n" + name)
     print_yellow("This is the code:\n" + code)
+
     filename = name +".py"
     tar_b64 = _pystring_to_tarBase64(code, filename=filename)
 
@@ -111,6 +113,8 @@ class FaasDeployer(RoutedAgent):
                 "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
                 "The handler should return a dictionary."
                 "The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
+                "If you obtain errors from the server reflect on these errors. For example if the error is 404 'Chosen runtime does not exists' choose python310. "
+                "If the error is 409 'Function already exists' choose another name for the function."
         )]
 
         self._model_client = model_client
@@ -125,41 +129,31 @@ class FaasDeployer(RoutedAgent):
         prompt= "This is the code: " + message.code
         session: List[LLMMessage] = self._system_messages + [UserMessage(content=prompt, source="user")]
 
-        # Run the chat completion with the tools.
-        create_result = await self._model_client.create(
-            messages=session,
-            tools=self._tools,
-            cancellation_token=ctx.cancellation_token,
-        )
+        while True:
+            # Run the chat completion with the tools.
+            create_result = await self._model_client.create(
+                messages=session,
+                tools=self._tools,
+                cancellation_token=ctx.cancellation_token,
+            )
 
-        # If there are no tool calls, return the result.
-        if isinstance(create_result.content, str):
-            return Message(content=create_result.content, type = "final_response")
-        assert isinstance(create_result.content, list) and all(
-            isinstance(call, FunctionCall) for call in create_result.content
-        )
+            # If there are no tool calls, return the result.
+            if isinstance(create_result.content, str):
+                return Message(content=create_result.content, type = "final_response")
+            assert isinstance(create_result.content, list) and all(
+                isinstance(call, FunctionCall) for call in create_result.content
+            )
 
-        # Add the first model create result to the session.
-        session.append(AssistantMessage(content=create_result.content, source="assistant"))
+            # Add the first model create result to the session.
+            session.append(AssistantMessage(content=create_result.content, source="assistant"))
 
-        # Execute the tool calls.
-        results = await asyncio.gather(
-            *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
-        )
+            # Execute the tool calls.
+            results = await asyncio.gather(
+                *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
+            )
 
-        # Add the function execution results to the session.
-        session.append(FunctionExecutionResultMessage(content=results))
-
-        # Run the chat completion again to reflect on the history and function execution results.
-        create_result = await self._model_client.create(
-            messages=session,
-            cancellation_token=ctx.cancellation_token,
-        )
-        assert isinstance(create_result.content, str)
-
-        print_purple(create_result.content)
-        # Return the result as a message.
-        return Message(content=create_result.content, type="final_response")
+            # Add the function execution results to the session.
+            session.append(FunctionExecutionResultMessage(content=results))
 
 
     async def _execute_tool_call(

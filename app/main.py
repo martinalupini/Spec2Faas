@@ -15,6 +15,7 @@ from agents.coding_agents.TestDesigner import *
 from agents.coding_agents.TestExecutor import *
 from agents.FaaSDeployer import *
 from autogen_core.tools import FunctionTool, Tool
+from agents.coding_agents.utils.Utils import *
 
 def load_env_variables():
 
@@ -93,6 +94,7 @@ async def main():
 
         user_input = "".join(lines)
         response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
+    print_green(response.content)
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
 

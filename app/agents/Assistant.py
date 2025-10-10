@@ -31,15 +31,15 @@ class Assistant(RoutedAgent):
 
         assert isinstance(response.content, str)
         if response.content.startswith("deployment"):
-            print("Assistant deployment")
-            await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("translation:")),AgentId("faas_deployer", "default"))
-            return Message(content=response.content, type="deployment")
+            #print("Assistant deployment")
+            await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
+            return Message(content="The function is successfully deployed.", type="deployment")
         elif response.content.startswith("translation"):
-            print("Assistant translation")
+            #print("Assistant translation")
             # The translation is complete so we can send a message to the Coder and the TestDesigner
-            await self._runtime.send_message(Message(response.content, type="request"), AgentId("entry_point", "default"))
+            await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
             return Message(content=response.content.removeprefix("translation:"), type="translation")
         else:
             # We need more context from the user
-            print("Assistant error")
+            #print("Assistant error")
             return Message(content=response.content, type="request")
