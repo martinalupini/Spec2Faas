@@ -17,7 +17,7 @@ from .coding_agents.utils.Utils import *
 from autogen_core.tools import FunctionTool, Tool
 
 
-def _pystring_to_tarBase64(py_code, filename= "main.py") -> str:
+def _pystring_to_tarBase64(py_code, filename) -> str:
     data = py_code.encode("utf-8")
     mem = io.BytesIO()
 
@@ -35,7 +35,8 @@ def _pystring_to_tarBase64(py_code, filename= "main.py") -> str:
 
 async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int, handler:str) -> dict:
     print_yellow("This is the code:\n" + code)
-    tar_b64 = _pystring_to_tarBase64(code, filename="main.py")
+    filename = name +".py"
+    tar_b64 = _pystring_to_tarBase64(code, filename=filename)
 
     payload = {
         "Name": name,
@@ -109,6 +110,7 @@ class FaasDeployer(RoutedAgent):
                 "The handler should be in the format function_name.handler. The examples are hello.handler and fibonacci.handler"
                 "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
                 "The handler should return a dictionary."
+                "The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
         )]
 
         self._model_client = model_client
