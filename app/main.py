@@ -4,8 +4,10 @@ import logging
 from typing import List
 import os
 import sys
+import tempfile
 from autogen_core import TRACE_LOGGER_NAME
 from autogen_core import SingleThreadedAgentRuntime, AgentId
+from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_core.models import ModelFamily
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from agents.Assistant import *
@@ -70,15 +72,23 @@ async def main():
             "structured_output" : True,
         },
     )
+    work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
     await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
     await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(model_client=model_client))
     await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
     await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
-    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client=model_client))
+    #await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client=model_client))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))
+    # Registering the Test Executor
+    async with DockerCommandLineCodeExecutor(work_dir=work_dir) as executor:  # type: ignore[syntax]
+        # Register the assistant and executor agents by providing
+        # their agent types, the factory functions for creating instance and subscriptions.
+        await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client,executor))
+
+
     runtime.start()  # Start processing messages in the background.
 
     response = Message("","request")

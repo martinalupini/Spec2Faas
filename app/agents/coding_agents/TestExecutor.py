@@ -1,10 +1,24 @@
+import re
+from typing import List
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
+from autogen_core.code_executor import CodeBlock, CodeExecutor
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 
+
+def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
+    pattern = re.compile(r"```(?:\s*([\w\+\-]+))?\n([\s\S]*?)```")
+    matches = pattern.findall(markdown_text)
+    code_blocks: List[CodeBlock] = []
+    for match in matches:
+        language = match[0].strip() if match[0] else ""
+        code_content = match[1]
+        code_blocks.append(CodeBlock(code=code_content, language=language))
+    return code_blocks
+
 class TestExecutor(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
         super().__init__("Skilled test executor")
         self._system_messages = [SystemMessage(
             content="You are a very skilled test executor."
@@ -12,6 +26,7 @@ class TestExecutor(RoutedAgent):
 
         )]
         self._model_client = model_client
+        self._code_executor = code_executor
         self._code = ""
         self._tests = ""
 
@@ -33,4 +48,11 @@ class TestExecutor(RoutedAgent):
 
             assert isinstance(response.content, str)
             print_purple(response.content)
+            code_blocks = extract_markdown_code_blocks(response.content)
+            if code_blocks:
+                result = await self._code_executor.execute_code_blocks(
+                    code_blocks, cancellation_token=ctx.cancellation_token
+                )
+                print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}")
+
 
