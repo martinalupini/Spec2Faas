@@ -1,6 +1,5 @@
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
-from .messages.MessagesTypes import Message
-from .TestDesigner import *
+from autogen_core.models import UserMessage, ChatCompletionClient, SystemMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 
@@ -23,5 +22,5 @@ class EntryPoint(RoutedAgent):
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
         print_purple("The function signature is: " + response.content)
-        await self._runtime.send_message(CodeMessage(message.content, response.content, "", ""), AgentId("coder", "default"))
-        await self._runtime.send_message(CodeMessage(message.content, response.content, "", ""), AgentId("test_designer", "default"))
+        await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))
+        await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))

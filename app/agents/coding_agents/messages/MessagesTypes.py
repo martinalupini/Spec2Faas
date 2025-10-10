@@ -12,9 +12,9 @@ class CodeMessage:
     specification: str
     function_signature: str
     code: str
-    test: str
+    tests: str
+    sender: str
 
 @dataclass
 class DeployMessage:
-    """TODO"""
     code:str

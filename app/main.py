@@ -12,6 +12,7 @@ from agents.Assistant import *
 from agents.coding_agents.Coder import *
 from agents.coding_agents.EntryPoint import *
 from agents.coding_agents.TestDesigner import *
+from agents.coding_agents.TestExecutor import *
 from agents.FaaSDeployer import *
 from autogen_core.tools import FunctionTool, Tool
 
@@ -73,6 +74,7 @@ async def main():
     await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(model_client=model_client))
     await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
     await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
+    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client=model_client))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))

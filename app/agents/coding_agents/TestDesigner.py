@@ -1,4 +1,4 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
@@ -47,3 +47,4 @@ class TestDesigner(RoutedAgent):
 
         assert isinstance(response.content, str)
         print_purple(response.content)
+        await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type), AgentId("test_executor", "default"))
