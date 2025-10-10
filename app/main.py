@@ -74,7 +74,7 @@ async def main():
     await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
     await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
     # creating the tools for the FaaS deployer
-    tools: List[Tool] = [FunctionTool(register_function, description="Register the function on a FaaS server."), FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
+    tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))
     runtime.start()  # Start processing messages in the background.
 

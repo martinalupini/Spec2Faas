@@ -34,6 +34,7 @@ def _pystring_to_tarBase64(py_code, filename= "main.py") -> str:
     return base64.b64encode(mem.getvalue()).decode("ascii")
 
 async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int, handler:str) -> dict:
+    print_yellow("This is the code:\n" + code)
     tar_b64 = _pystring_to_tarBase64(code, filename="main.py")
 
     payload = {
@@ -45,15 +46,9 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
         "TarFunctionCode": tar_b64
     }
 
-    return {
-        "payload": payload,
-        "url": os.getenv("SERVERLEDGE_URL")
-    }
-
-async def register_function(url: str, payload: dict, timeout: int =20):
     headers = {"Content-Type": "application/json"}
-
-    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=timeout)) as session:
+    url = os.getenv("SERVERLEDGE_URL")
+    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
             print_yellow(f"Resp status: {resp.status} Resp text: {await resp.text()}")
             if resp.ok:
@@ -74,7 +69,7 @@ class FaasDeployer(RoutedAgent):
             "The input will be a Python function code."
 
             "Step 1: Prepare the deployment payload."
-            "First, you must reformat the user's Python code into a valid handler structure. "
+            "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
             "The handler function must be named 'handler' and accept 'params' and 'context' as arguments. "
             "Import necessary libraries outside the handler."
             "Example 1: "
@@ -101,12 +96,19 @@ class FaasDeployer(RoutedAgent):
                 "def handler(params, context):"
                     "print(\"Executing function....\")"
                     "return \"Hello, Serverledge!\nParams: {}\".format(params)"
-                "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to generate the deployment payload and the server URL. "
-                "Choose the appropriate Name, Runtime, MemoryMB, CPUDemand and Handler."
+                "Example 3:"
+                "import re"
+                "def handler(params, context):"
+                    "return grep(\"grep\", params[\"InputText\"])"
+                "def grep(pattern, text):"
+                    "lines = text.split('\n')"
+                    "result = [line for line in lines if re.search(pattern, line)]"
+                    "return '\n'.join(result)"
+                "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to register the function. "
+                "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
                 "The handler should be in the format function_name.handler. The examples are hello.handler and fibonacci.handler"
-                "Step 3: Register the function."
-                "This step is mandatory and MUST follow Step 1. Take the `payload` and `url` returned by the `create_json_serverledge` tool and use them as arguments to call the `register_function` tool."
-                "The entire process is complete ONLY after the `register_function` tool has been successfully called. Do not stop after Step 1."
+                "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
+                "The handler should return a dictionary."
         )]
 
         self._model_client = model_client
@@ -116,13 +118,6 @@ class FaasDeployer(RoutedAgent):
     async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message. Starting to deploy the function in FaaS.")
 
-        """
-        prompt = "This is the code: " + message.code
-        response = await self._model_client.create(
-            self._system_messages + [UserMessage(content=prompt, source="user")], cancellation_token=ctx.cancellation_token
-        )
-        print_purple("The final response is: " + response.content)
-        """
         # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
         # Create a session of messages.
         prompt= "This is the code: " + message.code
