@@ -83,10 +83,9 @@ async def main():
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))
     # Registering the Test Executor
-    async with DockerCommandLineCodeExecutor(work_dir=work_dir) as executor:  # type: ignore[syntax]
-        # Register the assistant and executor agents by providing
-        # their agent types, the factory functions for creating instance and subscriptions.
-        await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client,executor))
+    executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
+    await executor.start()
+    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client,executor))
 
 
     runtime.start()  # Start processing messages in the background.
