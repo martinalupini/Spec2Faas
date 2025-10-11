@@ -76,6 +76,6 @@ class Debugger(RoutedAgent):
 
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
         code_block = match.group(1).strip()
-        print_purple("Debugged code: " + code_block)
+
         return DebugMessage(message.specification, code_block, "")
 
