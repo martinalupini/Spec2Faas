@@ -35,7 +35,7 @@ class TestDesigner(RoutedAgent):
         self._model_client = model_client
 
     @message_handler
-    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> None:
+    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message. Creating now a test suite for the function.")
 
         # Prepare input to the chat completion model.
@@ -47,4 +47,5 @@ class TestDesigner(RoutedAgent):
 
         assert isinstance(response.content, str)
         print_purple(response.content)
-        await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type), AgentId("test_executor", "default"))
+        return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type), AgentId("test_executor", "default"))
+        return return_message

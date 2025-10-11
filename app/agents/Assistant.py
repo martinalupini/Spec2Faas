@@ -37,9 +37,8 @@ class Assistant(RoutedAgent):
         elif response.content.startswith("translation"):
             print("Assistant translation")
             # The translation is complete so we can send a message to the Coder and the TestDesigner
-            await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
-            # TODO: definire una logica in base alla quale ritorno che va tutto bene o che qualcosa è andato storto.
-            return Message(content="", type="translation")
+            return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
+            return return_message
         else:
             # We need more context from the user
             print("Assistant error")

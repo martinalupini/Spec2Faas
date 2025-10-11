@@ -85,6 +85,8 @@ async def main():
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))
     # Registering the Test Executor
     executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
+    #This method sets the working environment variables, connects to Docker and starts the code executor. If no working directory was provided to the code executor, it creates a temporary directory and sets it as the code executor working directory.
+    #https://microsoft.github.io/autogen/stable//reference/python/autogen_ext.code_executors.docker.html#autogen_ext.code_executors.docker.DockerCommandLineCodeExecutor
     await executor.start()
     await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(model_client,executor))
 

@@ -14,7 +14,11 @@ class EntryPoint(RoutedAgent):
         self._model_client = model_client
 
     @message_handler
-    async def handle_assistant_message(self, message: Message, ctx: MessageContext) -> None:
+    async def handle_assistant_message(self, message: Message, ctx: MessageContext) -> Message:
+        if message.type == "test_executor_response":
+            print_green(f"{self.id.type} received message. Communicating final outcome.")
+            return message
+
         print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
 
         user_message = UserMessage(content=message.content, source="user")
@@ -23,4 +27,6 @@ class EntryPoint(RoutedAgent):
         )
         print_purple("The function signature is: " + response.content)
         await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))
-        await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
+        return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
+
+        return return_message

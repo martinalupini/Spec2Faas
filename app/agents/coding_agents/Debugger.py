@@ -1,4 +1,5 @@
 from typing import List
+import re
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage, LLMMessage, AssistantMessage
 from .messages.MessagesTypes import *
@@ -18,15 +19,20 @@ class Debugger(RoutedAgent):
                     "**Instructions**:"
                     "1. **Understand and Clarify**: Make sure you understand the error and why it's raised."
                     "2. **Completeness**: If you think there are other edge cases not considered make more corrections."
+                    "3. **Coherence**: Your tests should be coherent. This is not accectable:"
+                    "Test 1. assert is_palindrome(\"A man, a plan, a canal: Panama\") == True"
+                    "Test 2. assert is_palindrome(\"No 'x' in Nixon\") == False"
                     "3. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT"
         )]
         self._model_client = model_client
         # Adding a memory so that the debugger as an history of what happend
         self._debug_chat: List[LLMMessage] = self._system_messages
+        self._counter = 0
 
     @message_handler
-    async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> None:
-        print_green(f"{self.id.type} received message. Staring to debug code.")
+    async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> DebugMessage:
+        self._counter += 1
+        print_green(f"{self.id.type} received message. Staring to debug code. Attempt {self._counter}")
 
         # Prepare input to the chat completion model.
         prompt = "Function specification: " + message.specification + "\nFunction code: " + message.code + " Error message: " + message.error_message
@@ -38,4 +44,9 @@ class Debugger(RoutedAgent):
 
         assert isinstance(response.content, str)
         print_purple(response.content)
+
+        match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
+        code_block = match.group(1).strip()
+        print_purple("Debugged code: " + code_block)
+        return DebugMessage(message.specification, code_block, "")
 

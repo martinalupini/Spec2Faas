@@ -1,3 +1,4 @@
+import os
 import re
 from typing import List
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
@@ -29,9 +30,11 @@ class TestExecutor(RoutedAgent):
         self._code_executor = code_executor
         self._code = ""
         self._tests = ""
+        self._attempts = 0
+        self._max_attempts = int(os.getenv("MAX_DEBUG_ATTEMPTS"))
 
     @message_handler
-    async def handle_execute_code_message(self, message: CodeMessage, ctx: MessageContext) -> None:
+    async def handle_execute_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message from {message.sender}")
         if self._tests == "":
             self._tests = message.tests
@@ -39,8 +42,45 @@ class TestExecutor(RoutedAgent):
             self._code = message.code
 
         if self._tests != "" and self._code != "":
+            while self._attempts < self._max_attempts:
+                # Prepare input to the chat completion model.
+                prompt = "Function code: " + self._code + "\nFunction tests: " + self._tests
+                user_message = UserMessage(content=prompt, source="user")
+                response = await self._model_client.create(
+                    self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+                )
+
+                assert isinstance(response.content, str)
+                print_purple(response.content)
+                code_blocks = extract_markdown_code_blocks(response.content)
+                if code_blocks:
+                    result = await self._code_executor.execute_code_blocks(
+                        code_blocks, cancellation_token=ctx.cancellation_token
+                    )
+                    print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}")
+
+                    if "AssertionError" in result.output:
+                        debug_message = await self._runtime.send_message(
+                            DebugMessage(message.specification, message.code, result.output),
+                            AgentId("debugger", "default"))
+
+                        self._code = debug_message.code
+                        self._attempts += 1
+                    else:
+                        return Message(self._code, "test_executor_response")
+            # Max attempts number reached
+            return Message("FAIL", "test_executor_response")
+        return Message("Still waiting", "test_executor_response")
+
+    """
+    @message_handler
+    async def handle_debugger_message(self, message: DebugMessage, ctx: MessageContext) -> Message:
+        print_green(f"{self.id.type} received message from the debugger. Testing code again.")
+        self._attempts += 1
+
+        if self._attempts < self._max_attempts:
             # Prepare input to the chat completion model.
-            prompt = "Function code: " + self._code + "\nFunction tests: " + self._tests
+            prompt = "Function code: " + message.code + "\nFunction tests: " + self._tests
             user_message = UserMessage(content=prompt, source="user")
             response = await self._model_client.create(
                 self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
@@ -58,3 +98,6 @@ class TestExecutor(RoutedAgent):
                 await self._runtime.send_message(
                     DebugMessage(message.specification, message.code, result.output),
                     AgentId("debugger", "default"))
+            else:
+                return Message("FAIL", "test_executor_response")
+    """
