@@ -55,4 +55,6 @@ class TestExecutor(RoutedAgent):
                 )
                 print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}")
 
-
+                await self._runtime.send_message(
+                    DebugMessage(message.specification, message.code, result.output),
+                    AgentId("debugger", "default"))

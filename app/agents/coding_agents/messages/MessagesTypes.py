@@ -18,3 +18,11 @@ class CodeMessage:
 @dataclass
 class DeployMessage:
     code:str
+
+
+@dataclass
+class DebugMessage:
+    specification: str
+    code:str
+    error_message: str
+
