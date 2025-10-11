@@ -10,7 +10,10 @@ class Debugger(RoutedAgent):
         super().__init__("Skilled software debugger")
         self._system_messages = [SystemMessage(
             content="You are a very skilled software programmer specialized in debugging code."
-                    "**Task**: As a programmer, you are required to correct the code given as input"
+                    "**Task**: As a debugger, you are required to correct the code given as input"
+                    "Step 1: inspect the code in input and the error message."
+                    "Step 2: explain the error message and understand why the code is not working"
+                    "Step 3: correct the code."
                     "Use a Chain-of-Thought approach to break down the problem and then correct the code."
                     "Return only the code of the function in the format format:"
                     "```python"

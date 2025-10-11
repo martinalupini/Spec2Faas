@@ -71,33 +71,3 @@ class TestExecutor(RoutedAgent):
             # Max attempts number reached
             return Message("FAIL", "test_executor_response")
         return Message("Still waiting", "test_executor_response")
-
-    """
-    @message_handler
-    async def handle_debugger_message(self, message: DebugMessage, ctx: MessageContext) -> Message:
-        print_green(f"{self.id.type} received message from the debugger. Testing code again.")
-        self._attempts += 1
-
-        if self._attempts < self._max_attempts:
-            # Prepare input to the chat completion model.
-            prompt = "Function code: " + message.code + "\nFunction tests: " + self._tests
-            user_message = UserMessage(content=prompt, source="user")
-            response = await self._model_client.create(
-                self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
-            )
-
-            assert isinstance(response.content, str)
-            print_purple(response.content)
-            code_blocks = extract_markdown_code_blocks(response.content)
-            if code_blocks:
-                result = await self._code_executor.execute_code_blocks(
-                    code_blocks, cancellation_token=ctx.cancellation_token
-                )
-                print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}")
-
-                await self._runtime.send_message(
-                    DebugMessage(message.specification, message.code, result.output),
-                    AgentId("debugger", "default"))
-            else:
-                return Message("FAIL", "test_executor_response")
-    """

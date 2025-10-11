@@ -38,7 +38,12 @@ class Assistant(RoutedAgent):
             print("Assistant translation")
             # The translation is complete so we can send a message to the Coder and the TestDesigner
             return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
-            return return_message
+            if return_message.content == "FAIL":
+                return Message(content="We couldn't generate a correct function given the specification.", type="failure")
+            else:
+                await self._runtime.send_message(DeployMessage(code=return_message.content),
+                                                 AgentId("faas_deployer", "default"))
+                return Message(content="The function is successfully deployed.", type="deployment")
         else:
             # We need more context from the user
             print("Assistant error")
