@@ -17,6 +17,7 @@ class Debugger(RoutedAgent):
                     "```python"
                     "[Code]"
                     "```"
+                    "It is important to remember previous corrections of the same function."
         )]
         self._model_client = model_client
         # Adding a memory so that the debugger as an history of what happend
@@ -29,7 +30,7 @@ class Debugger(RoutedAgent):
         print_green(f"{self.id.type} received message. Staring to debug code. Attempt {self._counter}")
 
         # Prepare input to the chat completion model.
-        prompt = "Function specification: " + message.specification + "\nFunction code: " + message.code + " Error message: " + message.error_message
+        prompt = "This is the function specification: " + message.specification + "\nThis is the function code: " + message.code + "\nAnd this is the error message: " + message.error_message + "\nCan you correct the code?"
         self._debug_chat.append(UserMessage(content=prompt, source="user"))
         response = await self._model_client.create(
             messages=self._debug_chat, cancellation_token=ctx.cancellation_token

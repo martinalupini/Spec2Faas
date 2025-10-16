@@ -41,9 +41,9 @@ class Assistant(RoutedAgent):
             if return_message.content == "FAIL":
                 return Message(content="We couldn't generate a correct function given the specification.", type="failure")
             else:
-                await self._runtime.send_message(DeployMessage(code=return_message.content),
+                mess = await self._runtime.send_message(DeployMessage(code=return_message.content),
                                                  AgentId("faas_deployer", "default"))
-                return Message(content="The function is successfully deployed.", type="deployment")
+                return Message(content=mess.content, type="deployment")
         else:
             # We need more context from the user
             return Message(content=response.content, type="request")

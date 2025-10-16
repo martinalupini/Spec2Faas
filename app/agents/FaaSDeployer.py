@@ -114,6 +114,7 @@ class FaasDeployer(RoutedAgent):
                 "The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
                 "If you obtain errors from the server reflect on these errors. For example if the error is 404 'Chosen runtime does not exists' choose python310. "
                 "If the error is 409 'Function already exists' choose another name for the function."
+                "Only stop invoking tools when the server response is 200."
         )]
 
         self._model_client = model_client
