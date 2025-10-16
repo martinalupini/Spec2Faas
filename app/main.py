@@ -60,8 +60,10 @@ def set_logging_config():
 
 
 async def main():
+
     model_client = OpenAIChatCompletionClient(
         model="gemini-2.0-flash",  # o "gemini-2.0-pro", "gemini-1.5-pro", ecc.
+        #model= "gemini-2.5-pro",
         api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
         # perché il modello non è “OpenAI”, serve descriverne le capacità:
@@ -73,13 +75,41 @@ async def main():
             "structured_output" : True,
         },
     )
+
+    model_client_pro = OpenAIChatCompletionClient(
+        # model="gemini-2.0-flash",  # o "gemini-2.0-pro", "gemini-1.5-pro", ecc.
+        model="gemini-2.5-pro",
+        api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
+        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        # perché il modello non è “OpenAI”, serve descriverne le capacità:
+        model_info={
+            "family": ModelFamily.GEMINI_2_0_FLASH,
+            "function_calling": True,
+            "json_output": True,
+            "vision": False,
+            "structured_output": True,
+        },
+    )
+
+    """
+    model_client = OpenAIChatCompletionClient(
+        model="deepseek-coder",
+        api_key=os.environ["DEEPSEEK_API_KEY"],
+        base_url="https://api.deepseek.com",
+        model_capabilities={
+            "vision": False,
+            "function_calling": True,
+            "json_output": True,
+        },
+    )
+    """
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
     await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
     await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(model_client=model_client))
     await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
     await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
-    await Debugger.register(runtime, "debugger", lambda: Debugger(model_client=model_client))
+    await Debugger.register(runtime, "debugger", lambda: Debugger(model_client=model_client_pro))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(model_client=model_client, tool_schema=tools))
@@ -96,7 +126,6 @@ async def main():
     response = Message("","request")
     print_blue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
           "Press ENTER two times to continue.")
-    input_try = 0
 
     while response.type == "request":
         lines = []
@@ -113,6 +142,7 @@ async def main():
     print_green(response.content)
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
+    await model_client_pro.close()
 
 
 if __name__ == "__main__":
