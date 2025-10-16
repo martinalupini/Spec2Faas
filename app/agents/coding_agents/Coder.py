@@ -2,9 +2,10 @@ from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
+import ollama
 
 class Coder(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software programmer")
         self._system_messages = [SystemMessage(
             # Prompt from https://github.com/huangd1999/AgentCoder/blob/main/prompts/zero_shot_humaneval_prompt.txt
@@ -26,19 +27,37 @@ class Coder(RoutedAgent):
                     "4. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT"
         )]
         self._model_client = model_client
+        self._llm = llm
 
     @message_handler
     async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
-        print_green(f"{self.id.type} received message. Staring to generate code.")
+        print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
-        # Prepare input to the chat completion model.
-        prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
-        user_message = UserMessage(content=prompt, source="user")
-        response = await self._model_client.create(
-            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
-        )
+        if self._llm == "Deep Seek Coder V2":
+            # Prepare input to the chat completion model.
+            prompt = "Write a the code given this function specification: " + message.specification + "\n. This is the function signature: " + message.function_signature
+            response = ollama.chat(
+                model='deepseek-coder-v2',
+                messages=[
+                    {'role': 'user',
+                     'content': prompt},
+                ]
+            )
 
-        assert isinstance(response.content, str)
-        print_purple(response.content)
-        return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type), AgentId("test_executor", "default"))
-        return return_message
+            print_purple(response['message']['content'])
+            return_message = await self._runtime.send_message(
+                CodeMessage(message.specification, message.function_signature, response['message']['content'], "",
+                            self.id.type), AgentId("test_executor", "default"))
+            return return_message
+        else:
+            # Prepare input to the chat completion model.
+            prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
+            user_message = UserMessage(content=prompt, source="user")
+            response = await self._model_client.create(
+                self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+            )
+
+            assert isinstance(response.content, str)
+            print_purple(response.content)
+            return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type), AgentId("test_executor", "default"))
+            return return_message

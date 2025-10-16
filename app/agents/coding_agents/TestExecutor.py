@@ -24,7 +24,7 @@ class TestExecutor(RoutedAgent):
         self._system_messages = [SystemMessage(
             content="You are a very skilled test executor."
                     "Given the function to test and the tests, create a code that will make them runnable."
-                    "DO NOT MODIFY THE FUNCTION AND THE TESTS PROVIDED."
+                    "DO NOT MODIFY THE FUNCTION AND THE TESTS PROVIDED, just merge them in a single code."
 
         )]
         self._model_client = model_client
