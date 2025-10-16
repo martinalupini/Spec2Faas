@@ -108,7 +108,7 @@ async def main():
     await Assistant.register(runtime, "assistant", lambda: Assistant(model_client=model_client))
     await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(model_client=model_client))
     await Coder.register(runtime, "coder", lambda: Coder(model_client=model_client))
-    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client))
+    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(model_client=model_client_pro))
     await Debugger.register(runtime, "debugger", lambda: Debugger(model_client=model_client_pro))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]

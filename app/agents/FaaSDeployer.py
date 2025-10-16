@@ -33,12 +33,13 @@ def _pystring_to_tarBase64(py_code, filename) -> str:
     mem.seek(0)
     return base64.b64encode(mem.getvalue()).decode("ascii")
 
-async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int, handler:str) -> dict:
+async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int) -> dict:
     print_yellow("\nThis is the name:\n" + name)
     print_yellow("This is the code:\n" + code)
 
     filename = name +".py"
     tar_b64 = _pystring_to_tarBase64(code, filename=filename)
+    handler = name + ".handler"
 
     payload = {
         "Name": name,
@@ -73,7 +74,6 @@ class FaasDeployer(RoutedAgent):
 
             "Step 1: Prepare the deployment payload."
             "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
-            "The handler function must be named 'handler' and accept 'params' and 'context' as arguments. "
             "Import necessary libraries outside the handler."
             "Example 1: "
             "def handler(params, context):"
@@ -109,7 +109,6 @@ class FaasDeployer(RoutedAgent):
                     "return '\n'.join(result)"
                 "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to register the function. "
                 "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
-                "The handler should be in the format function_name.handler. The examples are hello.handler and fibonacci.handler"
                 "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
                 "The handler should return a dictionary."
                 "The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
