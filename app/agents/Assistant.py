@@ -12,7 +12,7 @@ class Assistant(RoutedAgent):
                     "1.If it contains a specification of a function or it asks to code a function, translate it in English and return the translation. "
                     "-Make the translation clear and direct, so that an AI assistant can easily generate code from it."
                     "-Put the word 'translation' as incipit of the text. Return only one translation."
-                    "-If it is already in English don't translate."
+                    "-If it is already in English don't translate, but still put translation as incipit of text."
                     "-Be as precise as possible with the translation."
                     "2. If it contains a function already complete return the word 'deployment' followed by the function specified by the user."
                     "3. If the input does not fall in the previous two categories or the specification is unsure asks for a clarification."
@@ -28,6 +28,7 @@ class Assistant(RoutedAgent):
         response = await self._model_client.create(
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
+
 
         assert isinstance(response.content, str)
         if response.content.startswith("deployment"):
@@ -47,3 +48,4 @@ class Assistant(RoutedAgent):
         else:
             # We need more context from the user
             return Message(content=response.content, type="request")
+
