@@ -20,7 +20,9 @@ class Assistant(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
-        print_green(f"Hi I'm the debugger and I use {self._llm}.")
+        self._text = ""
+        self._role = "Assistant"
+        print_green(f"Hi I'm the assistant and I use {self._llm}.")
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
@@ -34,11 +36,11 @@ class Assistant(RoutedAgent):
 
         assert isinstance(response.content, str)
         if response.content.startswith("deployment"):
-            #print("Assistant deployment")
+            dialogue(response.content, self._role)
             await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
             return Message(content="The function is successfully deployed.", type="deployment")
         elif response.content.startswith("translation"):
-            #print("Assistant translation")
+            dialogue(response.content, self._role)
             # The translation is complete so we can send a message to the Coder and the TestDesigner
             return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
             if return_message.content == "FAIL":
@@ -49,5 +51,6 @@ class Assistant(RoutedAgent):
                 return Message(content=mess.content, type="deployment")
         else:
             # We need more context from the user
+            dialogue(response.content, self._role)
             return Message(content=response.content, type="request")
 

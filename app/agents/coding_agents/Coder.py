@@ -28,6 +28,8 @@ class Coder(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
+        self._text = ""
+        self._role = "Software Programmer"
         print_green(f"Hi I'm the software programmer and I use {self._llm}.")
 
     @message_handler
@@ -45,7 +47,7 @@ class Coder(RoutedAgent):
                 ]
             )
 
-            print_purple(response['message']['content'])
+            dialogue(response['message']['content'], self._role)
             return_message = await self._runtime.send_message(
                 CodeMessage(message.specification, message.function_signature, response['message']['content'], "",
                             self.id.type), AgentId("test_executor", "default"))
@@ -59,6 +61,6 @@ class Coder(RoutedAgent):
             )
 
             assert isinstance(response.content, str)
-            print_purple(response.content)
+            dialogue(response.content, self._role)
             return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type), AgentId("test_executor", "default"))
             return return_message

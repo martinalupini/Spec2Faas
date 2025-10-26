@@ -120,6 +120,7 @@ class FaasDeployer(RoutedAgent):
         self._model_client = model_client
         self._tools = tool_schema
         self._llm = llm
+        self._role = "FaaS Deployer"
         print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
@@ -141,6 +142,7 @@ class FaasDeployer(RoutedAgent):
 
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
+                dialogue(create_result.content, self._role)
                 return Message(content=create_result.content, type = "final_response")
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
@@ -164,7 +166,7 @@ class FaasDeployer(RoutedAgent):
         # Find the tool by name.
         tool = next((tool for tool in self._tools if tool.name == call.name), None)
         assert tool is not None
-        print("Executing tool " + tool.name)
+        dialogue("Executing tool " + tool.name, self._role)
 
         # Run the tool and capture the result.
         try:

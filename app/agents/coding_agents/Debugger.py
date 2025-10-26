@@ -24,6 +24,7 @@ class Debugger(RoutedAgent):
         self._debug_chat: List[LLMMessage] = self._system_messages
         self._counter = 0
         self._llm = llm
+        self._role = "Debugger"
         print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
@@ -40,7 +41,7 @@ class Debugger(RoutedAgent):
         self._debug_chat.append(AssistantMessage(content=response.content, source="assistant"))
 
         assert isinstance(response.content, str)
-        print_purple(response.content)
+        dialogue(response.content, self._role)
 
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
         code_block = match.group(1).strip()

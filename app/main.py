@@ -72,8 +72,11 @@ async def main(llm):
     runtime.start()  # Start processing messages in the background.
 
     response = Message("","request")
-    print_blue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
-          "Press ENTER two times to continue.")
+    #print_blue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
+          #"Press ENTER two times to continue.")
+
+    dialogue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
+          "Press ENTER two times to continue.", "Assistant")
 
     while response.type == "request":
         lines = []
@@ -85,9 +88,8 @@ async def main(llm):
         user_input = "".join(lines)
         response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
         if response.type == "request":
-            print_blue("The input is not clear. Please provide more information about the function you want to deploy.")
+            dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
 
-    print_green(response.content)
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
     await model_client_pro.close()

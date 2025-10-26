@@ -26,6 +26,7 @@ class TestDesigner(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
+        self._role = "Test Designer"
         print_green(f"Hi I'm the test designer and I use {self._llm}.")
 
     @message_handler
@@ -40,6 +41,6 @@ class TestDesigner(RoutedAgent):
         )
 
         assert isinstance(response.content, str)
-        print_purple(response.content)
+        dialogue(response.content, self._role)
         return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type), AgentId("test_executor", "default"))
         return return_message

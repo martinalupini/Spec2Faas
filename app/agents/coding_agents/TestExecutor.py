@@ -34,6 +34,7 @@ class TestExecutor(RoutedAgent):
         self._attempts = 0
         self._max_attempts = int(os.getenv("MAX_DEBUG_ATTEMPTS"))
         self._llm = llm
+        self._role = "Test Executor"
         print_green(f"Hi I'm the test executor and I use {self._llm}.")
 
     @message_handler
@@ -54,7 +55,7 @@ class TestExecutor(RoutedAgent):
                 )
 
                 assert isinstance(response.content, str)
-                print_purple(response.content)
+                dialogue(response.content, self._role)
                 code_blocks = extract_markdown_code_blocks(response.content)
                 if code_blocks:
                     result = await self._code_executor.execute_code_blocks(

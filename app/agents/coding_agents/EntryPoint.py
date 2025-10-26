@@ -27,7 +27,7 @@ class EntryPoint(RoutedAgent):
         response = await self._model_client.create(
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
-        print_purple("The function signature is: " + response.content)
+        dialogue("The function signature is: " + response.content, "Entry Point")
         await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))
         return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
 

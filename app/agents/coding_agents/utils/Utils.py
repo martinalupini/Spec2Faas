@@ -1,6 +1,3 @@
-import textwrap
-
-
 def print_purple(string):
     print("\033[95m"+string+"\033[0m")
 
@@ -13,6 +10,7 @@ def print_blue(s): print("\033[96m {}\033[00m".format(s))
 
 ROSA = '\033[95m'
 RESET = '\033[0m'
+BLUE = '\033[96m'
 
 def dialogue(testo, interlocutore, larghezza=100):
     """
@@ -24,7 +22,7 @@ def dialogue(testo, interlocutore, larghezza=100):
     :param larghezza: La larghezza massima del testo prima di andare a capo.
     """
     # Spezza il testo in più righe se necessario
-    righe_testo = textwrap.wrap(testo, width=larghezza)
+    righe_testo = testo.splitlines()
     if not righe_testo:
         righe_testo = [""]
 
@@ -56,8 +54,12 @@ def dialogue(testo, interlocutore, larghezza=100):
 
     # 4. Righe del testo del dialogo
     for riga in righe_testo:
-        riga_formattata = riga.ljust(larghezza_interna)
-        print(" | " + riga_formattata + " |")
+        # Applichiamo il colore blu solo al testo effettivo.
+        # Gli spazi di riempimento vengono aggiunti dopo, per non
+        # alterare l'allineamento.
+        riga_con_colore = f"{BLUE}{riga}{RESET}"
+        spazi_testo = " " * (larghezza_interna - len(riga))
+        print(f" | {riga_con_colore}{spazi_testo} |")
 
     # 5. Bordo inferiore
     print(" '" + "_" * (larghezza_interna + 2) + "'")
