@@ -1,8 +1,10 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId, default_subscription, TopicId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .coding_agents.messages.MessagesTypes import *
 from .coding_agents.utils.Utils import *
 
+
+@default_subscription()
 class Assistant(RoutedAgent):
     def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("An helpful assistant ")
@@ -37,20 +39,25 @@ class Assistant(RoutedAgent):
         assert isinstance(response.content, str)
         if response.content.startswith("deployment"):
             dialogue(response.content, self._role)
-            await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
-            return Message(content="The function is successfully deployed.", type="deployment")
+            await self.publish_message(DeployMessage(code=response.content.removeprefix("deployment:")), topic_id=TopicId("default", self.id.key))
+            return Message(content="The function is being deployed.", type="deployment")
         elif response.content.startswith("translation"):
             dialogue(response.content, self._role)
             # The translation is complete so we can send a message to the Coder and the TestDesigner
-            return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
-            if return_message.content == "FAIL":
-                return Message(content="We couldn't generate a correct function given the specification.", type="failure")
-            else:
-                mess = await self._runtime.send_message(DeployMessage(code=return_message.content),
-                                                 AgentId("faas_deployer", "default"))
-                return Message(content=mess.content, type="deployment")
+            await self.publish_message(CodeWritingRequest(response.content.removeprefix("translation:")), topic_id=TopicId("default", self.id.key))
+            return Message(content="The function is being created and deployed.", type="deployment")
+
         else:
             # We need more context from the user
             dialogue(response.content, self._role)
             return Message(content=response.content, type="request")
+
+    @message_handler
+    async def handle_code_message(self, message: FinalCodeWritingResult, ctx: MessageContext) -> None:
+        print_green(f"{self.id.type} received message. Deploying the code.")
+
+        if message.type == "deployment":
+            await self.publish_message(DeployMessage(code=message.code), topic_id=TopicId("default", self.id.key))
+        else:
+            dialogue("It was not possible to generate a correct code.", self._role)
 

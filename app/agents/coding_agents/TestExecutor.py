@@ -1,7 +1,7 @@
 import os
 import re
 from typing import List
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, default_subscription, TopicId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_core.code_executor import CodeBlock, CodeExecutor
 from .messages.MessagesTypes import *
@@ -18,6 +18,7 @@ def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
         code_blocks.append(CodeBlock(code=code_content, language=language))
     return code_blocks
 
+@default_subscription()
 class TestExecutor(RoutedAgent):
     def __init__(self, llm:str, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
         super().__init__("Skilled test executor")
@@ -38,15 +39,19 @@ class TestExecutor(RoutedAgent):
         print_green(f"Hi I'm the test executor and I use {self._llm}.")
 
     @message_handler
-    async def handle_execute_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
+    async def handle_execute_code_message(self, message: ExecuteCodeRequest, ctx: MessageContext) -> None:
         print_green(f"{self.id.type} received message from {message.sender}")
-        if self._tests == "":
-            self._tests = message.tests
-        if self._code == "":
+
+        if not message.sender == "debugger":
+            if self._tests == "":
+                self._tests = message.tests
+            if self._code == "":
+                self._code = message.code
+        else:
             self._code = message.code
 
         if self._tests != "" and self._code != "":
-            while self._attempts < self._max_attempts:
+            if self._attempts < self._max_attempts:
                 # Prepare input to the chat completion model.
                 prompt = "Function code: " + self._code + "\nFunction tests: " + self._tests
                 user_message = UserMessage(content=prompt, source="user")
@@ -67,14 +72,17 @@ class TestExecutor(RoutedAgent):
                         print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}\n{'-' * 80}")
 
                     if "AssertionError" in result.output:
-                        debug_message = await self._runtime.send_message(
-                            DebugMessage(message.specification, message.code, result.output),
-                            AgentId("debugger", "default"))
+                    # At least one test does not pass
+                        await self.publish_message(
+                            DebugMessage(message.specification, message.code, message.tests, result.output),
+                            topic_id=TopicId("default", self.id.key))
 
-                        self._code = debug_message.code
                         self._attempts += 1
                     else:
-                        return Message(self._code, "test_executor_response")
-            # Max attempts number reached
-            return Message("FAIL", "test_executor_response")
-        return Message("Still waiting", "test_executor_response")
+                        # All the tests pass
+                        await self.publish_message(CodeExecutorFinalResult(code=self._code, type="final_result"),
+                                                   topic_id=TopicId("default", self.id.key))
+            else:
+                # Max attempts number reached
+                await self.publish_message(CodeExecutorFinalResult(code="", type="fail"),
+                                   topic_id=TopicId("default", self.id.key))

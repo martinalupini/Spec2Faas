@@ -8,7 +8,7 @@ import aiohttp
 import asyncio
 from typing import List
 
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, CancellationToken, FunctionCall
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, CancellationToken, FunctionCall, default_subscription
 from autogen_core.models import LLMMessage, AssistantMessage, FunctionExecutionResultMessage, FunctionExecutionResult
 
 from .coding_agents.TestDesigner import *
@@ -63,6 +63,7 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
                 return {"status": resp.status, "text": text}
 
 
+@default_subscription()
 class FaasDeployer(RoutedAgent):
     def __init__(self, llm: str, model_client: ChatCompletionClient, tool_schema: List[Tool]) -> None:
         super().__init__("The agents responsible for deploying the function in FaaS.")
@@ -143,7 +144,6 @@ class FaasDeployer(RoutedAgent):
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
                 dialogue(create_result.content, self._role)
-                return Message(content=create_result.content, type = "final_response")
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
             )

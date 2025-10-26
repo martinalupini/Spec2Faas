@@ -1,10 +1,11 @@
 from typing import List
 import re
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, default_subscription, TopicId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage, LLMMessage, AssistantMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 
+@default_subscription()
 class Debugger(RoutedAgent):
     def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software debugger")
@@ -28,7 +29,7 @@ class Debugger(RoutedAgent):
         print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
-    async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> DebugMessage:
+    async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> None:
         self._counter += 1
         print_green(f"{self.id.type} received message. Staring to debug code. Attempt {self._counter}")
 
@@ -46,5 +47,7 @@ class Debugger(RoutedAgent):
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
         code_block = match.group(1).strip()
 
-        return DebugMessage(message.specification, code_block, "")
+        await self.publish_message(
+            ExecuteCodeRequest(message.specification, code_block, message.tests,  self.id.type),
+            topic_id=TopicId("default", self.id.key))
 

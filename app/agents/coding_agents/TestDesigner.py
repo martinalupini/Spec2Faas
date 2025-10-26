@@ -1,8 +1,10 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, default_subscription, TopicId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 
+
+@default_subscription()
 class TestDesigner(RoutedAgent):
     def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled test designer")
@@ -30,7 +32,7 @@ class TestDesigner(RoutedAgent):
         print_green(f"Hi I'm the test designer and I use {self._llm}.")
 
     @message_handler
-    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
+    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> None:
         print_green(f"{self.id.type} received message. Creating now a test suite for the function.")
 
         # Prepare input to the chat completion model.
@@ -42,5 +44,6 @@ class TestDesigner(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
-        return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type), AgentId("test_executor", "default"))
-        return return_message
+        await self.publish_message(
+            ExecuteCodeRequest(message.specification, "", response.content, self.id.type),
+            topic_id=TopicId("default", self.id.key))

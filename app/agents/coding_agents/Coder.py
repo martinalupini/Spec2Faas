@@ -1,9 +1,11 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, default_subscription, TopicId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 import ollama
 
+
+@default_subscription()
 class Coder(RoutedAgent):
     def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software programmer")
@@ -33,7 +35,7 @@ class Coder(RoutedAgent):
         print_green(f"Hi I'm the software programmer and I use {self._llm}.")
 
     @message_handler
-    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
+    async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> None:
         print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
         if self._llm == "deepseek-coder-v2":
@@ -48,10 +50,9 @@ class Coder(RoutedAgent):
             )
 
             dialogue(response['message']['content'], self._role)
-            return_message = await self._runtime.send_message(
-                CodeMessage(message.specification, message.function_signature, response['message']['content'], "",
-                            self.id.type), AgentId("test_executor", "default"))
-            return return_message
+            await self.publish_message(
+                ExecuteCodeRequest(message.specification, response['message']['content'], "", self.id.type), topic_id=TopicId("default", self.id.key))
+
         else:
             # Prepare input to the chat completion model.
             prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
@@ -62,5 +63,6 @@ class Coder(RoutedAgent):
 
             assert isinstance(response.content, str)
             dialogue(response.content, self._role)
-            return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type), AgentId("test_executor", "default"))
-            return return_message
+            await self.publish_message(
+                ExecuteCodeRequest(message.specification, response.content, "", self.id.type),
+                topic_id=TopicId("default", self.id.key))

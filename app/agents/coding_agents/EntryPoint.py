@@ -1,9 +1,10 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, default_subscription, TopicId
 from autogen_core.models import UserMessage, ChatCompletionClient, SystemMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 
 
+@default_subscription()
 class EntryPoint(RoutedAgent):
     def __init__(self, llm: str,  model_client: ChatCompletionClient) -> None:
         super().__init__("The entry point of the coding.")
@@ -16,11 +17,7 @@ class EntryPoint(RoutedAgent):
         print_green(f"Hi I'm the entry point of the coding system and I use {self._llm}.")
 
     @message_handler
-    async def handle_assistant_message(self, message: Message, ctx: MessageContext) -> Message:
-        if message.type == "test_executor_response":
-            print_green(f"{self.id.type} received message. Communicating final outcome.")
-            return message
-
+    async def handle_assistant_message(self, message: CodeWritingRequest, ctx: MessageContext) -> None:
         print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
 
         user_message = UserMessage(content=message.content, source="user")
@@ -28,7 +25,13 @@ class EntryPoint(RoutedAgent):
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
         dialogue("The function signature is: " + response.content, "Entry Point")
-        await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))
-        return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
+        await self.publish_message(CodeMessage(message.content, response.content), topic_id=TopicId("default", self.id.key))
 
-        return return_message
+
+    @message_handler
+    async def handle_executor_message(self, message: CodeExecutorFinalResult, ctx: MessageContext) -> None:
+        print_green(f"{self.id.type} received message. Communicating final outcome.")
+        if message.type == "fail":
+            await self.publish_message(FinalCodeWritingResult(code=message.code, type="fail"), topic_id=TopicId("default", self.id.key))
+        else:
+            await self.publish_message(FinalCodeWritingResult(code=message.code, type="deployment"), topic_id=TopicId("default", self.id.key))

@@ -90,7 +90,7 @@ async def main(llm):
         if response.type == "request":
             dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
 
-    await runtime.stop()  # Stop processing messages in the background.
+    await runtime.stop_when_idle()
     await model_client.close()
     await model_client_pro.close()
 
