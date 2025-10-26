@@ -64,7 +64,7 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
 
 
 class FaasDeployer(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient, tool_schema: List[Tool]) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient, tool_schema: List[Tool]) -> None:
         super().__init__("The agents responsible for deploying the function in FaaS.")
 
         self._system_messages = [SystemMessage(
@@ -119,6 +119,8 @@ class FaasDeployer(RoutedAgent):
 
         self._model_client = model_client
         self._tools = tool_schema
+        self._llm = llm
+        print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
     async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> Message:

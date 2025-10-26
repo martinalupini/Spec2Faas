@@ -19,7 +19,7 @@ def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
     return code_blocks
 
 class TestExecutor(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
+    def __init__(self, llm:str, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
         super().__init__("Skilled test executor")
         self._system_messages = [SystemMessage(
             content="You are a very skilled test executor."
@@ -33,6 +33,8 @@ class TestExecutor(RoutedAgent):
         self._tests = ""
         self._attempts = 0
         self._max_attempts = int(os.getenv("MAX_DEBUG_ATTEMPTS"))
+        self._llm = llm
+        print_green(f"Hi I'm the test executor and I use {self._llm}.")
 
     @message_handler
     async def handle_execute_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:

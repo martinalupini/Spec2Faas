@@ -6,7 +6,7 @@ from .messages.MessagesTypes import *
 from .utils.Utils import *
 
 class Debugger(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software debugger")
         self._system_messages = [SystemMessage(content="You are a very skilled software programmer specialized in debugging code."
                     "**Task**: As a debugger, you are required to correct the code given as input"
@@ -23,6 +23,8 @@ class Debugger(RoutedAgent):
         # Adding a memory so that the debugger as an history of what happend
         self._debug_chat: List[LLMMessage] = self._system_messages
         self._counter = 0
+        self._llm = llm
+        print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
     async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> DebugMessage:

@@ -5,13 +5,15 @@ from .utils.Utils import *
 
 
 class EntryPoint(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str,  model_client: ChatCompletionClient) -> None:
         super().__init__("The entry point of the coding.")
         self._system_messages = [SystemMessage(
             content="Given the function specification create a signature for the function. "
                     "Return only the signature of the function as output."
         )]
         self._model_client = model_client
+        self._llm = llm
+        print_green(f"Hi I'm the entry point of the coding system and I use {self._llm}.")
 
     @message_handler
     async def handle_assistant_message(self, message: Message, ctx: MessageContext) -> Message:

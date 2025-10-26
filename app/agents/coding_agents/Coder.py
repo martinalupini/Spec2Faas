@@ -28,16 +28,17 @@ class Coder(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
+        print_green(f"Hi I'm the software programmer and I use {self._llm}.")
 
     @message_handler
     async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
-        if self._llm == "Deep Seek Coder V2":
+        if self._llm == "deepseek-coder-v2":
             # Prepare input to the chat completion model.
             prompt = "Write a the code given this function specification: " + message.specification + "\n. This is the function signature: " + message.function_signature
             response = ollama.chat(
-                model='deepseek-coder-v2',
+                model=self._llm,
                 messages=[
                     {'role': 'user',
                      'content': prompt},

@@ -1,0 +1,8 @@
+llm:
+  coder: "deepseek-coder-v2"
+  debugger: "gemini-2.5-pro"
+  test_designer: "gemini-2.5-pro"
+  assistant: "gemini-2.0-flash"
+  entry_point: "gemini-2.0-flash"
+  test_executor: "gemini-2.0-flash"
+  faas_deployer: "gemini-2.0-flash"

@@ -4,7 +4,7 @@ from .coding_agents.messages.MessagesTypes import *
 from .coding_agents.utils.Utils import *
 
 class Assistant(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("An helpful assistant ")
         self._system_messages = [SystemMessage(
             content="You are the entry point to a code generator and deployment app."
@@ -19,6 +19,8 @@ class Assistant(RoutedAgent):
                     "-If the user continue to provide an input that is neither a function specification nor a function code continue to ask for clarification."
         )]
         self._model_client = model_client
+        self._llm = llm
+        print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:

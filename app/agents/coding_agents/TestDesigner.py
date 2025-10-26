@@ -4,7 +4,7 @@ from .messages.MessagesTypes import *
 from .utils.Utils import *
 
 class TestDesigner(RoutedAgent):
-    def __init__(self, model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled test designer")
         self._system_messages = [SystemMessage(
             content= "You are a very skilled software tester specializing in designing comprehensive and well-documented test cases for Python functions."
@@ -25,6 +25,8 @@ class TestDesigner(RoutedAgent):
                      "-If the specification is not complete make REASONABLE assumptions on how the function should behave."
         )]
         self._model_client = model_client
+        self._llm = llm
+        print_green(f"Hi I'm the test designer and I use {self._llm}.")
 
     @message_handler
     async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
