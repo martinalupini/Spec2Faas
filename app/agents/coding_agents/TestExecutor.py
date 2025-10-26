@@ -61,7 +61,10 @@ class TestExecutor(RoutedAgent):
                     result = await self._code_executor.execute_code_blocks(
                         code_blocks, cancellation_token=ctx.cancellation_token
                     )
-                    print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}")
+                    if result.output == "":
+                        print_yellow(f"\n{'-' * 80}\nExecutor:\nThe function passes all the tests.\n{'-' * 80}")
+                    else:
+                        print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}\n{'-' * 80}")
 
                     if "AssertionError" in result.output:
                         debug_message = await self._runtime.send_message(
