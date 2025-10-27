@@ -9,15 +9,19 @@ class Debugger(RoutedAgent):
     def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software debugger")
         self._system_messages = [SystemMessage(content="You are a very skilled software programmer specialized in debugging code."
-                    "**Task**: As a debugger, you are required to correct the code given as input"
+                    "As a debugger, you are required to correct the code given as input"
+                    "<INSTRUCTIONS>"
                     "Step 1: inspect the code in input and the error message."
                     "Step 2: explain the error message and understand why the code is not working"
                     "Step 3: correct the code."
-                    "Return ONLY the code of the function in the format format:"
+                    "Return ONLY the code of the function in the specified format."
+                    "It is important to remember previous corrections of the same function."
+                    "</INSTRUCTIONS>"
+                    "<OUTPUT FORMAT>"
                     "```python"
                     "[Code]"
                     "```"
-                    "It is important to remember previous corrections of the same function."
+                    "</OUTPUT FORMAT>"
         )]
         self._model_client = model_client
         # Adding a memory so that the debugger as an history of what happend

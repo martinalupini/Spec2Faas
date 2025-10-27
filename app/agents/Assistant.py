@@ -8,7 +8,8 @@ class Assistant(RoutedAgent):
         super().__init__("An helpful assistant ")
         self._system_messages = [SystemMessage(
             content="You are the entry point to a code generator and deployment app."
-                    "Inspect the input received by the user.:"
+                    "<INSTRUCTIONS>"
+                    "Inspect the input received by the user:"
                     "1.If it contains a specification of a function or it asks to code a function, translate it in English and return the translation. "
                     "-Make the translation clear and direct, so that an AI assistant can easily generate code from it."
                     "-Put the word 'translation' as incipit of the text. Return only one translation."
@@ -17,6 +18,8 @@ class Assistant(RoutedAgent):
                     "2. If it contains a function already complete return the word 'deployment' followed by the function specified by the user."
                     "3. If the input does not fall in the previous two categories or the specification is unsure asks for a clarification."
                     "-If the user continue to provide an input that is neither a function specification nor a function code continue to ask for clarification."
+                    "Be careful when inspecting user prompt."
+                    "</INSTRUCTIONS>"
         )]
         self._model_client = model_client
         self._llm = llm

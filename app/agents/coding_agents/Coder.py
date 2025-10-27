@@ -7,24 +7,41 @@ import ollama
 class Coder(RoutedAgent):
     def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
         super().__init__("Skilled software programmer")
+        self._system_prompt = """You are a very skilled software programmer.
+                    <TASK>
+                    As a programmer, you are required to code a function that adheres to the function specification.
+                    Make sure to use the function signature provided.
+                    <CODE FORMATTING>
+                    Please write code in this format:
+                    ```python
+                    [Code]
+                    ```
+                    </CODE FORMATTING>
+                    <INSTRUCTIONS>
+                    1. Make sure you understand the task.
+                    2. Decide on the most efficient way to solve the task.
+                    3. Use the function signature provided.
+                    3. Make sure your code is correct and complete.
+                    4. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT
+                    </INSTRUCTIONS>\n"""
         self._system_messages = [SystemMessage(
-            # Prompt from https://github.com/huangd1999/AgentCoder/blob/main/prompts/zero_shot_humaneval_prompt.txt
             content="You are a very skilled software programmer."
-                    "**Task**: As a programmer, you are required to code a function that adheres to the function specification."
+                    "<TASK>"
+                    "As a programmer, you are required to code a function that adheres to the function specification."
                     "Make sure to use the function signature provided."
-                    "Return only the code of the function in the format "
-                    #"Use a Chain-of-Thought approach to break down the problem, create pseudocode, and then write the code in Python language."
-                    "**Code Formatting**: Please write code in this format:"
+                    "<CODE FORMATTING>"
+                    "Please write code in this format:"
                     "```python"
                     "[Code]"
                     "```"
-                    "**Instructions**:"
-                    "1. **Understand and Clarify**: Make sure you understand the task."
-                    "2. **Algorithm/Method Selection**: Decide on the most efficient way."
-                    #"3. **Pseudocode Creation**: Write down the steps you will follow in pseudocode."
-                    #"4. **Code Generation**: Translate your pseudocode into executable Python code. "
-                    "3. **Correctness and Completeness: Make sure your code is correct and complete."
+                    "</CODE FORMATTING>"
+                    "<INSTRUCTIONS>"
+                    "1. Make sure you understand the task."
+                    "2. Decide on the most efficient way to solve the task."
+                    "3. Use the function signature provided."
+                    "3. Make sure your code is correct and complete."
                     "4. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT"
+                    "<I</NSTRUCTIONS>"
         )]
         self._model_client = model_client
         self._llm = llm
@@ -38,16 +55,18 @@ class Coder(RoutedAgent):
         print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
         if self._llm == "deepseek-coder-v2":
+            """
             if self._client is None:
                 self._client = ollama.Client(host='http://160.80.97.151:11434')
                 print(self._client)
+            """
             # Prepare input to the chat completion model.
             prompt = "Write a the code given this function specification: " + message.specification + "\n. This is the function signature: " + message.function_signature
-            response = self._client.chat(
+            response = ollama.chat(
                 model=self._llm,
                 messages=[
                     {'role': 'user',
-                     'content': prompt},
+                     'content': self._system_prompt + prompt},
                 ]
             )
 
