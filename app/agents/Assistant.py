@@ -24,7 +24,7 @@ class Assistant(RoutedAgent):
         self._llm = llm
         self._text = ""
         self._role = "Assistant"
-        print_green(f"Hi I'm the assistant and I use {self._llm}.")
+
 
     @message_handler
     async def handle_user_message(self, message: Message, ctx: MessageContext) -> Message:
@@ -61,3 +61,6 @@ class Assistant(RoutedAgent):
         else:
             dialogue("It was not possible to generate a correct code.", self._role)
 
+    @message_handler
+    async def handle_hello_message(self, message: HelloMessage, ctx: MessageContext) -> None:
+        print_purple(f"Hi I'm the {self._role} and I use {self._llm}.")

@@ -3,8 +3,9 @@ import asyncio
 import sys
 import tempfile
 import sys
+import time
 from typing import List
-from autogen_core import SingleThreadedAgentRuntime, AgentId
+from autogen_core import SingleThreadedAgentRuntime, AgentId, DefaultTopicId
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_core.models import ModelFamily
 from autogen_ext.models.openai import OpenAIChatCompletionClient
@@ -70,10 +71,11 @@ async def main(llm):
 
 
     runtime.start()  # Start processing messages in the background.
+    await runtime.publish_message(HelloMessage(content="Hello world!"),
+                               topic_id=DefaultTopicId())
+
 
     response = Message("","request")
-    #print_blue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
-          #"Press ENTER two times to continue.")
 
     dialogue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
           "Press ENTER two times to continue.", "Assistant")

@@ -49,3 +49,6 @@ class ExecuteCodeRequest:
     tests: str
     sender: str
 
+@dataclass
+class HelloMessage:
+    content: str

@@ -26,7 +26,6 @@ class Debugger(RoutedAgent):
         self._counter = 0
         self._llm = llm
         self._role = "Debugger"
-        print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
     async def handle_debug_code_message(self, message: DebugMessage, ctx: MessageContext) -> None:
@@ -51,3 +50,6 @@ class Debugger(RoutedAgent):
             ExecuteCodeRequest(message.specification, code_block, message.tests,  self.id.type),
             topic_id=TopicId("default", self.id.key))
 
+    @message_handler
+    async def handle_hello_message(self, message: HelloMessage, ctx: MessageContext) -> None:
+        print_purple(f"Hi I'm the {self._role} and I use {self._llm}.")

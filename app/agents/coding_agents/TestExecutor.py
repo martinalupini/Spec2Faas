@@ -36,7 +36,7 @@ class TestExecutor(RoutedAgent):
         self._max_attempts = int(os.getenv("MAX_DEBUG_ATTEMPTS"))
         self._llm = llm
         self._role = "Test Executor"
-        print_green(f"Hi I'm the test executor and I use {self._llm}.")
+
 
     @message_handler
     async def handle_execute_code_message(self, message: ExecuteCodeRequest, ctx: MessageContext) -> None:
@@ -86,3 +86,7 @@ class TestExecutor(RoutedAgent):
                 # Max attempts number reached
                 await self.publish_message(CodeExecutorFinalResult(code="", type="fail"),
                                    topic_id=TopicId("default", self.id.key))
+
+    @message_handler
+    async def handle_hello_message(self, message: HelloMessage, ctx: MessageContext) -> None:
+        print_purple(f"Hi I'm the {self._role} and I use {self._llm}.")

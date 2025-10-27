@@ -122,7 +122,7 @@ class FaasDeployer(RoutedAgent):
         self._tools = tool_schema
         self._llm = llm
         self._role = "FaaS Deployer"
-        print_green(f"Hi I'm the debugger and I use {self._llm}.")
+
 
     @message_handler
     async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> Message:
@@ -178,3 +178,6 @@ class FaasDeployer(RoutedAgent):
         except Exception as e:
             return FunctionExecutionResult(call_id=call.id, content=str(e), is_error=True, name=tool.name)
 
+    @message_handler
+    async def handle_hello_message(self, message: HelloMessage, ctx: MessageContext) -> None:
+        print_purple(f"Hi I'm the {self._role} and I use {self._llm}.")

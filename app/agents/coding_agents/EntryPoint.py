@@ -14,7 +14,6 @@ class EntryPoint(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
-        print_green(f"Hi I'm the entry point of the coding system and I use {self._llm}.")
 
     @message_handler
     async def handle_assistant_message(self, message: CodeWritingRequest, ctx: MessageContext) -> None:
@@ -35,3 +34,7 @@ class EntryPoint(RoutedAgent):
             await self.publish_message(FinalCodeWritingResult(code=message.code, type="fail"), topic_id=TopicId("default", self.id.key))
         else:
             await self.publish_message(FinalCodeWritingResult(code=message.code, type="deployment"), topic_id=TopicId("default", self.id.key))
+
+    @message_handler
+    async def handle_hello_message(self, message: HelloMessage, ctx: MessageContext) -> None:
+        print_purple(f"Hi I'm the {self._role} and I use {self._llm}.")
