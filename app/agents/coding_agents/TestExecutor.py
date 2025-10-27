@@ -25,7 +25,9 @@ class TestExecutor(RoutedAgent):
         self._system_messages = [SystemMessage(
             content="You are a very skilled test executor."
                     "Given the function to test and the tests, create a code that will make them runnable."
+                    "<INSTRUCTIONS>"
                     "DO NOT MODIFY THE FUNCTION AND THE TESTS PROVIDED, just merge them in a single code."
+                    "</INSTRUCTIONS>"
 
         )]
         self._model_client = model_client
@@ -67,9 +69,9 @@ class TestExecutor(RoutedAgent):
                         code_blocks, cancellation_token=ctx.cancellation_token
                     )
                     if result.output == "":
-                        print_yellow(f"\n{'-' * 80}\nExecutor:\nThe function passes all the tests.\n{'-' * 80}")
+                        print_yellow(f"\n{'-' * 130}\nExecutor:\nThe function passes all the tests.\n{'-' * 130}")
                     else:
-                        print_yellow(f"\n{'-' * 80}\nExecutor:\n{result.output}\n{'-' * 80}")
+                        print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
 
                     if "AssertionError" in result.output:
                     # At least one test does not pass
