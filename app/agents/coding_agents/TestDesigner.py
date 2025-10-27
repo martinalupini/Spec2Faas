@@ -31,7 +31,6 @@ class TestDesigner(RoutedAgent):
                     "Your goal is to generate exhaustive test cases for the given function specification, covering all relevant input scenarios and ensuring correctness, robustness, and edge coverage."
                     "<INSTRUCTIONS>"
                     "First of all, make CORRECT tests."
-                    "- If the specification is not complete make REASONABLE assumptions on how the function should behave."
                     "- Focus on correctness, clarity, and diversity of test inputs."
                     "- Each test case must:"
                     "-- Follow the exact format below."
@@ -39,6 +38,7 @@ class TestDesigner(RoutedAgent):
                     "-- Be self-contained and syntactically valid Python."
                     "-- Be semantically correct with respect to the specification."
                     "- Only output test cases in the specified format Python format, nothing else."
+                    "- After you have produced the tests take your time to reflect if each on of them is correct."
                     "</INSTRUCTIONS>"
                     "<OUTPUT FORMAT>"
                     "The format of test cases should be:"
@@ -56,14 +56,14 @@ class TestDesigner(RoutedAgent):
         print_green(f"{self.id.type} received message. Creating now a test suite for the function.")
 
         if self._llm == "deepseek-coder-v2":
-            """
+
             if self._client is None:
                 self._client = ollama.Client(host='http://160.80.97.151:11434')
                 print(self._client)
-            """
+
             # Prepare input to the chat completion model.
             prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
-            response = ollama.chat(
+            response = self._client.chat(
                 model=self._llm,
                 messages=[
                     {'role': 'user',
