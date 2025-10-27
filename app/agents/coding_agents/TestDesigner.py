@@ -19,6 +19,7 @@ class TestDesigner(RoutedAgent):
                     -- Be self-contained and syntactically valid Python.
                     -- Be semantically correct with respect to the specification.
                     - Only output test cases in the specified format Python format, nothing else.
+                    - After you have produced the tests take your time to reflect if each on of them is correct.
                     </INSTRUCTIONS>
                     <OUTPUT FORMAT>
                     The format of test cases should be:
