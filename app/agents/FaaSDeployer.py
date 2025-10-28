@@ -54,7 +54,16 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
     url = os.getenv("SERVERLEDGE_URL")
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
-            print_yellow(f"Resp status: {resp.status} Resp text: {await resp.text()}")
+            #print_yellow(f"Resp status: {resp.status} Resp text: {await resp.text()}")
+            response_text = await resp.text()
+            response_details = f"""
+            --- Response Received ---
+            Status: {resp.status} {resp.reason}
+            Response Headers: {json.dumps(dict(resp.headers), indent=2)}
+            Response Body: {response_text}
+            -----------------------
+            """
+            print_red(response_details)
             if resp.ok:
                 # If there are no errors content-type is json otherwise is text
                 return await resp.json()

@@ -8,6 +8,8 @@ def print_yellow(s): print("\033[93m {}\033[00m".format(s))
 
 def print_blue(s): print("\033[96m {}\033[00m".format(s))
 
+def print_red(s): print("\033[91m {}\033[00m".format(s))
+
 ROSA = '\033[95m'
 RESET = '\033[0m'
 BLUE = '\033[96m'
