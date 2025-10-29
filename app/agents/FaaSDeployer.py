@@ -160,6 +160,10 @@ class FaasDeployer(RoutedAgent):
                 *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
             )
 
+            for r in results:
+                # r è un FunctionExecutionResult
+                dialogue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}", self._role)
+
             # Add the function execution results to the session.
             session.append(FunctionExecutionResultMessage(content=results))
 
