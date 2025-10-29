@@ -54,7 +54,22 @@ class Coder(RoutedAgent):
     async def handle_generate_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
-        if self._llm == "deepseek-coder-v2":
+        if self._llm == "gemini-2.5-pro" or self._llm == "gemini-2.0-flash":
+            # Prepare input to the chat completion model.
+            prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
+            user_message = UserMessage(content=prompt, source="user")
+            response = await self._model_client.create(
+                self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+            )
+
+            assert isinstance(response.content, str)
+            dialogue(response.content, self._role)
+            return_message = await self._runtime.send_message(
+                CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type),
+                AgentId("test_executor", "default"))
+            return return_message
+
+        else:
 
             if self._client is None:
                 self._client = ollama.Client(host='http://160.80.97.151:11434')
@@ -73,16 +88,4 @@ class Coder(RoutedAgent):
             return_message = await self._runtime.send_message(
                 CodeMessage(message.specification, message.function_signature, response['message']['content'], "",
                             self.id.type), AgentId("test_executor", "default"))
-            return return_message
-        else:
-            # Prepare input to the chat completion model.
-            prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
-            user_message = UserMessage(content=prompt, source="user")
-            response = await self._model_client.create(
-                self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
-            )
-
-            assert isinstance(response.content, str)
-            dialogue(response.content, self._role)
-            return_message = await self._runtime.send_message(CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type), AgentId("test_executor", "default"))
             return return_message
