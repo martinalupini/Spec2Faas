@@ -86,9 +86,18 @@ class TestDesigner(RoutedAgent):
                 ]
             )
 
-            dialogue(response['message']['content'], self._role)
+            prompt = "Are these tests correct? If not correct them. Do not make new tests but only inspect the one provided:\n" + response['message']['content']
+            response_corrected = self._client.chat(
+                model=self._llm,
+                messages=[
+                    {'role': 'user',
+                     'content': prompt},
+                ]
+            )
+
+            dialogue(response['message']['content'] + "\n\n" + response_corrected['message']['content'], self._role)
             return_message = await self._runtime.send_message(
-                CodeMessage(message.specification, message.function_signature, "", response['message']['content'],
+                CodeMessage(message.specification, message.function_signature, "", response_corrected['message']['content'],
                             self.id.type), AgentId("test_executor", "default"))
             return return_message
 
