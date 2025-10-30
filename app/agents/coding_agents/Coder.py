@@ -3,9 +3,10 @@ from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
 import ollama
+import time
 
 class Coder(RoutedAgent):
-    def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
+    def __init__(self,llm: str, model_client: ChatCompletionClient = None) -> None:
         super().__init__("Skilled software programmer")
         self._system_prompt = """You are a very skilled software programmer.
                     <TASK>
@@ -89,3 +90,51 @@ class Coder(RoutedAgent):
                 CodeMessage(message.specification, message.function_signature, response['message']['content'], "",
                             self.id.type), AgentId("test_executor", "default"))
             return return_message
+
+    @message_handler
+    async def handle_generate_code_message(self, message: TestCodeMessage,
+                                           ctx: MessageContext) -> TestCodeResult:
+        print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
+
+        if self._llm == "gemini-2.5-pro" or self._llm == "gemini-2.0-flash":
+            # Prepare input to the chat completion model.
+            prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
+            user_message = UserMessage(content=prompt, source="user")
+            start_time = time.perf_counter()
+            response = await self._model_client.create(
+                self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+            )
+            end_time = time.perf_counter()
+            execution_time = end_time - start_time
+
+            assert isinstance(response.content, str)
+
+            return TestCodeResult(response.content, execution_time, 0)
+
+        else:
+
+            if self._client is None:
+                self._client = ollama.Client(host='http://160.80.97.151:11434')
+
+            # Prepare input to the chat completion model.
+            prompt = "Write a the code given this function specification: " + message.specification + "\n. This is the function signature: " + message.function_signature
+            start_time = time.perf_counter()
+            response = self._client.chat(
+                model=self._llm,
+                messages=[
+                    {'role': 'user',
+                     'content': self._system_prompt + prompt},
+                ]
+            )
+
+            # Counting tokens
+            prompt_tokens = 0
+            completion_tokens = 0
+            if 'prompt_eval_count' in response and 'eval_count' in response:
+                prompt_tokens = response['prompt_eval_count']
+                completion_tokens = response['eval_count']
+
+            end_time = time.perf_counter()
+            execution_time = end_time - start_time
+
+            return TestCodeResult(response['message']['content'], execution_time, prompt_tokens + completion_tokens)

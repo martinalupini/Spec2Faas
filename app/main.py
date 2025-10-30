@@ -98,8 +98,9 @@ async def main(llm):
 if __name__ == "__main__":
 
     load_env_variables()
-    set_logging_config()
-    llm = get_config_data()
+    log_path = os.getenv("LOG_PATH")
+    set_logging_config(log_path)
+    llm = get_config_data("../config.yaml")
 
     try:
         asyncio.run(main(llm))

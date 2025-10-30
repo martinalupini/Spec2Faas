@@ -20,8 +20,7 @@ def load_env_variables():
         pass
 
 
-def set_logging_config():
-    log_path = os.getenv("LOG_PATH")
+def set_logging_config(log_path):
 
     logging.basicConfig(level=logging.WARNING)
     logger = logging.getLogger(TRACE_LOGGER_NAME)
@@ -45,8 +44,8 @@ def set_logging_config():
     logging.getLogger(TRACE_LOGGER_NAME).propagate = True
 
 
-def get_config_data():
+def get_config_data(path):
 
-    with open('../config.yaml', 'r') as file:
+    with open(path, 'r') as file:
         config = yaml.safe_load(file)
         return config['llm']

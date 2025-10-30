@@ -26,3 +26,13 @@ class DebugMessage:
     code:str
     error_message: str
 
+@dataclass
+class TestCodeMessage:
+    specification: str
+    function_signature: str
+
+@dataclass
+class TestCodeResult:
+    content: str
+    time: float
+    tokens: float
