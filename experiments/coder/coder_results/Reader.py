@@ -8,7 +8,9 @@ try:
     df = pd.read_parquet(file_path)
 
     # Stampa le prime 10 righe del DataFrame
-    print(df.head(133))
+    print(df.head(10))
+
+    print(df.info())
 
     # Se vuoi vedere l'intero contenuto (solo se il file è piccolo!)
     # print(df)

@@ -57,7 +57,6 @@ async def main(llm):
     else:
         results_df = pd.DataFrame(columns=columns)
 
-
     runtime.start()  # Start processing messages in the background.
 
     # Iterating through each row
@@ -98,7 +97,7 @@ async def main(llm):
         CoG_canonical = compute_CoG(canonical_function_code)
 
         new_data = {
-            'task_id': [task_id],
+            'task_id': [str(task_id)],
             'passed': [passed],
             'generation time': [response.time],
             'tokens': [response.tokens],
@@ -115,6 +114,8 @@ async def main(llm):
             results_df = new_row_df
         else:
             results_df = pd.concat([results_df, new_row_df], ignore_index=True)
+
+        results_df['task_id'] = results_df['task_id'].astype('string')
         results_df.to_parquet(file_name, engine='pyarrow')
 
     await executor.stop()
