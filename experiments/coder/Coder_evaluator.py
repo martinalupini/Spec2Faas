@@ -44,14 +44,13 @@ async def main(llm):
 
     #Importing the dataset
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
-    print(df.head())
 
     # Creating file to store data
     file_name = "coder_results/"+ llm['coder']+".parquet"
     columns = [
         'task_id', 'passed', 'generation time', 'tokens',
         'execution time', 'execution time canonical',
-        'CC generation', 'CC canonical'
+        'CC generation', 'CC canonical', 'CoG generation', 'CoG canonical'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
@@ -87,6 +86,8 @@ async def main(llm):
             passed = False
 
         CC_generated = compute_CC(function_code_string)
+        CoG_generated = compute_CoG(function_code_string)
+
 
         # Canonical solution execution
         signature = extract_signature(prompt)
@@ -94,8 +95,8 @@ async def main(llm):
         canonical_function_code = fix_indent(non_indent_code)
         result, execution_time_canonical = await execute_function(canonical_function_code, test, entry_point, executor, response.ctx)
         CC_canonical = compute_CC(canonical_function_code)
+        CoG_canonical = compute_CoG(canonical_function_code)
 
-        """
         new_data = {
             'task_id': [task_id],
             'passed': [passed],
@@ -104,13 +105,17 @@ async def main(llm):
             'execution time': [execution_time_generated],
             'execution time canonical': [execution_time_canonical],
             'CC generation': [CC_generated],
-            'CC canonical': [CC_canonical]
+            'CC canonical': [CC_canonical],
+            'CoG generation': [CoG_generated],
+            'CoG canonical': [CoG_canonical]
         }
 
         new_row_df = pd.DataFrame(new_data)
-        results_df = pd.concat([results_df, new_row_df], ignore_index=True)
+        if results_df.empty:
+            results_df = new_row_df
+        else:
+            results_df = pd.concat([results_df, new_row_df], ignore_index=True)
         results_df.to_parquet(file_name, engine='pyarrow')
-                """
 
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
