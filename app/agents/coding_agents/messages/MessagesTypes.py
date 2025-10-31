@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-
+from autogen_core import CancellationToken
 
 @dataclass
 class Message:
@@ -36,3 +36,4 @@ class TestCodeResult:
     content: str
     time: float
     tokens: float
+    ctx: CancellationToken

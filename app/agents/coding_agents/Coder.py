@@ -1,4 +1,4 @@
-from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
+from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, CancellationToken
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
@@ -92,9 +92,8 @@ class Coder(RoutedAgent):
             return return_message
 
     @message_handler
-    async def handle_generate_code_message(self, message: TestCodeMessage,
+    async def handle_generate_test_code_message(self, message: TestCodeMessage,
                                            ctx: MessageContext) -> TestCodeResult:
-        print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
 
         if self._llm == "gemini-2.5-pro" or self._llm == "gemini-2.0-flash":
             # Prepare input to the chat completion model.
@@ -137,4 +136,4 @@ class Coder(RoutedAgent):
             end_time = time.perf_counter()
             execution_time = end_time - start_time
 
-            return TestCodeResult(response['message']['content'], execution_time, prompt_tokens + completion_tokens)
+            return TestCodeResult(response['message']['content'], execution_time, prompt_tokens + completion_tokens, ctx.cancellation_token)

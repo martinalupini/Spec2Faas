@@ -6,17 +6,7 @@ from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_core.code_executor import CodeBlock, CodeExecutor
 from .messages.MessagesTypes import *
 from .utils.Utils import *
-
-
-def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
-    pattern = re.compile(r"```(?:\s*([\w\+\-]+))?\n([\s\S]*?)```")
-    matches = pattern.findall(markdown_text)
-    code_blocks: List[CodeBlock] = []
-    for match in matches:
-        language = match[0].strip() if match[0] else ""
-        code_content = match[1]
-        code_blocks.append(CodeBlock(code=code_content, language=language))
-    return code_blocks
+from .utils.Code_Extractors import *
 
 class TestExecutor(RoutedAgent):
     def __init__(self, llm:str, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
