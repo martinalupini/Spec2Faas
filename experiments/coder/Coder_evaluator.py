@@ -49,7 +49,7 @@ async def main(llm, client):
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
     # Creating file to store data
-    file_name = "coder_results/"+ llm+".parquet"
+    file_name = "coder_results/"+ llm+"2.parquet"
     columns = [
         'task_id', 'passed', 'generation time', 'tokens',
         'execution time', 'execution time canonical',

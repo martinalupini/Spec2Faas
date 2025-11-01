@@ -6,7 +6,7 @@ from app.Utils import *
 llm = get_config_data("../../../config.yaml")
 coder = llm['coder']
 
-file_path = coder + ".parquet"
+file_path = coder + "2.parquet"
 csv_file = "../results.csv"
 
 try:

@@ -27,6 +27,7 @@ async def main(llm):
         model="gemini-2.0-flash",
         api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        max_retries=10,
         # perché il modello non è “OpenAI”, serve descriverne le capacità:
         model_info={
             "family": ModelFamily.GEMINI_2_0_FLASH,
@@ -41,6 +42,7 @@ async def main(llm):
         model="gemini-2.5-pro",
         api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+        max_retries=10,
         # perché il modello non è “OpenAI”, serve descriverne le capacità:
         model_info={
             "family": ModelFamily.GEMINI_2_0_FLASH,
