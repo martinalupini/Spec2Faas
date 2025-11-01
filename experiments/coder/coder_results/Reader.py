@@ -22,6 +22,7 @@ except Exception as e:
     print(f"Si è verificato un errore durante la lettura del file: {e}")
 
 pass_at_1 = df['passed'].mean()
+avg_generation_time = df['generation time'].mean()
 avg_execution_time_generation = df['execution time'].mean()
 avg_execution_time_canonical = df['execution time canonical'].mean()
 avg_cc_generation = df['CC generation'].mean()
@@ -30,6 +31,7 @@ avg_cog_generation = df['CoG generation'].mean()
 avg_cog_canonical = df['CoG canonical'].mean()
 
 print(f"pass@1: {pass_at_1:.4f}")
+print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
 print("\n--- Average Execution Time ---")
 print(f"Generated function: {avg_execution_time_generation:.4f}")
 print(f"Canonical function: {avg_execution_time_canonical:.4f}")
@@ -44,6 +46,7 @@ print(f"Canonical function: {avg_cog_canonical:.4f}")
 results_data = {
     'model': [coder],
     'pass@1': [pass_at_1],
+    'generation_time': [avg_generation_time],
     'avg_execution_time_generation': [avg_execution_time_generation],
     'avg_execution_time_canonical': [avg_execution_time_canonical],
     'avg_cc_generation': [avg_cc_generation],

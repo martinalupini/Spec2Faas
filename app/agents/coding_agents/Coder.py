@@ -106,9 +106,12 @@ class Coder(RoutedAgent):
             end_time = time.perf_counter()
             execution_time = end_time - start_time
 
+            usage_metadata = response.usage
+            total_tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
             assert isinstance(response.content, str)
 
-            return TestCodeResult(response.content, execution_time, 0)
+            return TestCodeResult(response.content, execution_time, total_tokens, ctx.cancellation_token)
 
         else:
 

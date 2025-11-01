@@ -6,7 +6,10 @@ import sys
 import time
 from typing import List
 from autogen_core import SingleThreadedAgentRuntime, AgentId
+from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
+from autogen_ext.models.openai import OpenAIChatCompletionClient
+
 from app.agents.coding_agents.Coder import *
 from autogen_core.tools import FunctionTool, Tool
 from app.agents.coding_agents.utils.Utils import *
@@ -33,10 +36,10 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
     return result, end_time - start_time
 
 
-async def main(llm):
+async def main(llm, client):
 
     runtime = SingleThreadedAgentRuntime()
-    await Coder.register(runtime, "coder", lambda: Coder(llm = llm['coder']))
+    await Coder.register(runtime, "coder", lambda: Coder(llm = llm, model_client=client))
 
     work_dir = tempfile.mkdtemp()
     executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
@@ -46,7 +49,7 @@ async def main(llm):
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
     # Creating file to store data
-    file_name = "coder_results/"+ llm['coder']+".parquet"
+    file_name = "coder_results/"+ llm+".parquet"
     columns = [
         'task_id', 'passed', 'generation time', 'tokens',
         'execution time', 'execution time canonical',
@@ -127,12 +130,31 @@ async def main(llm):
 
 if __name__ == "__main__":
 
+    load_env_variables()
     log_path = "../../output/coder/log"
     set_logging_config(log_path)
     llm = get_config_data("../../config.yaml")
+    coder = llm['coder']
+
+    if coder == "gemini-2.5-pro" or coder == "gemini-2.0-flash":
+        model_client = OpenAIChatCompletionClient(
+            model=coder,
+            api_key=os.environ["GEMINI_API_KEY"],
+            base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+            max_retries = 10,
+            model_info={
+                "family": ModelFamily.GEMINI_2_0_FLASH,
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "structured_output": True,
+            },
+        )
+    else:
+        model_client = None
 
     try:
-        asyncio.run(main(llm))
+        asyncio.run(main(coder, model_client))
     finally:
         logging.shutdown()
 
