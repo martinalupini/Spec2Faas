@@ -4,6 +4,7 @@ import os
 from app.Utils import *
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import math
 
 llm = get_config_data("../../../config.yaml")
 coder = llm['coder']
@@ -84,20 +85,37 @@ def make_plot():
     df_csv = df_csv[df_csv['model'] != avoid_model].copy()
 
     models = df_csv['model'].tolist()
-    metrics = df_csv.columns.drop('model').tolist()
+    metrics = df_csv.columns.drop(['model', 'avg_execution_time_canonical', 'avg_cc_canonical', 'avg_cog_canonical']).tolist()
+    df_csv_no_canonical = df_csv[df_csv['model'] != "canonical"].copy()
+    models_no_canonical = df_csv_no_canonical['model'].tolist()
 
-    fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(22, 12))
+    #fig, axes = plt.subplots(nrows=2, ncols=4, figsize=(22, 12))
+    n_metrics = len(metrics)
+    cols = min(n_metrics, 3)
+    rows = math.ceil(n_metrics / cols)
+
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(6 * cols, 5 * rows))
+    axes = np.array(axes).reshape(-1)
+
+    for ax in axes.flatten()[len(metrics):]:
+        ax.set_visible(False)
 
     fig.suptitle('', fontsize=24, weight='bold')
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)+1))
 
-    for ax, metrica in zip(axes.flatten(), metrics):
-        valori = df_csv[metrica]
+    for ax, metric in zip(axes.flatten(), metrics):
+        if metric == 'pass@1' or metric == 'generation_time':
+            df_value = df_csv_no_canonical.copy()
+            models_plot = models_no_canonical
+        else:
+            df_value = df_csv.copy()
+            models_plot = models
+        valori = df_value[metric]
 
-        bars = ax.bar(models, valori, color=colors)
+        bars = ax.bar(models_plot, valori, color=colors)
 
-        ax.set_title(metrica, fontsize=12, weight='bold')
+        ax.set_title(metric, fontsize=12, weight='bold')
         ax.set_ylabel('Value', fontsize=10)
         ax.tick_params(axis='x', rotation=45, labelsize=8)
         ax.yaxis.grid(True, linestyle='--', alpha=0.6)
@@ -106,11 +124,6 @@ def make_plot():
             yval = bar.get_height()
             ax.text(bar.get_x() + bar.get_width()/2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom', fontsize=8)
 
-    # Optional: add legend (but it does not fit)
-    #legend_patches = [mpatches.Patch(color=color, label=model) for color, model in zip(colors, models)]
-    #fig.legend(handles=legend_patches, loc='lower center', ncol=len(models), fontsize=12, title="Models")
-
-    #plt.tight_layout(rect=[0, 0.05, 1, 0.93])
     plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
 
     plt.savefig('../comparison.png', dpi=300)
