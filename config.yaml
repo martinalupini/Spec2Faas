@@ -1,5 +1,6 @@
 llm:
-  coder: "deepseek-coder-v2"
+  #coder: "deepseek-coder-v2"
+  coder: "qwen2.5-coder:32b"
   debugger: "gemini-2.5-pro"
   #test_designer: "gemini-2.5-pro"
   test_designer: "qwen3"

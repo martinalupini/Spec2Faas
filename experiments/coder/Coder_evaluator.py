@@ -130,10 +130,6 @@ if __name__ == "__main__":
     log_path = "../../output/coder/log"
     set_logging_config(log_path)
     llm = get_config_data("../../config.yaml")
-    results_path = "./coder_results/" + llm['coder']
-    file_name = "coder_results/" + llm['coder'] + ".parquet"
-    #df = pd.read_parquet(file_name)
-    #print(df.head())
 
     try:
         asyncio.run(main(llm))

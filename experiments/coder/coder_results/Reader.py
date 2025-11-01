@@ -1,7 +1,12 @@
 import pandas as pd
 import os
+from app.Utils import *
 
-file_path = "deepseek-coder-v2.parquet"
+
+llm = get_config_data("../../../config.yaml")
+coder = llm['coder']
+
+file_path = coder + ".parquet"
 csv_file = "../results.csv"
 
 try:
@@ -37,6 +42,7 @@ print(f"Canonical function: {avg_cog_canonical:.4f}")
 
 
 results_data = {
+    'model': [coder],
     'pass@1': [pass_at_1],
     'avg_execution_time_generation': [avg_execution_time_generation],
     'avg_execution_time_canonical': [avg_execution_time_canonical],
