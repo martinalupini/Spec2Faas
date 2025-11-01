@@ -119,6 +119,9 @@ class FaasDeployer(RoutedAgent):
                     "result = [line for line in lines if re.search(pattern, line)]"
                     "return '\n'.join(result)"
                 "</EXAMPLES>"
+                "<OUTPUT>"
+                "If the deployment is succesful return the name of the handler and the name of the parameters"
+                "</OUTPUT>"
         )]
 
         self._model_client = model_client
