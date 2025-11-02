@@ -120,12 +120,16 @@ class Coder(RoutedAgent):
 
             # Prepare input to the chat completion model.
             prompt = "Write a the code given this function specification: " + message.specification + "\n. This is the function signature: " + message.function_signature
+            if message.prompt:
+                final_prompt = self._system_prompt + prompt
+            else:
+                final_prompt = prompt
             start_time = time.perf_counter()
             response = self._client.chat(
                 model=self._llm,
                 messages=[
                     {'role': 'user',
-                     'content': self._system_prompt + prompt},
+                     'content': final_prompt},
                 ]
             )
 

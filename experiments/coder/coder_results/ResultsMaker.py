@@ -6,8 +6,15 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import math
 
-llm = get_config_data("../../../config.yaml")
+llm = get_config_data("../../config_test.yaml")
 coder = llm['coder']
+if llm['coder_prompt'] == "Yes":
+    prompt = True
+else:
+    prompt = False
+
+if not prompt:
+    coder = coder + "_no_prompt"
 
 file_path = coder + ".parquet"
 csv_file = "../results.csv"
@@ -52,11 +59,8 @@ def write_csv():
         'pass@1': [pass_at_1],
         'generation_time': [avg_generation_time],
         'avg_execution_time_generation': [avg_execution_time_generation],
-        'avg_execution_time_canonical': [avg_execution_time_canonical],
         'avg_cc_generation': [avg_cc_generation],
-        'avg_cc_canonical': [avg_cc_canonical],
         'avg_cog_generation': [avg_cog_generation],
-        'avg_cog_canonical': [avg_cog_canonical],
     }
 
     results_df = pd.DataFrame(results_data)
@@ -81,11 +85,11 @@ def write_csv():
 def make_plot():
     df_csv = pd.read_csv('../results.csv')
 
-    avoid_model = 'deepseek-coder-v2_no_prompt'
-    df_csv = df_csv[df_csv['model'] != avoid_model].copy()
+    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt']
+    df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
 
     models = df_csv['model'].tolist()
-    metrics = df_csv.columns.drop(['model', 'avg_execution_time_canonical', 'avg_cc_canonical', 'avg_cog_canonical']).tolist()
+    metrics = df_csv.columns.drop(['model']).tolist()
     df_csv_no_canonical = df_csv[df_csv['model'] != "canonical"].copy()
     models_no_canonical = df_csv_no_canonical['model'].tolist()
 

@@ -2,6 +2,7 @@ import re
 from typing import List
 from autogen_core.code_executor import CodeBlock
 import autopep8
+import ast
 
 def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
     pattern = re.compile(r"```(?:\s*([\w\+\-]+))?\n([\s\S]*?)```")
@@ -22,6 +23,17 @@ def extract_signature(description: str) -> str:
     else:
         signature = ""
     return signature
+
+
+def get_function_name_from_code(code: str) -> str:
+    tree = ast.parse(code)
+
+    for node in tree.body:
+        # Check if the node is a function definition
+        if isinstance(node, ast.FunctionDef):
+            return node.name
+
+    return None
 
 
 

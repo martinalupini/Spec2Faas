@@ -2,16 +2,13 @@ import logging
 import asyncio
 import sys
 import tempfile
-import sys
 import time
-from typing import List
 from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 
 from app.agents.coding_agents.Coder import *
-from autogen_core.tools import FunctionTool, Tool
 from app.agents.coding_agents.utils.Utils import *
 from app.agents.coding_agents.utils.Code_Extractors import *
 from app.Utils import *
@@ -36,7 +33,7 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
     return result, end_time - start_time
 
 
-async def main(llm, client):
+async def main(llm, client, system_prompt):
 
     runtime = SingleThreadedAgentRuntime()
     await Coder.register(runtime, "coder", lambda: Coder(llm = llm, model_client=client))
@@ -49,7 +46,10 @@ async def main(llm, client):
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
     # Creating file to store data
-    file_name = "coder_results/"+ llm+"2.parquet"
+    if system_prompt:
+        file_name = "coder_results/"+ llm+".parquet"
+    else:
+        file_name = "coder_results/"+ llm+"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'generation time', 'tokens',
         'execution time', 'execution time canonical',
@@ -70,22 +70,27 @@ async def main(llm, client):
         test = row.test
         canonical_solution = row.canonical_solution
 
+        function_name = get_function_name_from_code(prompt)
+        if function_name != entry_point:
+            entry_point = function_name
+
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
             continue
 
         print_yellow(task_id)
-        response= await runtime.send_message(TestCodeMessage(prompt, entry_point), AgentId("coder", "default"))
+        response= await runtime.send_message(TestCodeMessage(prompt, entry_point, system_prompt), AgentId("coder", "default"))
 
 
         # Generated function execution
         function_code = extract_markdown_code_blocks(response.content)
         function_code_string = function_code[0].code
         result, execution_time_generated = await execute_function(function_code_string, test, entry_point, executor, response.ctx)
-        if result.output == "":
-            passed = True
-        else:
+        if "AssertionError" in result.output:
+            print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
             passed = False
+        else:
+            passed = True
 
         CC_generated = compute_CC(function_code_string)
         CoG_generated = compute_CoG(function_code_string)
@@ -98,6 +103,9 @@ async def main(llm, client):
         result, execution_time_canonical = await execute_function(canonical_function_code, test, entry_point, executor, response.ctx)
         CC_canonical = compute_CC(canonical_function_code)
         CoG_canonical = compute_CoG(canonical_function_code)
+        if "AssertionError" in result.output:
+            print_purple(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
+
 
         new_data = {
             'task_id': [str(task_id)],
@@ -133,8 +141,12 @@ if __name__ == "__main__":
     load_env_variables()
     log_path = "../../output/coder/log"
     set_logging_config(log_path)
-    llm = get_config_data("../../config.yaml")
+    llm = get_config_data("../config_test.yaml")
     coder = llm['coder']
+    if llm['coder_prompt'] == "Yes":
+        prompt = True
+    else:
+        prompt = False
 
     if coder == "gemini-2.5-pro" or coder == "gemini-2.0-flash":
         model_client = OpenAIChatCompletionClient(
@@ -154,7 +166,7 @@ if __name__ == "__main__":
         model_client = None
 
     try:
-        asyncio.run(main(coder, model_client))
+        asyncio.run(main(coder, model_client, prompt))
     finally:
         logging.shutdown()
 
