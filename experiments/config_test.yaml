@@ -1,10 +1,10 @@
 llm:
   #coder: "deepseek-coder-v2"
-  coder_prompt: "No"
+  coder_prompt: "Yes"
   #coder: "qwen2.5-coder:32b"
-  #coder: "qwen2.5-coder"
+  coder: "qwen2.5-coder"
   #coder: "gemini-2.5-pro"
-  coder: "gemini-2.0-flash"
+  #coder: "gemini-2.0-flash"
   debugger: "gemini-2.5-pro"
   #test_designer: "gemini-2.5-pro"
   test_designer: "qwen3"

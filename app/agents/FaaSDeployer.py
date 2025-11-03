@@ -34,8 +34,8 @@ def _pystring_to_tarBase64(py_code, filename) -> str:
     return base64.b64encode(mem.getvalue()).decode("ascii")
 
 async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int) -> dict:
-    print_yellow("\nThis is the name:\n" + name)
-    print_yellow("This is the code:\n" + code)
+    #print_yellow("\nThis is the name:\n" + name)
+    #print_yellow("This is the code:\n" + code)
 
     filename = name +".py"
     tar_b64 = _pystring_to_tarBase64(code, filename=filename)
@@ -119,16 +119,13 @@ class FaasDeployer(RoutedAgent):
                     "result = [line for line in lines if re.search(pattern, line)]"
                     "return '\n'.join(result)"
                 "</EXAMPLES>"
-                "<OUTPUT>"
-                "If the deployment is succesful return the name of the handler and the name of the parameters"
-                "</OUTPUT>"
         )]
 
         self._model_client = model_client
         self._tools = tool_schema
         self._llm = llm
         self._role = "FaaS Deployer"
-        print_green(f"Hi I'm the debugger and I use {self._llm}.")
+        print_green(f"Hi I'm the faas deployer and I use {self._llm}.")
 
     @message_handler
     async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> Message:
@@ -177,7 +174,7 @@ class FaasDeployer(RoutedAgent):
         # Find the tool by name.
         tool = next((tool for tool in self._tools if tool.name == call.name), None)
         assert tool is not None
-        dialogue("Executing tool " + tool.name, self._role)
+        #dialogue("Executing tool " + tool.name, self._role)
 
         # Run the tool and capture the result.
         try:
@@ -189,3 +186,47 @@ class FaasDeployer(RoutedAgent):
         except Exception as e:
             return FunctionExecutionResult(call_id=call.id, content=str(e), is_error=True, name=tool.name)
 
+    @message_handler
+    async def handle_test_deploy_message(self, message: TestDeployMessage, ctx: MessageContext) -> TestDeployResult:
+        print_green(f"{self.id.type} received message. Starting to deploy the function in FaaS.")
+
+        # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
+        # Create a session of messages.
+        prompt = "This is the code: " + message.code + "If the deployment is successful return the name of the handler otherwise return 'FAIL'"
+        session: List[LLMMessage] = self._system_messages + [UserMessage(content=prompt, source="user")]
+
+        start_time = time.perf_counter()
+        tokens = 0
+        while True:
+            # Run the chat completion with the tools.
+            create_result = await self._model_client.create(
+                messages=session,
+                tools=self._tools,
+                cancellation_token=ctx.cancellation_token,
+            )
+
+            usage_metadata = create_result.usage
+            tokens = tokens + usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+            # If there are no tool calls, return the result.
+            if isinstance(create_result.content, str):
+                end_time = time.perf_counter()
+                return TestDeployResult(result=create_result.content, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
+            assert isinstance(create_result.content, list) and all(
+                isinstance(call, FunctionCall) for call in create_result.content
+            )
+
+            # Add the first model create result to the session.
+            session.append(AssistantMessage(content=create_result.content, source="assistant"))
+
+            # Execute the tool calls.
+            results = await asyncio.gather(
+                *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
+            )
+
+            for r in results:
+                # r è un FunctionExecutionResult
+                print_blue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}")
+
+            # Add the function execution results to the session.
+            session.append(FunctionExecutionResultMessage(content=results))
