@@ -35,6 +35,7 @@ except Exception as e:
 def write_csv():
     pass_at_1 = df['passed'].mean()
     avg_generation_time = df['generation time'].mean()
+    avg_tokens = df['tokens'].mean()
     avg_execution_time_generation = df['execution time'].mean()
     avg_execution_time_canonical = df['execution time canonical'].mean()
     avg_cc_generation = df['CC generation'].mean()
@@ -44,6 +45,7 @@ def write_csv():
 
     print(f"pass@1: {pass_at_1:.4f}")
     print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
+    print(f"\nAverage Tokens: {avg_tokens:.4f}")
     print("\n--- Average Execution Time ---")
     print(f"Generated function: {avg_execution_time_generation:.4f}")
     print(f"Canonical function: {avg_execution_time_canonical:.4f}")
@@ -57,7 +59,8 @@ def write_csv():
     results_data = {
         'model': [coder],
         'pass@1': [pass_at_1],
-        'generation_time': [avg_generation_time],
+        'avg_generation_time': [avg_generation_time],
+        'avg_tokens': [avg_tokens],
         'avg_execution_time_generation': [avg_execution_time_generation],
         'avg_cc_generation': [avg_cc_generation],
         'avg_cog_generation': [avg_cog_generation],
@@ -106,10 +109,11 @@ def make_plot():
 
     fig.suptitle('', fontsize=24, weight='bold')
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(models)+1))
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric in zip(axes.flatten(), metrics):
-        if metric == 'pass@1' or metric == 'generation_time':
+        if metric == 'pass@1' or metric == 'avg_generation_time' or metric == 'avg_tokens':
             df_value = df_csv_no_canonical.copy()
             models_plot = models_no_canonical
         else:
@@ -117,7 +121,9 @@ def make_plot():
             models_plot = models
         valori = df_value[metric]
 
-        bars = ax.bar(models_plot, valori, color=colors)
+        plot_colors = [color_map[model] for model in models_plot]
+
+        bars = ax.bar(models_plot, valori, color=plot_colors)
 
         ax.set_title(metric, fontsize=12, weight='bold')
         ax.set_ylabel('Value', fontsize=10)
