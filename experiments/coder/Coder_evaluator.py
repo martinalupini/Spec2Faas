@@ -70,10 +70,6 @@ async def main(llm, client, system_prompt):
         test = row.test
         canonical_solution = row.canonical_solution
 
-        function_name = get_function_name_from_code(prompt)
-        if function_name != entry_point:
-            entry_point = function_name
-
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
             continue
@@ -97,8 +93,7 @@ async def main(llm, client, system_prompt):
 
 
         # Canonical solution execution
-        signature = extract_signature(prompt)
-        non_indent_code = signature + canonical_solution
+        non_indent_code = prompt + canonical_solution
         canonical_function_code = fix_indent(non_indent_code)
         result, execution_time_canonical = await execute_function(canonical_function_code, test, entry_point, executor, response.ctx)
         CC_canonical = compute_CC(canonical_function_code)

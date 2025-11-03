@@ -25,17 +25,6 @@ def extract_signature(description: str) -> str:
     return signature
 
 
-def get_function_name_from_code(code: str) -> str:
-    tree = ast.parse(code)
-
-    for node in tree.body:
-        # Check if the node is a function definition
-        if isinstance(node, ast.FunctionDef):
-            return node.name
-
-    return None
-
-
 
 def fix_indent(text: str) -> str:
     return autopep8.fix_code(text)
