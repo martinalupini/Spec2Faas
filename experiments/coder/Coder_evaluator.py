@@ -93,11 +93,10 @@ async def main(llm, client, system_prompt):
 
 
         # Canonical solution execution
-        non_indent_code = prompt + canonical_solution
-        canonical_function_code = fix_indent(non_indent_code)
-        result, execution_time_canonical = await execute_function(canonical_function_code, test, entry_point, executor, response.ctx)
-        CC_canonical = compute_CC(canonical_function_code)
-        CoG_canonical = compute_CoG(canonical_function_code)
+        canonical_code = prompt +  canonical_solution
+        result, execution_time_canonical = await execute_function(canonical_code, test, entry_point, executor, response.ctx)
+        CC_canonical = compute_CC(canonical_code)
+        CoG_canonical = compute_CoG(canonical_code)
         if "AssertionError" in result.output:
             print_purple(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
 

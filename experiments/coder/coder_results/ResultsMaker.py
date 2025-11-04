@@ -61,7 +61,7 @@ def write_csv():
         'pass@1': [pass_at_1],
         'avg_generation_time': [avg_generation_time],
         'avg_tokens': [avg_tokens],
-        'avg_execution_time_generation': [avg_execution_time_generation],
+        'avg_execution_time': [avg_execution_time_generation],
         'avg_cc_generation': [avg_cc_generation],
         'avg_cog_generation': [avg_cog_generation],
     }
