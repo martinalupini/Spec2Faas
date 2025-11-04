@@ -6,6 +6,7 @@ import time
 import json
 import aiohttp
 import asyncio
+import ast
 from typing import List
 
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, CancellationToken, FunctionCall
@@ -69,56 +70,52 @@ class FaasDeployer(RoutedAgent):
 
         self._system_messages = [SystemMessage(
             content="You are an expert cloud engineer responsible for deploying Python functions to a FaaS platform."
-            "Your task is to follow a strict two-step process using the available tools."
-            "The input will be a Python function code."
-            "<INSTRUCTIONS>"
-            "Step 1: Prepare the deployment payload."
-            "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
-            "Import necessary libraries outside the handler."
-            "Look at the examples in <EXAMPLES>"
-            "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to register the function. "
-            "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
-            "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
-            "The handler should return a dictionary."
-            "The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
-            "If you obtain errors from the server reflect on these errors. For example if the error is 404 'Chosen runtime does not exists' choose python310. "
-            "If the error is 409 'Function already exists' choose another name for the function."
-            "Only stop invoking tools when the server response is 200."
-            "</INSTRUCTIONS>"
-            "<EXAMPLES>"
-            "Example 1: "
-            "def handler(params, context):"
-                "n = params['n']"
-                "return ''.join(fibonacci_nums(int(n)))"
-            "def fibonacci_nums(n):"
-                "sequence = \"\""
-                "if n <= 0:"
+                    "Your task is to follow a strict two-step process using the available tools."
+                    "The input will be a Python function code."
+
+                    "Step 1: Prepare the deployment payload."
+                    "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
+                    "Import necessary libraries outside the handler."
+                    "Example 1: "
+                    "def handler(params, context):"
+                    "n = params['n']"
+                    "return ''.join(fibonacci_nums(int(n)))"
+                    "def fibonacci_nums(n):"
+                    "sequence = \"\""
+                    "if n <= 0:"
                     "sequence += \"0\""
                     "return sequence"
-                "sequence = \"0, 1\""
-                "count = 2"
-                "n1 = 0"
-                "n2 = 1"
-                "while count <= n:"
+                    "sequence = \"0, 1\""
+                    "count = 2"
+                    "n1 = 0"
+                    "n2 = 1"
+                    "while count <= n:"
                     "next_value = n2 + n1"
                     "sequence += \",\" + \"\".join(str(next_value))"
                     "n1 = n2"
                     "n2 = next_value"
                     "count += 1"
-                "return sequence"
-                "Example 2:"
-                "def handler(params, context):"
+                    "return sequence"
+                    "Example 2:"
+                    "def handler(params, context):"
                     "print(\"Executing function....\")"
                     "return \"Hello, Serverledge!\nParams: {}\".format(params)"
-                "Example 3:"
-                "import re"
-                "def handler(params, context):"
+                    "Example 3:"
+                    "import re"
+                    "def handler(params, context):"
                     "return grep(\"grep\", params[\"InputText\"])"
-                "def grep(pattern, text):"
+                    "def grep(pattern, text):"
                     "lines = text.split('\n')"
                     "result = [line for line in lines if re.search(pattern, line)]"
                     "return '\n'.join(result)"
-                "</EXAMPLES>"
+                    "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to register the function. "
+                    "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
+                    "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
+                    "The handler should return a dictionary."
+                    #"The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
+                    "If you obtain errors from the server reflect on these errors. For example if the error is 404 'Chosen runtime does not exists' choose python310. "
+                    "If the error is 409 'Function already exists' choose another name for the function."
+                    "Only stop invoking tools when the server response is 200."
         )]
 
         self._model_client = model_client
@@ -189,10 +186,11 @@ class FaasDeployer(RoutedAgent):
     @message_handler
     async def handle_test_deploy_message(self, message: TestDeployMessage, ctx: MessageContext) -> TestDeployResult:
         print_green(f"{self.id.type} received message. Starting to deploy the function in FaaS.")
+        r = None
 
         # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
         # Create a session of messages.
-        prompt = "This is the code: " + message.code + "If the deployment is successful return the name of the handler otherwise return 'FAIL'"
+        prompt = "This is the code: " + message.code
         session: List[LLMMessage] = self._system_messages + [UserMessage(content=prompt, source="user")]
 
         start_time = time.perf_counter()
@@ -211,7 +209,12 @@ class FaasDeployer(RoutedAgent):
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
                 end_time = time.perf_counter()
-                return TestDeployResult(result=create_result.content, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
+                if r is None or r.is_error:
+                    final_response = "FAIL"
+                else:
+                    data = ast.literal_eval(r.content)
+                    final_response = next(iter(data.values()))
+                return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
             )
@@ -224,9 +227,7 @@ class FaasDeployer(RoutedAgent):
                 *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
             )
 
-            for r in results:
-                # r è un FunctionExecutionResult
-                print_blue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}")
+            r = results[0]
 
             # Add the function execution results to the session.
             session.append(FunctionExecutionResultMessage(content=results))

@@ -2,6 +2,7 @@ import re
 import ast
 import json
 from typing import Tuple, List, Any
+import pandas as pd
 
 def extract_param_names(testo: str, entry_point: str) ->List[str]:
     pattern = re.compile(r"def\s+" + re.escape(entry_point) + r"\s*\((.*?)\):")
@@ -54,7 +55,7 @@ def create_json(names: list, values: list, filename: str):
 
     data = dict(zip(names, values))
 
-    with open("inputs/" + filename, 'w') as f:
+    with open(filename, 'w') as f:
         json.dump(data, f, indent=4)
 
 

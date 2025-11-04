@@ -54,51 +54,46 @@ async def main(llm, client, server):
         prompt = row.prompt
         canonical_solution = row.canonical_solution
         json_filename = entry_point + ".json"
-
-        """
-        param_names = extract_param_names(prompt, entry_point)
-        param_values = extract_param_values(test)
-
-        local_path = task_id.split('/')[-1] + "_"+json_filename
+        local_path = "inputs/"+ task_id.split('/')[-1] + "_" + json_filename
         remote_path = "serverledge/inputs" + "/" + json_filename
-
-        try:
-            sftp = server.open_sftp()
-
-            try:
-                sftp.stat(remote_path)
-                continue
-            except FileNotFoundError:
-                create_json(param_names, param_values, local_path)
-                sftp.put("inputs/"+local_path, remote_path)
-                print("Json uploaded!")
-
-        except Exception as e:
-            print(f"Error during file transfer: {e}")
-            raise e
-        finally:
-            if sftp:
-                sftp.close()
-        """
 
         # Function already seen in a previous experiment
         if task_id in results_df['task_id'].values:
             continue
 
+        # First of all, saving the json files containing the inputs (if not yet saved)
+        if not os.path.exists(local_path):
+            param_names = extract_param_names(prompt, entry_point)
+            param_values = extract_param_values(test)
+
+            try:
+                sftp = server.open_sftp()
+
+                try:
+                    sftp.stat(remote_path)
+                    continue
+                except FileNotFoundError:
+                    create_json(param_names, param_values, local_path)
+                    sftp.put(local_path, remote_path)
+                    print("Json uploaded!")
+
+            except Exception as e:
+                print(f"Error during file transfer: {e}")
+                raise e
+            finally:
+                if sftp:
+                    sftp.close()
+
         print_yellow(task_id)
 
         # Extracting canonical solution
-        non_indent_code = prompt + canonical_solution
-        canonical_function_code = fix_indent(non_indent_code)
+        canonical_function_code = prompt + canonical_solution
         response= await runtime.send_message(TestDeployMessage(canonical_function_code), AgentId("faas_deployer", "default"))
-        print(response.result)
+        correctly_executed = False
         if response.result != 'FAIL':
             deployed = True
 
-            print_yellow(response.result)
-
-            command = "serverledge/bin/serverledge-cli invoke -f " + response.result +" --params_file inputs/" + json_filename
-            print_purple(command)
+            command = "serverledge/bin/serverledge-cli invoke -f " + response.result +" --params_file " + remote_path + " --ret_output"
             stdin, stdout, stderr = server.exec_command(command)
 
             output = stdout.read().decode('utf-8')
@@ -106,19 +101,14 @@ async def main(llm, client, server):
 
             if "\"Success\": true," in output:
                 correctly_executed = True
-            else:
-                correctly_executed = False
 
             if output is not None:
                 print("--- Output ---")
                 print(output)
-
-            if error:
-                print("--- Error ---")
-                print(error)
             
         else:
             deployed = False
+
 
         new_data = {
             'task_id': [str(task_id)],

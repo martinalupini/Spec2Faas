@@ -3,20 +3,19 @@ import pandas as pd
 import os
 from app.Utils import *
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import math
 
 llm = get_config_data("../../config_test.yaml")
-coder = llm['coder']
+deployer = llm['faas_deployer']
 if llm['coder_prompt'] == "Yes":
     prompt = True
 else:
     prompt = False
 
 if not prompt:
-    coder = coder + "_no_prompt"
+    deployer = deployer + "_no_prompt"
 
-file_path = coder + ".parquet"
+file_path = deployer + ".parquet"
 csv_file = "../results.csv"
 
 try:
@@ -31,39 +30,36 @@ except FileNotFoundError:
 except Exception as e:
     print(f"Si è verificato un errore durante la lettura del file: {e}")
 
+columns = [
+        'task_id', 'tokens',
+        'deployment time', 'deployed', 'correctly executed'
+    ]
 
 def write_csv():
-    pass_at_1 = df['passed'].mean()
-    avg_generation_time = df['generation time'].mean()
     avg_tokens = df['tokens'].mean()
-    avg_execution_time_generation = df['execution time'].mean()
-    avg_execution_time_canonical = df['execution time canonical'].mean()
-    avg_cc_generation = df['CC generation'].mean()
-    avg_cc_canonical = df['CC canonical'].mean()
-    avg_cog_generation = df['CoG generation'].mean()
-    avg_cog_canonical = df['CoG canonical'].mean()
+    avg_deployment_time = df['deployment time'].mean()
+    avg_deployed = df['deployed'].mean()
+    avg_executed = df['correctly executed'].mean()
+    sum_deployed = df['deployed'].sum()
+    sum_executed = df['correctly executed'].sum()
 
-    print(f"pass@1: {pass_at_1:.4f}")
-    print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
+
     print(f"\nAverage Tokens: {avg_tokens:.4f}")
-    print("\n--- Average Execution Time ---")
-    print(f"Generated function: {avg_execution_time_generation:.4f}")
-    print(f"Canonical function: {avg_execution_time_canonical:.4f}")
-    print("\n--- Average Cyclomatic Complexity (CC) ---")
-    print(f"Generated function: {avg_cc_generation:.4f}")
-    print(f"Canonical function: {avg_cc_canonical:.4f}")
-    print("\n--- Average Cognitive Complexity (CoG) ---")
-    print(f"Generated function: {avg_cog_generation:.4f}")
-    print(f"Canonical function: {avg_cog_canonical:.4f}")
+    print(f"\nAverage Deployment Time: {avg_deployment_time:.4f}")
+    print(f"\nFunctions Deployed: {avg_deployed:.4f}")
+    print(f"\n#Functions Correctly Deployed: {sum_deployed}")
+    print(f"\nFunctions Correctly Executed: {avg_executed:.4f}")
+    print(f"\n#Functions Correctly Executed {sum_executed}")
+
 
     results_data = {
-        'model': [coder],
-        'pass@1': [pass_at_1],
-        'avg_generation_time': [avg_generation_time],
+        'model': [deployer],
+        'avg_deployment_time': [avg_deployment_time],
         'avg_tokens': [avg_tokens],
-        'avg_execution_time': [avg_execution_time_generation],
-        'avg_cc_generation': [avg_cc_generation],
-        'avg_cog_generation': [avg_cog_generation],
+        'functions_correctly_deployed': [avg_deployed],
+        '#functions_correctly_deployed': [sum_deployed],
+        'functions_correctly_executed': [avg_executed],
+        '#functions_correctly_executed': [sum_executed],
     }
 
     results_df = pd.DataFrame(results_data)
@@ -88,13 +84,11 @@ def write_csv():
 def make_plot():
     df_csv = pd.read_csv('../results.csv')
 
-    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt']
-    df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
+    #avoid_models = ['gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt']
+    #df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
 
     models = df_csv['model'].tolist()
     metrics = df_csv.columns.drop(['model']).tolist()
-    df_csv_no_canonical = df_csv[df_csv['model'] != "canonical"].copy()
-    models_no_canonical = df_csv_no_canonical['model'].tolist()
 
     n_metrics = len(metrics)
     cols = min(n_metrics, 3)
@@ -112,12 +106,9 @@ def make_plot():
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric in zip(axes.flatten(), metrics):
-        if metric == 'pass@1' or metric == 'avg_generation_time' or metric == 'avg_tokens':
-            df_value = df_csv_no_canonical.copy()
-            models_plot = models_no_canonical
-        else:
-            df_value = df_csv.copy()
-            models_plot = models
+
+        df_value = df_csv.copy()
+        models_plot = models
         valori = df_value[metric]
 
         plot_colors = [color_map[model] for model in models_plot]
