@@ -8,6 +8,7 @@ from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_ext.models.ollama import OllamaChatCompletionClient
 
 from app.agents.FaaSDeployer import *
 from autogen_core.tools import FunctionTool, Tool
@@ -162,7 +163,17 @@ if __name__ == "__main__":
             },
         )
     else:
-        model_client = None
+        model_client = OllamaChatCompletionClient(
+            model=deployer,
+            host=" 160.80.97.151:11434",
+            model_info={
+                "family": ModelFamily.UNKNOWN,
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "structured_output": True,
+            }
+        )
 
     # Connection to the server
     client = paramiko.SSHClient()
