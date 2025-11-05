@@ -3,10 +3,10 @@ import io
 import tarfile
 import base64
 import time
-import json
 import aiohttp
 import asyncio
 import ast
+import json
 from typing import List
 
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, CancellationToken, FunctionCall
@@ -16,6 +16,8 @@ from .coding_agents.TestDesigner import *
 from .coding_agents.messages.MessagesTypes import *
 from .coding_agents.utils.Utils import *
 from autogen_core.tools import FunctionTool, Tool
+
+from ..Utils import get_func_call_from_json
 
 
 def _pystring_to_tarBase64(py_code, filename) -> str:
@@ -206,25 +208,41 @@ class FaasDeployer(RoutedAgent):
             usage_metadata = create_result.usage
             tokens = tokens + usage_metadata.prompt_tokens + usage_metadata.completion_tokens
 
-            # If there are no tool calls, return the result.
-            if isinstance(create_result.content, str):
-                end_time = time.perf_counter()
-                if r is None or r.is_error:
-                    final_response = "FAIL"
-                else:
-                    data = ast.literal_eval(r.content)
-                    final_response = next(iter(data.values()))
-                return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
-            assert isinstance(create_result.content, list) and all(
-                isinstance(call, FunctionCall) for call in create_result.content
-            )
+            if "qwen2.5" in self._llm and "\"name\": \"create_json_serverledge\"" in create_result.content:
+                try:
+                    content = get_func_call_from_json(create_result.content)
+
+                # If it fails to build a correct FunctionTool it means the LLM failed to invoke the function
+                except Exception as e:
+                    end_time = time.perf_counter()
+                    print("Failed to invoke tool.")
+                    return TestDeployResult(result="FAIL", time=end_time - start_time, tokens=tokens,
+                                        ctx=ctx.cancellation_token)
+            else:
+
+                # If there are no tool calls, return the result.
+                if isinstance(create_result.content, str):
+                    end_time = time.perf_counter()
+                    if r is None or r.is_error:
+                        final_response = "FAIL"
+                    else:
+                        # To extract the field from a string in json format
+                        data = ast.literal_eval(r.content)
+                        # To extract the first value in the string
+                        final_response = next(iter(data.values()))
+                    return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
+                assert isinstance(create_result.content, list) and all(
+                    isinstance(call, FunctionCall) for call in create_result.content
+                )
+
+                content = create_result.content
 
             # Add the first model create result to the session.
-            session.append(AssistantMessage(content=create_result.content, source="assistant"))
+            session.append(AssistantMessage(content=content, source="assistant"))
 
             # Execute the tool calls.
             results = await asyncio.gather(
-                *[self._execute_tool_call(call, ctx.cancellation_token) for call in create_result.content]
+                *[self._execute_tool_call(call, ctx.cancellation_token) for call in content]
             )
 
             r = results[0]

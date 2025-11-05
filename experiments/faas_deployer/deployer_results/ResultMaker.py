@@ -57,9 +57,9 @@ def write_csv():
         'avg_deployment_time': [avg_deployment_time],
         'avg_tokens': [avg_tokens],
         'functions_correctly_deployed': [avg_deployed],
-        '#functions_correctly_deployed': [sum_deployed],
+        'number_functions_correctly_deployed': [sum_deployed],
         'functions_correctly_executed': [avg_executed],
-        '#functions_correctly_executed': [sum_executed],
+        'number_functions_correctly_executed': [sum_executed],
     }
 
     results_df = pd.DataFrame(results_data)

@@ -108,6 +108,7 @@ async def main(llm, client, server):
                 print(output)
             
         else:
+            print("Failed to deploy.")
             deployed = False
 
 
@@ -165,7 +166,7 @@ if __name__ == "__main__":
     else:
         model_client = OllamaChatCompletionClient(
             model=deployer,
-            host=" 160.80.97.151:11434",
+            host="160.80.97.151:11434",
             model_info={
                 "family": ModelFamily.UNKNOWN,
                 "function_calling": True,
