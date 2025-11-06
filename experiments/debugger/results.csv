@@ -1,0 +1,2 @@
+coder,debugger,passed_after_generation,number_passed_after_generation,avg_generation_time,average_debugging_time,average_total_time,avg_tokens,passed_after_debugging,number_passed_after_debugging,avg_attempts_debugging
+deepseek-coder-v2,gemini-2.0-flash,0.6890243902439024,113,1.9349007624755692,5.2964354862256515,7.23133624870122,470.9329268292683,0.9024390243902439,148,1.3353658536585367

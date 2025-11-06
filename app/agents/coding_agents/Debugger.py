@@ -55,25 +55,34 @@ class Debugger(RoutedAgent):
 
     @message_handler
     async def handle_test_debug_code_message(self, message: TestDebugMessage, ctx: MessageContext) -> TestDebugResult:
+        print_green(f"{self.id.type} received message. Attempt {self._counter}")
 
-        print_green(f"{self.id.type} received message.")
+        if message.new_chat:
+            self._counter = 0
+            self._debug_chat: List[LLMMessage] = self._system_messages
+        else:
+            self._counter += 1
 
         # Prepare input to the chat completion model.
         prompt = "This is the function specification: " + message.specification + "\nThis is the function code: " + message.code + "\nAnd this is the error message: " + message.error_message + "\nCan you correct the code?"
-        self._debug_chat.append(UserMessage(content=prompt, source="user"))
 
-        response = await self._model_client.create(
-            messages=self._debug_chat, cancellation_token=ctx.cancellation_token
-        )
-        self._debug_chat.append(AssistantMessage(content=response.content, source="assistant"))
+        try:
+            self._debug_chat.append(UserMessage(content=prompt, source="user"))
 
-        usage_metadata = response.usage
-        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+            response = await self._model_client.create(
+                messages=self._debug_chat, cancellation_token=ctx.cancellation_token
+            )
+            self._debug_chat.append(AssistantMessage(content=response.content, source="assistant"))
 
-        assert isinstance(response.content, str)
+            usage_metadata = response.usage
+            tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
 
-        match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
-        code_block = match.group(1).strip()
+            assert isinstance(response.content, str)
 
-        return TestDebugResult(code_block, tokens)
+            match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
+            code_block = match.group(1).strip()
+
+            return TestDebugResult(code_block, tokens)
+        except Exception as e:
+            return TestDebugResult("", 1048575)
 

@@ -45,6 +45,7 @@ class TestDebugMessage:
     specification: str
     code: str
     error_message: str
+    new_chat: bool
 
 
 @dataclass

@@ -80,6 +80,7 @@ class TestExecutor(RoutedAgent):
         self._code = message.code
         entry_point = message.function_signature
         tokens = 0
+        first_chat = True
         self._attempts = 0
         start_time = time.perf_counter()
 
@@ -98,14 +99,21 @@ class TestExecutor(RoutedAgent):
 
             print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
 
-            if "AssertionError" in result.output:
+            if "AssertionError" in result.output or "Error" in result.output:
                 debug_message = await self._runtime.send_message(
-                    TestDebugMessage(message.specification, message.code, result.output),
+                    TestDebugMessage(message.specification, message.code, result.output, first_chat),
                     AgentId("debugger", "default"))
+
+                tokens += debug_message.tokens
+
+                if debug_message.code == "":
+                    end_time = time.perf_counter()
+                    return TestExecCodeResult(final_function=self._code, passed=False, time=end_time - start_time,
+                                              tokens=tokens, attempts=self._max_attempts)
 
                 self._code = extract_markdown_code_string(debug_message.code)
                 self._attempts += 1
-                tokens += debug_message.tokens
+                first_chat = False
             else:
                 end_time = time.perf_counter()
                 return TestExecCodeResult(final_function=self._code, passed=True, time= end_time - start_time, tokens = tokens, attempts=self._attempts)

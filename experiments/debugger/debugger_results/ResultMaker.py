@@ -10,7 +10,7 @@ llm = get_config_data("../../config_test.yaml")
 debugger = llm['debugger']
 coder = llm['coder']
 
-file_path = debugger + ".parquet"
+file_path = coder + "_" + debugger + ".parquet"
 csv_file = "../results.csv"
 
 try:

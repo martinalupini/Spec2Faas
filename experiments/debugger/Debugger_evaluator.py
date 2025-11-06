@@ -43,7 +43,7 @@ def modify_tests(test: str) -> str:
 
     # Indenta la riga dell'assertion con 4 spazi (lo stesso livello dell'if aggiunto)
     if assertion_index != -1:
-        lines[assertion_index] = '    ' + lines[assertion_index].lstrip()
+        lines[assertion_index] = '        ' + lines[assertion_index].lstrip()
 
     new_string = '\n'.join(lines)
     return new_string
@@ -67,9 +67,9 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "debugger_results/"+ llm+".parquet"
+        file_name = "debugger_results/"+ llm + "_" + debugger +".parquet"
     else:
-        file_name = "debugger_results/"+ llm+"_no_prompt.parquet"
+        file_name = "debugger_results/"+  llm + "_" + debugger +"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'passed after debugging', 'tokens',
         'generation time', 'debugging time', 'attempts',
@@ -88,6 +88,7 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
         entry_point = row.entry_point
         prompt = row.prompt
         test = modify_tests(row.test)
+        #test = row.test
         canonical_solution = row.canonical_solution
         debugged_function = ""
 
@@ -96,6 +97,7 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
             continue
 
         print_yellow(task_id)
+
         response= await runtime.send_message(TestCodeMessage(prompt, entry_point, system_prompt), AgentId("coder", "default"))
 
         # Generated function execution
