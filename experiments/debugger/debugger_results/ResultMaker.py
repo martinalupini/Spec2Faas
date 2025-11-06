@@ -3,19 +3,14 @@ import pandas as pd
 import os
 from app.Utils import *
 import matplotlib.pyplot as plt
+import matplotlib.patches as mpatches
 import math
 
 llm = get_config_data("../../config_test.yaml")
-deployer = llm['faas_deployer']
-if llm['coder_prompt'] == "Yes":
-    prompt = True
-else:
-    prompt = False
+debugger = llm['debugger']
+coder = llm['coder']
 
-if not prompt:
-    deployer = deployer + "_no_prompt"
-
-file_path = deployer + ".parquet"
+file_path = debugger + ".parquet"
 csv_file = "../results.csv"
 
 try:
@@ -30,36 +25,38 @@ except FileNotFoundError:
 except Exception as e:
     print(f"Si è verificato un errore durante la lettura del file: {e}")
 
-columns = [
-        'task_id', 'tokens',
-        'deployment time', 'deployed', 'correctly executed'
-    ]
-
 def write_csv():
+    passed_after_generation = df['passed'].mean()
+    number_passed_after_generation = df['passed'].sum()
+    passed_after_debugging = df['passed after debugging'].mean()
+    number_passed_after_debugging = df['passed after debugging'].sum()
     avg_tokens = df['tokens'].mean()
-    avg_deployment_time = df['deployment time'].mean()
-    avg_deployed = df['deployed'].mean()
-    avg_executed = df['correctly executed'].mean()
-    sum_deployed = df['deployed'].sum()
-    sum_executed = df['correctly executed'].sum()
+    avg_generation_time = df['generation time'].mean()
+    avg_debugging_time = df['debugging time'].mean()
+    avg_attempts_debugging = df['attempts'].mean()
 
 
+    print(f"Passed after generation: {passed_after_generation:.4f}")
+    print(f"\nNumber passed after generation: {number_passed_after_generation:.4f}")
+    print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
+    print(f"\nAverage Debugging Time: {avg_debugging_time:.4f}")
     print(f"\nAverage Tokens: {avg_tokens:.4f}")
-    print(f"\nAverage Deployment Time: {avg_deployment_time:.4f}")
-    print(f"\nFunctions Deployed: {avg_deployed:.4f}")
-    print(f"\n#Functions Correctly Deployed: {sum_deployed}")
-    print(f"\nFunctions Correctly Executed: {avg_executed:.4f}")
-    print(f"\n#Functions Correctly Executed {sum_executed}")
-
+    print(f"\nPassed after debugging: {passed_after_debugging:.4f}")
+    print(f"\nNumber passed after debugging: {number_passed_after_debugging:.4f}")
+    print(f"\nAverage attempts debugging: {avg_attempts_debugging:.4f}")
 
     results_data = {
-        'model': [deployer],
-        'avg_deployment_time': [avg_deployment_time],
+        'coder': [coder],
+        'debugger': [debugger],
+        'passed_after_generation': [passed_after_generation],
+        'number_passed_after_generation': [number_passed_after_generation],
+        'avg_generation_time': [avg_generation_time],
+        'average_debugging_time': [avg_debugging_time],
+        'average_total_time': [avg_generation_time + avg_debugging_time],
         'avg_tokens': [avg_tokens],
-        'functions_correctly_deployed': [avg_deployed],
-        'number_functions_correctly_deployed': [sum_deployed],
-        'functions_correctly_executed': [avg_executed],
-        'number_functions_correctly_executed': [sum_executed],
+        'passed_after_debugging': [passed_after_debugging],
+        'number_passed_after_debugging': [number_passed_after_debugging],
+        'avg_attempts_debugging': [avg_attempts_debugging],
     }
 
     results_df = pd.DataFrame(results_data)
@@ -78,7 +75,6 @@ def write_csv():
 
     except Exception as e:
         print(f"\nAn error occurred while saving the file: {e}")
-
 
 
 def make_plot():
@@ -119,7 +115,8 @@ def make_plot():
 
         for bar in bars:
             yval = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom', fontsize=8)
+            ax.text(bar.get_x() + bar.get_width() / 2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom',
+                    fontsize=8)
 
     plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
 
@@ -128,5 +125,6 @@ def make_plot():
     plt.show()
 
 
-#write_csv()
-make_plot()
+
+write_csv()
+#make_plot()

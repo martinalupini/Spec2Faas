@@ -1,10 +1,12 @@
 import os
 import re
+import time
 from typing import List
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from autogen_core.code_executor import CodeBlock, CodeExecutor
 from .messages.MessagesTypes import *
+from experiments.MessageTypesTest import *
 from .utils.Utils import *
 from .utils.Code_Extractors import *
 
@@ -70,3 +72,45 @@ class TestExecutor(RoutedAgent):
             # Max attempts number reached
             return Message("FAIL", "test_executor_response")
         return Message("Still waiting", "test_executor_response")
+
+    @message_handler
+    async def handle_test_execute_code_message(self, message: TestExecCodeMessage, ctx: MessageContext) -> TestExecCodeResult:
+        print_green(f"{self.id.type} received message.")
+        self._tests = message.tests
+        self._code = message.code
+        entry_point = message.function_signature
+        tokens = 0
+        self._attempts = 0
+        start_time = time.perf_counter()
+
+        while self._attempts < self._max_attempts:
+
+            dependencies = "```sh\npip install numpy\n```"
+            code_blocks = extract_markdown_code_blocks(dependencies)
+
+            code = self._code + self._tests + "\n\ncheck(" + entry_point + ")\n"
+            invocation_code = CodeBlock(code=code, language='python')
+            code_blocks.append(invocation_code)
+
+            result = await self._code_executor.execute_code_blocks(
+                code_blocks, cancellation_token=ctx.cancellation_token
+            )
+
+            print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
+
+            if "AssertionError" in result.output:
+                debug_message = await self._runtime.send_message(
+                    TestDebugMessage(message.specification, message.code, result.output),
+                    AgentId("debugger", "default"))
+
+                self._code = extract_markdown_code_string(debug_message.code)
+                self._attempts += 1
+                tokens += debug_message.tokens
+            else:
+                end_time = time.perf_counter()
+                return TestExecCodeResult(final_function=self._code, passed=True, time= end_time - start_time, tokens = tokens, attempts=self._attempts)
+
+        # Max attempts number reached
+        end_time = time.perf_counter()
+        return TestExecCodeResult(final_function=self._code, passed=False, time= end_time - start_time, tokens = tokens, attempts=self._max_attempts)
+

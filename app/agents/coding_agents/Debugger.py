@@ -3,6 +3,7 @@ import re
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage, LLMMessage, AssistantMessage
 from .messages.MessagesTypes import *
+from experiments.MessageTypesTest import *
 from .utils.Utils import *
 
 class Debugger(RoutedAgent):
@@ -51,4 +52,28 @@ class Debugger(RoutedAgent):
         code_block = match.group(1).strip()
 
         return DebugMessage(message.specification, code_block, "")
+
+    @message_handler
+    async def handle_test_debug_code_message(self, message: TestDebugMessage, ctx: MessageContext) -> TestDebugResult:
+
+        print_green(f"{self.id.type} received message.")
+
+        # Prepare input to the chat completion model.
+        prompt = "This is the function specification: " + message.specification + "\nThis is the function code: " + message.code + "\nAnd this is the error message: " + message.error_message + "\nCan you correct the code?"
+        self._debug_chat.append(UserMessage(content=prompt, source="user"))
+
+        response = await self._model_client.create(
+            messages=self._debug_chat, cancellation_token=ctx.cancellation_token
+        )
+        self._debug_chat.append(AssistantMessage(content=response.content, source="assistant"))
+
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+        assert isinstance(response.content, str)
+
+        match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
+        code_block = match.group(1).strip()
+
+        return TestDebugResult(code_block, tokens)
 

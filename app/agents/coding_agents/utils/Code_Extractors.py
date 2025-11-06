@@ -12,3 +12,10 @@ def extract_markdown_code_blocks(markdown_text: str) -> List[CodeBlock]:
         code_content = match[1]
         code_blocks.append(CodeBlock(code=code_content, language=language))
     return code_blocks
+
+
+def extract_markdown_code_string(markdown_text: str) -> str:
+    pattern = re.compile(r"```(?:\s*([\w\+\-]+))?\n([\s\S]*?)```")
+    matches = pattern.findall(markdown_text)
+    match = matches[0]
+    return match[1]
