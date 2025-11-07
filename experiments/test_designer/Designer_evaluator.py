@@ -29,6 +29,7 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
 
     start_time = time.perf_counter()
     result = await executor.execute_code_blocks(code_block, ctx)
+    print_purple(result.output)
     end_time = time.perf_counter()
 
     return result, end_time - start_time
@@ -48,9 +49,9 @@ async def main(llm, client, system_prompt):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "coder_results/"+ llm+".parquet"
+        file_name = "designer_results/"+ llm+".parquet"
     else:
-        file_name = "coder_results/"+ llm+"_no_prompt.parquet"
+        file_name = "designer_results/"+ llm+"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'generation_time', 'tokens',
         'execution_time', 'tests'
