@@ -3,36 +3,37 @@ import pandas as pd
 import os
 from app.Utils import *
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import math
 
 llm = get_config_data("../../config_test.yaml")
 debugger = llm['debugger']
 coder = llm['coder']
 
-file_path = coder + "_" + debugger + ".parquet"
-csv_file = "../results.csv"
-
-try:
-    df = pd.read_parquet(file_path)
-
-    #print(df.head(10))
-
-    #print(df.info())
-
-except FileNotFoundError:
-    print(f"Errore: File non trovato a questo percorso: {file_path}")
-except Exception as e:
-    print(f"Si è verificato un errore durante la lettura del file: {e}")
 
 def write_csv():
+    file_path = coder + "_" + debugger + ".parquet"
+    csv_file = "../results.csv"
+
+    try:
+        df = pd.read_parquet(file_path)
+
+        # print(df.head(10))
+
+        # print(df.info())
+
+    except FileNotFoundError:
+        print(f"Errore: File non trovato a questo percorso: {file_path}")
+    except Exception as e:
+        print(f"Si è verificato un errore durante la lettura del file: {e}")
+
     passed_after_generation = df['passed'].mean()
     number_passed_after_generation = df['passed'].sum()
-    passed_after_debugging = df['passed after debugging'].mean()
-    number_passed_after_debugging = df['passed after debugging'].sum()
-    avg_tokens = df['tokens'].mean()
-    avg_generation_time = df['generation time'].mean()
-    avg_debugging_time = df['debugging time'].mean()
+    passed_after_debugging = df['passed_after_debugging'].mean()
+    number_passed_after_debugging = df['passed_after_debugging'].sum()
+    avg_tokens = df['total_tokens'].mean()
+    avg_debug_tokens = df['debugging_tokens'].mean()
+    avg_generation_time = df['generation_time'].mean()
+    avg_debugging_time = df['debugging_time'].mean()
     avg_attempts_debugging = df['attempts'].mean()
 
 
@@ -41,6 +42,7 @@ def write_csv():
     print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
     print(f"\nAverage Debugging Time: {avg_debugging_time:.4f}")
     print(f"\nAverage Tokens: {avg_tokens:.4f}")
+    print(f"\nAverage Debugging Tokens: {avg_debug_tokens:.4f}")
     print(f"\nPassed after debugging: {passed_after_debugging:.4f}")
     print(f"\nNumber passed after debugging: {number_passed_after_debugging:.4f}")
     print(f"\nAverage attempts debugging: {avg_attempts_debugging:.4f}")
@@ -53,7 +55,8 @@ def write_csv():
         'avg_generation_time': [avg_generation_time],
         'average_debugging_time': [avg_debugging_time],
         'average_total_time': [avg_generation_time + avg_debugging_time],
-        'avg_tokens': [avg_tokens],
+        'avg_debugging_tokens': [avg_debug_tokens],
+        'avg_total_tokens': [avg_tokens],
         'passed_after_debugging': [passed_after_debugging],
         'number_passed_after_debugging': [number_passed_after_debugging],
         'avg_attempts_debugging': [avg_attempts_debugging],
@@ -79,9 +82,12 @@ def write_csv():
 
 def make_plot():
     df_csv = pd.read_csv('../results.csv')
+    df_csv = df_csv[df_csv['coder'] == coder].copy()
+    models = df_csv['debugger'].tolist()
+    metrics = df_csv.columns.drop(['coder', 'debugger','passed_after_generation', 'number_passed_after_generation', 'avg_generation_time', 'average_total_time', 'avg_total_tokens' ]).tolist()
+    df_csv_no_canonical = df_csv[df_csv['debugger'] != "no debugger"].copy()
+    models_no_canonical = df_csv_no_canonical['debugger'].tolist()
 
-    models = df_csv['model'].tolist()
-    metrics = df_csv.columns.drop(['model']).tolist()
 
     n_metrics = len(metrics)
     cols = min(n_metrics, 3)
@@ -100,8 +106,14 @@ def make_plot():
 
     for ax, metric in zip(axes.flatten(), metrics):
 
-        df_value = df_csv.copy()
-        models_plot = models
+        if metric == 'average_debugging_time' or metric == 'avg_debugging_tokens' or metric == 'avg_attempts_debugging':
+            df_value = df_csv_no_canonical.copy()
+            models_plot = models_no_canonical
+        else:
+            df_value = df_csv.copy()
+            models_plot = models
+
+
         valori = df_value[metric]
 
         plot_colors = [color_map[model] for model in models_plot]
@@ -120,11 +132,11 @@ def make_plot():
 
     plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
 
-    plt.savefig('../comparison.png', dpi=300)
+    plt.savefig('../comparison_'+ coder+'.png', dpi=300)
 
     plt.show()
 
 
 
-write_csv()
-#make_plot()
+#write_csv()
+make_plot()

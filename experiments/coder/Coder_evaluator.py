@@ -51,9 +51,9 @@ async def main(llm, client, system_prompt):
     else:
         file_name = "coder_results/"+ llm+"_no_prompt.parquet"
     columns = [
-        'task_id', 'passed', 'generation time', 'tokens',
-        'execution time', 'execution time canonical',
-        'CC generation', 'CC canonical', 'CoG generation', 'CoG canonical'
+        'task_id', 'passed', 'generation_time', 'tokens',
+        'execution_time', 'execution_time_canonical',
+        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'function'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
@@ -104,14 +104,15 @@ async def main(llm, client, system_prompt):
         new_data = {
             'task_id': [str(task_id)],
             'passed': [passed],
-            'generation time': [response.time],
+            'generation_time': [response.time],
             'tokens': [response.tokens],
-            'execution time': [execution_time_generated],
-            'execution time canonical': [execution_time_canonical],
-            'CC generation': [CC_generated],
-            'CC canonical': [CC_canonical],
-            'CoG generation': [CoG_generated],
-            'CoG canonical': [CoG_canonical]
+            'execution_time': [execution_time_generated],
+            'execution_time_canonical': [execution_time_canonical],
+            'CC_generation': [CC_generated],
+            'CC_canonical': [CC_canonical],
+            'CoG_generation': [CoG_generated],
+            'CoG_canonical': [CoG_canonical],
+            'function': [function_code_string]
         }
 
         new_row_df = pd.DataFrame(new_data)

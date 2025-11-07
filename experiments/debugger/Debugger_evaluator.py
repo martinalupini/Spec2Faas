@@ -71,24 +71,26 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
     else:
         file_name = "debugger_results/"+  llm + "_" + debugger +"_no_prompt.parquet"
     columns = [
-        'task_id', 'passed', 'passed after debugging', 'tokens',
-        'generation time', 'debugging time', 'attempts',
-        'CC generation', 'CC canonical', 'CoG generation', 'CoG canonical', 'Original function', 'Debugged function'
+        'task_id', 'passed', 'passed_after_debugging','debugging_tokens', 'total_tokens',
+        'generation_time', 'debugging_time', 'attempts',
+        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'Original_function', 'Debugged_function'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
     else:
         results_df = pd.DataFrame(columns=columns)
 
+    coder_path = "../coder/coder_results/" + coder + ".parquet"
+    coder_df = pd.read_parquet(coder_path)
+
     runtime.start()  # Start processing messages in the background.
 
     # Iterating through each row
-    for row in df.itertuples(index=False):
+    for row, row_coder_df in zip(df.itertuples(index=False), coder_df.itertuples(index=False)):
         task_id = row.task_id
         entry_point = row.entry_point
         prompt = row.prompt
         test = modify_tests(row.test)
-        #test = row.test
         canonical_solution = row.canonical_solution
         debugged_function = ""
 
@@ -98,41 +100,30 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
 
         print_yellow(task_id)
 
-        response= await runtime.send_message(TestCodeMessage(prompt, entry_point, system_prompt), AgentId("coder", "default"))
-
-        # Generated function execution
-        function_code = extract_markdown_code_blocks(response.content)
-        function_code_string = function_code[0].code
-        CC_generated = compute_CC(function_code_string)
-        CoG_generated = compute_CoG(function_code_string)
+        function_code_string = row_coder_df.function
+        CC_generated = row_coder_df.CC_generation
+        CoG_generated = row_coder_df.CoG_generation
 
         response_debug= await runtime.send_message(TestExecCodeMessage(prompt, entry_point, function_code_string, test), AgentId("test_executor", "default"))
 
-        # The function generated is already correct
-        if response_debug.passed and response_debug.attempts == 0:
-            passed=True
-        else:
-            passed = False
-
-        # Canonical solution execution
-        canonical_code = prompt +  canonical_solution
-        CC_canonical = compute_CC(canonical_code)
-        CoG_canonical = compute_CoG(canonical_code)
+        CC_canonical = row_coder_df.CC_canonical
+        CoG_canonical = row_coder_df.CoG_canonical
 
         new_data = {
             'task_id': [str(task_id)],
-            'passed': [passed],
-            'passed after debugging': [response_debug.passed],
-            'tokens': [response.tokens],
-            'generation time': [response.time],
-            'debugging time': [response_debug.time],
+            'passed': [row_coder_df.passed],
+            'passed_after_debugging': [response_debug.passed],
+            'debugging_tokens': [response_debug.tokens],
+            'total_tokens': [row_coder_df.tokens + response_debug.tokens],
+            'generation_time': [row_coder_df.generation_time],
+            'debugging_time': [response_debug.time],
             'attempts': [response_debug.attempts],
-            'CC generation': [CC_generated],
-            'CC canonical': [CC_canonical],
-            'CoG generation': [CoG_generated],
-            'CoG canonical': [CoG_canonical],
-            'Original function': [function_code_string],
-            'Debugged function': [response_debug.final_function]
+            'CC_generation': [CC_generated],
+            'CC_canonical': [CC_canonical],
+            'CoG_generation': [CoG_generated],
+            'CoG_canonical': [CoG_canonical],
+            'Original_function': [function_code_string],
+            'Debugged_function': [response_debug.final_function]
         }
 
         new_row_df = pd.DataFrame(new_data)

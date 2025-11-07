@@ -34,14 +34,14 @@ except Exception as e:
 
 def write_csv():
     pass_at_1 = df['passed'].mean()
-    avg_generation_time = df['generation time'].mean()
+    avg_generation_time = df['generation_time'].mean()
     avg_tokens = df['tokens'].mean()
-    avg_execution_time_generation = df['execution time'].mean()
-    avg_execution_time_canonical = df['execution time canonical'].mean()
-    avg_cc_generation = df['CC generation'].mean()
-    avg_cc_canonical = df['CC canonical'].mean()
-    avg_cog_generation = df['CoG generation'].mean()
-    avg_cog_canonical = df['CoG canonical'].mean()
+    avg_execution_time_generation = df['execution_time'].mean()
+    avg_execution_time_canonical = df['execution_time_canonical'].mean()
+    avg_cc_generation = df['CC_generation'].mean()
+    avg_cc_canonical = df['CC_canonical'].mean()
+    avg_cog_generation = df['CoG_generation'].mean()
+    avg_cog_canonical = df['CoG_canonical'].mean()
 
     print(f"pass@1: {pass_at_1:.4f}")
     print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
@@ -140,5 +140,5 @@ def make_plot():
     plt.show()
 
 
-#write_csv()
-make_plot()
+write_csv()
+#make_plot()
