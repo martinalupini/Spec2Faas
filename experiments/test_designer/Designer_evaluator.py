@@ -23,13 +23,12 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
     dependencies = "```sh\npip install numpy\n```"
     code_block = extract_markdown_code_blocks(dependencies)
 
-    code = function + test + "\n\ncheck(" + entry_point + ")\n"
+    code = function + test
     invocation_code = CodeBlock(code=code, language='python')
     code_block.append(invocation_code)
 
     start_time = time.perf_counter()
     result = await executor.execute_code_blocks(code_block, ctx)
-    print_purple(result.output)
     end_time = time.perf_counter()
 
     return result, end_time - start_time
@@ -82,13 +81,15 @@ async def main(llm, client, system_prompt):
 
         # Generated function execution
         test_code = extract_markdown_code_blocks(response.content)
-        test_code_string = test_code[0].code
-        result, execution_time_generated = await execute_function(canonical_code, test_code_string, entry_point, executor, response.ctx)
-        if "AssertionError" in result.output:
-            print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
-            passed = False
+        if test_code:
+            test_code_string = test_code[0].code
+            result, execution_time_generated = await execute_function(canonical_code, test_code_string, entry_point, executor, response.ctx)
+            if "AssertionError" in result.output:
+                passed = False
+            else:
+                passed = True
         else:
-            passed = True
+            passed = False
 
 
         if "AssertionError" in result.output:
