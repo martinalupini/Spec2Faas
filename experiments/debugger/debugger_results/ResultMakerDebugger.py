@@ -84,7 +84,7 @@ def make_plot():
     df_csv = pd.read_csv('../results.csv')
     df_csv = df_csv[df_csv['coder'] == coder].copy()
     models = df_csv['debugger'].tolist()
-    metrics = df_csv.columns.drop(['coder', 'debugger','passed_after_generation', 'number_passed_after_generation', 'avg_generation_time', 'average_total_time', 'avg_total_tokens' ]).tolist()
+    metrics = df_csv.columns.drop(['coder', 'debugger','passed_after_generation', 'number_passed_after_generation', 'avg_generation_time', 'avg_debugging_tokens']).tolist()
     df_csv_no_canonical = df_csv[df_csv['debugger'] != "no debugger"].copy()
     models_no_canonical = df_csv_no_canonical['debugger'].tolist()
 
@@ -106,7 +106,7 @@ def make_plot():
 
     for ax, metric in zip(axes.flatten(), metrics):
 
-        if metric == 'average_debugging_time' or metric == 'avg_debugging_tokens' or metric == 'avg_attempts_debugging':
+        if metric == 'average_debugging_time' or metric == 'avg_attempts_debugging':
             df_value = df_csv_no_canonical.copy()
             models_plot = models_no_canonical
         else:
