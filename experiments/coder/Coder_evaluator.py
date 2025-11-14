@@ -7,7 +7,7 @@ from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
-
+from autogen_ext.models.ollama import OllamaChatCompletionClient
 from app.agents.coding_agents.Coder import *
 from app.agents.coding_agents.utils.Utils import *
 from app.agents.coding_agents.utils.Code_Extractors import *
@@ -47,7 +47,7 @@ async def main(llm, client, system_prompt):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "coder_results/"+ llm+".parquet"
+        file_name = "coder_results/"+ llm+"2.parquet"
     else:
         file_name = "coder_results/"+ llm+"_no_prompt.parquet"
     columns = [
@@ -126,6 +126,7 @@ async def main(llm, client, system_prompt):
 
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
+    await model_client.close()
 
 
 
@@ -158,7 +159,17 @@ if __name__ == "__main__":
             },
         )
     else:
-        model_client = None
+        model_client = OllamaChatCompletionClient(
+            model=coder,
+            host="160.80.97.151:11434",
+            model_info={
+                "family": ModelFamily.UNKNOWN,
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "structured_output": True,
+            }
+        )
 
     try:
         asyncio.run(main(coder, model_client, prompt))

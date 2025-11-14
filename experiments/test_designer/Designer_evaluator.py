@@ -18,7 +18,7 @@ import pandas as pd
 
 
 
-async def execute_function(function: str, test:str, entry_point, executor, ctx):
+async def execute_function(function: str, test:str, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\npip install coverage```"
     code_block = extract_markdown_code_blocks(dependencies)
@@ -57,8 +57,6 @@ async def main(llm, client, system_prompt):
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
-        if 'coverage' not in results_df.columns:
-            results_df['coverage'] = pd.Series(dtype='Int64')
     else:
         results_df = pd.DataFrame(columns=columns)
 
@@ -85,7 +83,7 @@ async def main(llm, client, system_prompt):
         test_code = extract_markdown_code_blocks(response.content)
         if test_code:
             test_code_string = test_code[0].code
-            result, execution_time_generated = await execute_function(canonical_code, test_code_string, entry_point, executor, response.ctx)
+            result, execution_time_generated = await execute_function(canonical_code, test_code_string, executor, response.ctx)
             if "AssertionError" in result.output:
                 passed = False
                 coverage = 0

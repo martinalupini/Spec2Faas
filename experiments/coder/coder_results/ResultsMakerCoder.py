@@ -16,7 +16,7 @@ else:
 if not prompt:
     coder = coder + "_no_prompt"
 
-file_path = coder + ".parquet"
+file_path = coder + "2.parquet"
 csv_file = "../results.csv"
 
 try:
@@ -140,5 +140,5 @@ def make_plot():
     plt.show()
 
 
-#write_csv()
-make_plot()
+write_csv()
+#make_plot()

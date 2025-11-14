@@ -137,6 +137,7 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
 
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
+    await model_client.close()
 
 
 
