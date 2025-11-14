@@ -75,20 +75,6 @@ async def main(llm, client, system_prompt):
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
-            tests = results_df.loc[results_df['task_id'] == task_id, 'tests'].item()
-            print_yellow(task_id)
-            result, execution_time_generated = await execute_function(canonical_code, tests, entry_point, executor, CancellationToken())
-
-            if "AssertionError" in result.output:
-                coverage = 0
-            else:
-                match = re.search(r'(\d+)\s*%', result.output)
-                if match:
-                    coverage = int(match.group(1))
-                else:
-                    coverage = 0
-            results_df.loc[results_df['task_id'] == task_id, 'coverage'] = coverage
-            results_df.to_parquet(file_name, index=False)
             continue
 
         print_yellow(task_id)
