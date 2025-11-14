@@ -59,9 +59,9 @@ def write_csv():
     results_data = {
         'model': [coder],
         'pass@1': [pass_at_1],
-        'avg_generation_time': [avg_generation_time],
+        'avg_generation_time (s)': [avg_generation_time],
         'avg_tokens': [avg_tokens],
-        'avg_execution_time': [avg_execution_time_generation],
+        'avg_execution_time (s)': [avg_execution_time_generation],
         'avg_cc_generation': [avg_cc_generation],
         'avg_cog_generation': [avg_cog_generation],
     }
@@ -112,7 +112,7 @@ def make_plot():
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric in zip(axes.flatten(), metrics):
-        if metric == 'pass@1' or metric == 'avg_generation_time' or metric == 'avg_tokens':
+        if metric == 'pass@1' or metric == 'avg_generation_time (s)' or metric == 'avg_tokens':
             df_value = df_csv_no_canonical.copy()
             models_plot = models_no_canonical
         else:
@@ -125,7 +125,7 @@ def make_plot():
         bars = ax.bar(models_plot, valori, color=plot_colors)
 
         ax.set_title(metric, fontsize=12, weight='bold')
-        ax.set_ylabel('Value', fontsize=10)
+        ax.set_ylabel(metric, fontsize=10)
         ax.tick_params(axis='x', rotation=45, labelsize=8)
         ax.yaxis.grid(True, linestyle='--', alpha=0.6)
 
@@ -140,5 +140,5 @@ def make_plot():
     plt.show()
 
 
-write_csv()
-#make_plot()
+#write_csv()
+make_plot()

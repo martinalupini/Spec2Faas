@@ -54,7 +54,7 @@ def write_csv():
 
     results_data = {
         'model': [deployer],
-        'avg_deployment_time': [avg_deployment_time],
+        'avg_deployment_time (s)': [avg_deployment_time],
         'avg_tokens': [avg_tokens],
         'functions_correctly_deployed': [avg_deployed],
         'number_functions_correctly_deployed': [sum_deployed],
@@ -113,7 +113,7 @@ def make_plot():
         bars = ax.bar(models_plot, valori, color=plot_colors)
 
         ax.set_title(metric, fontsize=12, weight='bold')
-        ax.set_ylabel('Value', fontsize=10)
+        ax.set_ylabel(metric, fontsize=10)
         ax.tick_params(axis='x', rotation=45, labelsize=8)
         ax.yaxis.grid(True, linestyle='--', alpha=0.6)
 

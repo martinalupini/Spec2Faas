@@ -1,4 +1,4 @@
-model,avg_deployment_time,avg_tokens,functions_correctly_deployed,number_functions_correctly_deployed,functions_correctly_executed,number_functions_correctly_executed
+model,avg_deployment_time (s),avg_tokens,functions_correctly_deployed,number_functions_correctly_deployed,functions_correctly_executed,number_functions_correctly_executed
 gemini-2.0-flash,7.084847119335503,2004.9303797468353,0.8734177215189873,138,0.8481012658227848,134
 qwen3,73.78279125762658,4928.632911392405,0.9240506329113924,146,0.689873417721519,109
 qwen2.5-coder,6.857331027284505,2506.6202531645567,0.9556962025316456,151,0.3291139240506329,52
