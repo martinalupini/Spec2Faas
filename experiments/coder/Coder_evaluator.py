@@ -47,7 +47,7 @@ async def main(llm, client, system_prompt):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "coder_results/"+ llm+"2.parquet"
+        file_name = "coder_results/"+ llm+".parquet"
     else:
         file_name = "coder_results/"+ llm+"_no_prompt.parquet"
     columns = [
