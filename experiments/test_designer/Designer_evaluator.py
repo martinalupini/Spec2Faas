@@ -20,10 +20,10 @@ import pandas as pd
 
 async def execute_function(function: str, test:str, entry_point, executor, ctx):
     # Installing dependencies in container
-    dependencies = "```sh\npip install numpy\n```"
+    dependencies = "```sh\npip install numpy\npip install coverage```"
     code_block = extract_markdown_code_blocks(dependencies)
 
-    code = function + test
+    code = "import coverage\n\ncov = coverage.Coverage()\n\ncov.start()\n\n" + function + test +"\n\ncov.stop()\n\ncov.report()"
     invocation_code = CodeBlock(code=code, language='python')
     code_block.append(invocation_code)
 
@@ -53,10 +53,12 @@ async def main(llm, client, system_prompt):
         file_name = "designer_results/"+ llm+"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'generation_time', 'tokens',
-        'execution_time', 'tests'
+        'execution_time', 'tests', 'coverage'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
+        if 'coverage' not in results_df.columns:
+            results_df['coverage'] = pd.Series(dtype='Int64')
     else:
         results_df = pd.DataFrame(columns=columns)
 
@@ -73,6 +75,20 @@ async def main(llm, client, system_prompt):
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
+            tests = results_df.loc[results_df['task_id'] == task_id, 'tests'].item()
+            print_yellow(task_id)
+            result, execution_time_generated = await execute_function(canonical_code, tests, entry_point, executor, CancellationToken())
+
+            if "AssertionError" in result.output:
+                coverage = 0
+            else:
+                match = re.search(r'(\d+)\s*%', result.output)
+                if match:
+                    coverage = int(match.group(1))
+                else:
+                    coverage = 0
+            results_df.loc[results_df['task_id'] == task_id, 'coverage'] = coverage
+            results_df.to_parquet(file_name, index=False)
             continue
 
         print_yellow(task_id)
@@ -86,8 +102,14 @@ async def main(llm, client, system_prompt):
             result, execution_time_generated = await execute_function(canonical_code, test_code_string, entry_point, executor, response.ctx)
             if "AssertionError" in result.output:
                 passed = False
+                coverage = 0
             else:
                 passed = True
+                match = re.search(r'(\d+)\s*%', result.output)
+                if match:
+                    coverage = int(match.group(1))
+                else:
+                    coverage = 0
         else:
             passed = False
 
@@ -102,7 +124,8 @@ async def main(llm, client, system_prompt):
             'generation_time': [response.time],
             'tokens': [response.tokens],
             'execution_time': [execution_time_generated],
-            'tests': [test_code_string]
+            'tests': [test_code_string],
+            'coverage': [coverage]
         }
 
         new_row_df = pd.DataFrame(new_data)
