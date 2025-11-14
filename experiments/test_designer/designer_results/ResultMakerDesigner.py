@@ -44,10 +44,10 @@ def write_csv():
         'model': [designer],
         'passed': [passed],
         'num_passed': [num_passed],
-        'avg_test_generation_time': [avg_generation_time],
+        'avg_test_generation_time (s)': [avg_generation_time],
         'avg_tokens': [avg_tokens],
-        'avg_test_execution_time': [avg_execution_time_generation],
-        'avg_coverage': [avg_coverage]
+        'avg_test_execution_time (s)': [avg_execution_time_generation],
+        'avg_coverage (%)': [avg_coverage]
     }
 
     results_df = pd.DataFrame(results_data)
@@ -116,5 +116,5 @@ def make_plot():
     plt.show()
 
 
-write_csv()
-#make_plot()
+#write_csv()
+make_plot()
