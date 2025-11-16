@@ -1,7 +1,9 @@
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import UserMessage, ChatCompletionClient, SystemMessage
 from .messages.MessagesTypes import *
+from experiments.MessageTypesTest import *
 from .utils.Utils import *
+import time
 
 
 class EntryPoint(RoutedAgent):
@@ -32,3 +34,25 @@ class EntryPoint(RoutedAgent):
         return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
 
         return return_message
+
+    @message_handler
+    async def handle_test_assistant_message(self, message: TestMessage, ctx: MessageContext) -> FinalTestResult:
+        start_time = time.perf_counter()
+        print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
+
+        user_message = UserMessage(content=message.content, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+        end_time = time.perf_counter()
+        message.time['entry_point'] = end_time - start_time
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        message.tokens['entry_point'] = tokens
+
+        coder_message = await self._runtime.send_message(TestCodeMessage(message.content, response.content, True, True, message.time, message.tokens),
+                                         AgentId("coder", "default"))
+        return_message = await self._runtime.send_message(
+            TestCodeMessage(message.content, response.content, True, True, message.time, message.tokens), AgentId("test_designer", "default"))
+
+        return FinalTestResult(return_message.time, return_message.tokens, coder_message.content, return_message.content, return_message.corrected_function, return_message.generated, False, ctx.cancellation_token)

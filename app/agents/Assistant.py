@@ -1,7 +1,9 @@
 from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .coding_agents.messages.MessagesTypes import *
+from experiments.MessageTypesTest import *
 from .coding_agents.utils.Utils import *
+import time
 
 class Assistant(RoutedAgent):
     def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
@@ -56,4 +58,46 @@ class Assistant(RoutedAgent):
             # We need more context from the user
             dialogue(response.content, self._role)
             return Message(content=response.content, type="request")
+
+    @message_handler
+    async def handle_test_user_message(self, message: TestMessage, ctx: MessageContext) -> FinalTestResult:
+        start_time = time.perf_counter()
+        total_tokens = {'assistant':0.0, 'entry_point': 0.0, 'coder': 0.0, 'test_designer': 0.0, 'test_executor': 0.0, 'debugger': 0.0,
+                        'faas_deployer': 0.0}
+        total_time = {'assistant': 0.0, 'entry_point': 0.0, 'coder': 0.0, 'test_designer': 0.0, 'test_executor': 0.0, 'debugger': 0.0,
+                      'faas_deployer': 0.0}
+        print_green(f"{self.id.type} received message. Staring to analyze user's prompt.")
+        # Prepare input to the chat completion model.
+        user_message = UserMessage(content=message.content, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        total_tokens['assistant'] = tokens
+
+        assert isinstance(response.content, str)
+        if response.content.startswith("translation"):
+            return_message = await self._runtime.send_message(
+                TestMessage(response.content.removeprefix("translation:"), total_time, total_tokens),
+                AgentId("entry_point", "default"))
+            if return_message.content == "FAIL":
+                total_time = return_message.time
+                end_time = time.perf_counter()
+                total_time['assistant'] = end_time - start_time
+                return FinalTestResult(total_time, return_message.tokens, return_message.generated_function, return_message.generated_test, return_message.corrected_function, False, False, ctx.cancellation_token)
+            else:
+                mess = await self._runtime.send_message(DeployMessage(code=return_message.content),
+                                                        AgentId("faas_deployer", "default"))
+                total_time = mess.time
+                end_time = time.perf_counter()
+                total_time['assistant'] = end_time - start_time
+                return FinalTestResult(total_time, mess.tokens, return_message.generated_function,
+                                       return_message.generated_test, return_message.corrected_function, True, mess.deployed, ctx.cancellation_token)
+        else:
+            print("ELSEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE")
+            end_time = time.perf_counter()
+            total_time['assistant'] = end_time - start_time
+            return FinalTestResult(total_time, total_tokens, "", "", "", False, False, ctx.cancellation_token)
 

@@ -74,5 +74,11 @@ class Coder(RoutedAgent):
 
         assert isinstance(response.content, str)
 
-        return TestCodeResult(response.content, execution_time, total_tokens, ctx.cancellation_token)
+        if not message.system:
+            return TestCodeResult(response.content, execution_time, total_tokens, ctx.cancellation_token)
+        else:
+            message.time['coder'] = end_time - start_time
+            message.tokens['coder'] = total_tokens
+            return_message = await self._runtime.send_message(TestExecCodeSystemMessage(message.specification, message.function_signature, response.content, "", self.id.type, True, message.time, message.tokens),AgentId("test_executor", "default"))
+            return TestCodeResult(response.content, return_message.time, return_message.tokens, ctx.cancellation_token)
 

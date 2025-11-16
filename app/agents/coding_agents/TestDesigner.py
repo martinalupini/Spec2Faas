@@ -68,6 +68,16 @@ class TestDesigner(RoutedAgent):
         usage_metadata = response.usage
         tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
         end_time = time.perf_counter()
-        return TestCodeResult(response.content, end_time - start_time, tokens, ctx.cancellation_token)
+
+        if not message.system:
+            return TestCodeResult(response.content, end_time - start_time, tokens, ctx.cancellation_token)
+        else:
+            message.time['test_designer'] = end_time - start_time
+            message.tokens['test_designer'] = tokens
+            return_message = await self._runtime.send_message(
+                TestExecCodeSystemMessage(message.specification, message.function_signature, "", response.content, self.id.type, True, message.time, message.tokens),
+                AgentId("test_executor", "default"))
+            return TestCodeResult(response.content, return_message.time,return_message.tokens, ctx.cancellation_token)
+
 
 
