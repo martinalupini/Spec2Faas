@@ -56,6 +56,18 @@ def get_config_data(path):
         return config['llm']
 
 
+def get_config_data_full(path):
+
+    with open(path, 'r') as file:
+        config = yaml.safe_load(file)
+        return config
+
+
+def save_yaml(path, data):
+    with open(path, 'w') as file:
+        yaml.dump(data, file)
+
+
 def get_func_call_from_json(json_string) -> List[FunctionCall]:
     # Removing data before and after {}
     cleaned_data = clean_string(json_string)

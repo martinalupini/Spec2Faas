@@ -1,7 +1,13 @@
+from unittest import TestResult
+
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import UserMessage, ChatCompletionClient, SystemMessage
+
+from experiments.MessageTypesTest import TestMessageResult
 from .messages.MessagesTypes import *
+from experiments.MessageTypesTest import *
 from .utils.Utils import *
+import time
 
 
 class EntryPoint(RoutedAgent):
@@ -32,3 +38,19 @@ class EntryPoint(RoutedAgent):
         return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
 
         return return_message
+
+    @message_handler
+    async def handle_test_assistant_message(self, message: TestMessage, ctx: MessageContext) -> TestMessageResult:
+        print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
+
+        start_time = time.perf_counter()
+        user_message = UserMessage(content=message.content, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+        return TestMessageResult(response.content, end_time - start_time, tokens)

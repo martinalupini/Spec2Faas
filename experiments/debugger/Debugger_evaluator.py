@@ -109,6 +109,8 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
         CC_canonical = row_coder_df.CC_canonical
         CoG_canonical = row_coder_df.CoG_canonical
 
+
+        # TODO: aggiungere una colonna con la CC e la CoG della funzione corretta
         new_data = {
             'task_id': [str(task_id)],
             'passed': [row_coder_df.passed],

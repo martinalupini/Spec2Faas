@@ -79,46 +79,94 @@ class TestExecutor(RoutedAgent):
         self._tests = message.tests
         self._code = message.code
         entry_point = message.function_signature
-        tokens = 0
+        tokens_executor = 0
+        time_executor = 0
+        tokens_debugger = 0
+        time_debugger = 0
         first_chat = True
         self._attempts = 0
-        start_time = time.perf_counter()
 
-        while self._attempts < self._max_attempts:
 
-            dependencies = "```sh\npip install numpy\n```"
-            code_blocks = extract_markdown_code_blocks(dependencies)
+        if message.system:
+            while self._attempts < self._max_attempts:
+                start_time = time.perf_counter()
+                # Prepare input to the chat completion model.
+                prompt = "Function code: " + self._code + "\nFunction tests: " + self._tests
+                user_message = UserMessage(content=prompt, source="user")
+                response = await self._model_client.create(
+                    self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+                )
 
-            code = self._code + self._tests + "\n\ncheck(" + entry_point + ")\n"
-            invocation_code = CodeBlock(code=code, language='python')
-            code_blocks.append(invocation_code)
+                usage_metadata = response.usage
+                tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+                tokens_executor += tokens
 
-            result = await self._code_executor.execute_code_blocks(
-                code_blocks, cancellation_token=ctx.cancellation_token
-            )
-
-            print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
-
-            if "AssertionError" in result.output or "Error" in result.output:
-                debug_message = await self._runtime.send_message(
-                    TestDebugMessage(message.specification, message.code, result.output, first_chat),
-                    AgentId("debugger", "default"))
-
-                tokens += debug_message.tokens
-
-                if debug_message.code == "":
+                assert isinstance(response.content, str)
+                code_blocks = extract_markdown_code_blocks(response.content)
+                if code_blocks:
+                    result = await self._code_executor.execute_code_blocks(
+                        code_blocks, cancellation_token=ctx.cancellation_token
+                    )
                     end_time = time.perf_counter()
-                    return TestExecCodeResult(final_function=self._code, passed=False, time=end_time - start_time,
-                                              tokens=tokens, attempts=self._max_attempts)
+                    time_executor += end_time - start_time
+                    if "AssertionError" in result.output or "Error" in result.output:
+                        start_time_debug = time.perf_counter()
+                        debug_message = await self._runtime.send_message(
+                            TestDebugMessage(message.specification, message.code, result.output, first_chat),
+                            AgentId("debugger", "default"))
+                        end_time_debug = time.perf_counter()
+                        tokens_debugger += end_time_debug - start_time_debug
+                        time_debugger += end_time_debug - start_time_debug
 
-                self._code = extract_markdown_code_string(debug_message.code)
-                self._attempts += 1
-                first_chat = False
-            else:
-                end_time = time.perf_counter()
-                return TestExecCodeResult(final_function=self._code, passed=True, time= end_time - start_time, tokens = tokens, attempts=self._attempts)
+                        if debug_message.code == "":
+                            return TestExecCodeResult(final_function=message.code, passed=False, time=time_executor,
+                                                      tokens=tokens_executor, attempts=self._max_attempts, tokens_debugger=tokens_debugger, time_debugger=time_debugger)
 
-        # Max attempts number reached
-        end_time = time.perf_counter()
-        return TestExecCodeResult(final_function=self._code, passed=False, time= end_time - start_time, tokens = tokens, attempts=self._max_attempts)
+                        self._code = debug_message.code
+                        self._attempts += 1
+                        first_chat = False
+                    else:
+                        return TestExecCodeResult(final_function=self._code, passed=True, time=time_executor,
+                                                  tokens=tokens_executor, attempts=self._attempts, tokens_debugger=tokens_debugger,time_debugger=time_debugger)
+            # Max attempts number reached
+            return TestExecCodeResult(final_function=message.code, passed=False, time= time_executor, tokens = tokens_executor, attempts=self._max_attempts, tokens_debugger=tokens_debugger,time_debugger=time_debugger)
+        else:
+            start_time = time.perf_counter()
+            while self._attempts < self._max_attempts:
+
+                dependencies = "```sh\npip install numpy\n```"
+                code_blocks = extract_markdown_code_blocks(dependencies)
+
+                code = self._code + self._tests + "\n\ncheck(" + entry_point + ")\n"
+                invocation_code = CodeBlock(code=code, language='python')
+                code_blocks.append(invocation_code)
+
+                result = await self._code_executor.execute_code_blocks(
+                    code_blocks, cancellation_token=ctx.cancellation_token
+                )
+
+                print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
+
+                if "AssertionError" in result.output or "Error" in result.output:
+                    debug_message = await self._runtime.send_message(
+                        TestDebugMessage(message.specification, message.code, result.output, first_chat),
+                        AgentId("debugger", "default"))
+
+                    tokens += debug_message.tokens
+
+                    if debug_message.code == "":
+                        end_time = time.perf_counter()
+                        return TestExecCodeResult(final_function="", passed=False, time=end_time - start_time,
+                                                  tokens=tokens, attempts=self._max_attempts)
+
+                    self._code = extract_markdown_code_string(debug_message.code)
+                    self._attempts += 1
+                    first_chat = False
+                else:
+                    end_time = time.perf_counter()
+                    return TestExecCodeResult(final_function=self._code, passed=True, time= end_time - start_time, tokens = tokens, attempts=self._attempts)
+
+            # Max attempts number reached
+            end_time = time.perf_counter()
+            return TestExecCodeResult(final_function=self._code, passed=False, time= end_time - start_time, tokens = tokens, attempts=self._max_attempts)
 

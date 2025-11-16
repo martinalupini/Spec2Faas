@@ -31,6 +31,7 @@ class TestExecCodeMessage:
     function_signature: str
     code: str
     tests: str
+    system: bool = False
 
 @dataclass
 class TestExecCodeResult:
@@ -39,6 +40,8 @@ class TestExecCodeResult:
     time: float
     tokens: float
     attempts: int
+    tokens_debugger:float = 0
+    time_debugger: float = 0
 
 @dataclass
 class TestDebugMessage:
@@ -51,4 +54,14 @@ class TestDebugMessage:
 @dataclass
 class TestDebugResult:
     code: str
+    tokens: float
+
+@dataclass
+class TestMessage:
+    content:str
+
+@dataclass
+class TestMessageResult:
+    content: str
+    time : float
     tokens: float
