@@ -102,6 +102,7 @@ class TestExecutor(RoutedAgent):
                 tokens_executor += tokens
 
                 assert isinstance(response.content, str)
+                print(response.content)
                 code_blocks = extract_markdown_code_blocks(response.content)
                 if code_blocks:
                     result = await self._code_executor.execute_code_blocks(

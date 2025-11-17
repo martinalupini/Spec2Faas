@@ -177,6 +177,8 @@ async def main(config, models, system_prompt, server):
             tokens['coder'] = response_coder.tokens
             messages += 1
 
+            print(original_function)
+
             response_designer = await runtime.send_message(TestCodeMessage(generated_prompt, signature, system_prompt),
                                                   AgentId("test_designer", "default"))
             messages += 1
@@ -184,13 +186,19 @@ async def main(config, models, system_prompt, server):
             tokens['designer'] = response_designer.tokens
             tests = response_designer.content
 
+            print(tests)
             messages += 1
             response_debug = await runtime.send_message(
-                TestExecCodeMessage(prompt, entry_point, original_function, test, system=True),
+                TestExecCodeMessage(prompt, signature, original_function, tests, system=True),
                 AgentId("test_executor", "default"))
             messages += 1
             generated = response_debug.passed
-            final_function = response_debug.final_function
+
+            function_code = extract_markdown_code_blocks(response_coder.content)
+            if function_code:
+                final_function = function_code[0].code
+            else:
+                final_function = response_debug.final_function
             time['debugger'] = response_debug.time_debugger
             tokens['debugger'] = response_debug.tokens_debugger
             time['test_executor'] = response_debug.time

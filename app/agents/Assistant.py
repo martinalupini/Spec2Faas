@@ -87,12 +87,7 @@ class Assistant(RoutedAgent):
 
         assert isinstance(response.content, str)
 
-        if response.content.startswith("translation"):
-            # The translation is complete so we can send a message to the Coder and the TestDesigner
-            end_time = time.perf_counter()
-            return TestMessageResult(response.content.removeprefix("translation:"), end_time - start_time, tokens)
-        else:
-            # We need more context from the user
-            end_time = time.perf_counter()
-            return TestMessageResult("FAIL", end_time - start_time, tokens)
+        end_time = time.perf_counter()
+        return TestMessageResult(response.content.removeprefix("translation:"), end_time - start_time, tokens)
+
 
