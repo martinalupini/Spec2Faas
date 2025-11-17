@@ -56,6 +56,7 @@ class Debugger(RoutedAgent):
     @message_handler
     async def handle_test_debug_code_message(self, message: TestDebugMessage, ctx: MessageContext) -> TestDebugResult:
         print_green(f"{self.id.type} received message. Attempt {self._counter}")
+        print_purple(str(message))
 
         if message.new_chat:
             self._counter = 0

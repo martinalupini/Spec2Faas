@@ -2,6 +2,7 @@ from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
+from .utils.Code_Extractors import *
 from experiments.MessageTypesTest import *
 import time
 
@@ -70,4 +71,36 @@ class TestDesigner(RoutedAgent):
         end_time = time.perf_counter()
         return TestCodeResult(response.content, end_time - start_time, tokens, ctx.cancellation_token)
 
+    @message_handler
+    async def handle_test_system_generate_code_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        print_green(f"{self.id.type} received message. Creating now a test suite for the function.")
+        print_purple(str(message))
 
+        total_tokens = message.tokens
+        total_time = message.time
+
+        start_time = time.perf_counter()
+        # Prepare input to the chat completion model.
+        prompt = "Function specification: " + message.prompt + "\nFunction signature: " + message.signature + "\nPlease generate the tests:"
+        user_message = UserMessage(content=prompt, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        assert isinstance(response.content, str)
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        total_time['test_designer'] = end_time - start_time
+        total_tokens['test_designer'] = tokens
+
+        test_code = extract_markdown_code_blocks(response.content)
+        if test_code:
+            tests = test_code[0].code
+        else:
+            tests = response.content
+
+        return_message = await self._runtime.send_message(
+            TestSystemMessage(tokens = total_tokens, time = total_time, prompt = message.prompt, signature = message.signature, original_func = message.original_func, code = message.code, tests = response.content, tests_str = tests , sender = self.id.type),
+            AgentId("test_executor", "default"))
+        return return_message

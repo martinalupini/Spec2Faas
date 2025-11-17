@@ -79,6 +79,7 @@ class TestExecutor(RoutedAgent):
         self._tests = message.tests
         self._code = message.code
         entry_point = message.function_signature
+        tokens = 0
         tokens_executor = 0
         time_executor = 0
         tokens_debugger = 0
@@ -171,3 +172,94 @@ class TestExecutor(RoutedAgent):
             end_time = time.perf_counter()
             return TestExecCodeResult(final_function=self._code, passed=False, time= end_time - start_time, tokens = tokens, attempts=self._max_attempts)
 
+    @message_handler
+    async def handle_test_system_execute_code_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        print_green(f"{self.id.type} received message from {message.sender}")
+        if self._tests == "":
+            self._tests = message.tests
+        if self._code == "":
+            self._code = message.code
+
+        if self._tests != "" and self._code != "":
+            print_purple(str(message))
+            total_tokens = message.tokens
+            total_time = message.time
+            self._attempts = 0
+            tokens_executor = 0
+            time_executor = 0
+            tokens_debugger = 0
+            time_debugger = 0
+            first_chat = True
+            start_time = time.perf_counter()
+            while self._attempts < self._max_attempts:
+                # Prepare input to the chat completion model.
+                prompt = "Function code: " + self._code + "\nFunction tests: " + self._tests
+                user_message = UserMessage(content=prompt, source="user")
+                response = await self._model_client.create(
+                    self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+                )
+
+                usage_metadata = response.usage
+                tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+                tokens_executor += tokens
+
+                assert isinstance(response.content, str)
+                code_blocks = extract_markdown_code_blocks(response.content)
+                if code_blocks:
+                    result = await self._code_executor.execute_code_blocks(
+                        code_blocks, cancellation_token=ctx.cancellation_token
+                    )
+                    end_time = time.perf_counter()
+                    time_executor += end_time - start_time
+                    if "AssertionError" in result.output or "Error" in result.output:
+                        start_time_debug = time.perf_counter()
+                        debug_message = await self._runtime.send_message(
+                            TestDebugMessage(message.prompt, message.code, result.output, first_chat),
+                            AgentId("debugger", "default"))
+                        end_time_debug = time.perf_counter()
+                        tokens_debugger += end_time_debug - start_time_debug
+                        time_debugger += end_time_debug - start_time_debug
+
+                        if debug_message.code == "":
+                            total_time['test_executor'] = time_executor
+                            total_tokens['test_executor'] = tokens_executor
+                            total_tokens['debugger'] = tokens_debugger
+                            total_time['debugger'] = time_debugger
+                            # Original function is not correct and can't be generated
+                            return TestSystemMessage(tokens = total_tokens, time=total_time, prompt = message.prompt, signature = message.signature, original_func = message.original_func, code = message.code,
+                                                     tests = message.tests, tests_str = message.tests_str,
+                                                     attempts = self._attempts, type = "test_executor_response")
+
+                        self._code = debug_message.code
+                        self._attempts += 1
+                        first_chat = False
+                    else:
+                        total_time['test_executor'] = time_executor
+                        total_tokens['test_executor'] = tokens_executor
+                        total_tokens['debugger'] = tokens_debugger
+                        total_time['debugger'] = time_debugger
+                        function_code = extract_markdown_code_blocks(self._code)
+                        if function_code:
+                            final_function = function_code[0].code
+                        else:
+                            final_function = self._code
+
+                        # Function is corrected
+                        return TestSystemMessage(tokens=total_tokens, time=total_time, prompt=message.prompt,
+                                                 signature=message.signature, original_func=message.original_func,
+                                                 code=message.code, tests=message.tests, tests_str=message.tests_str,
+                                                 final_func = final_function, code_final_func=self._code,
+                                                 attempts=self._attempts, generated = True, type="test_executor_response")
+
+            # Max attempts number reached, function is not correct
+            total_time['test_executor'] = time_executor
+            total_tokens['test_executor'] = tokens_executor
+            total_tokens['debugger'] = tokens_debugger
+            total_time['debugger'] = time_debugger
+            return TestSystemMessage(tokens=total_tokens, time=total_time, prompt=message.prompt,
+                                     signature=message.signature, original_func=message.original_func,
+                                     code=message.code, tests=message.tests, tests_str=message.tests_str,
+                                     attempts=self._max_attempts, type="test_executor_response")
+
+        # returns when the coder sends the message
+        return message

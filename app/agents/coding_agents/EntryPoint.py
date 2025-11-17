@@ -54,3 +54,33 @@ class EntryPoint(RoutedAgent):
         tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
 
         return TestMessageResult(response.content, end_time - start_time, tokens)
+
+    @message_handler
+    async def handle_test_system_assistant_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        if message.type == "test_executor_response":
+            print_green(f"{self.id.type} received message. Communicating final outcome.")
+            print_purple(str(message))
+            return message
+
+        print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
+        print_purple(str(message))
+
+        total_time = message.time
+        total_tokens = message.tokens
+        start_time = time.perf_counter()
+        user_message = UserMessage(content=message.prompt, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        total_time['entry_point'] = end_time - start_time
+        total_tokens['entry_point'] = tokens
+
+        return_coder = await self._runtime.send_message(TestSystemMessage(tokens= total_tokens, time = total_time,prompt = message.prompt, signature = response.content),
+                                         AgentId("coder", "default"))
+        return_message = await self._runtime.send_message(TestSystemMessage(tokens= return_coder.tokens, time = return_coder.time, prompt = message.prompt, signature = response.content, original_func = return_coder.original_func, code = return_coder.code),
+                                         AgentId("test_designer", "default"))
+        return return_message

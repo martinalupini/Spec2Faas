@@ -2,6 +2,7 @@ from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId, 
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from .messages.MessagesTypes import *
 from .utils.Utils import *
+from .utils.Code_Extractors import *
 from experiments.MessageTypesTest import *
 import ollama
 import time
@@ -76,3 +77,34 @@ class Coder(RoutedAgent):
 
         return TestCodeResult(response.content, execution_time, total_tokens, ctx.cancellation_token)
 
+    @message_handler
+    async def handle_test_system_generate_code_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        print_green(f"{self.id.type} received message. Staring to generate code with {self._llm}.")
+        print_purple(str(message))
+
+        total_time = message.time
+        total_tokens = message.tokens
+        start_time = time.perf_counter()
+        # Prepare input to the chat completion model.
+        prompt = "Function specification: " + message.prompt + "\nFunction signature: " + message.signature
+        user_message = UserMessage(content=prompt, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        total_time['coder'] = end_time - start_time
+        total_tokens['coder'] = tokens
+
+        function_code = extract_markdown_code_blocks(response.content)
+        if function_code:
+            original_function = function_code[0].code
+        else: original_function = response.content
+
+        assert isinstance(response.content, str)
+        return_message = await self._runtime.send_message(
+            TestSystemMessage(tokens = total_tokens, time = total_time, prompt = message.prompt, signature = message.signature, original_func = original_function, code = response.content, sender = self.id.type),
+            AgentId("test_executor", "default"))
+        return return_message

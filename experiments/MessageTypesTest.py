@@ -65,3 +65,29 @@ class TestMessageResult:
     content: str
     time : float
     tokens: float
+
+
+@dataclass
+class TestSystemMessage:
+    tokens: dict
+    time: dict
+    # From Assistant
+    prompt: str = ""
+    # From Entry Point
+    signature: str = ""
+    # From Coder
+    original_func: str = ""
+    code: str = ""
+    # From test designer
+    tests: str = ""
+    tests_str: str = ""
+    sender: str = ""
+    # From debugger and test executor
+    final_func: str = ""
+    code_final_func: str = ""
+    attempts: int = 0
+    generated: bool = False
+    # From deployer
+    result_deployment: str = ""
+    deployed: bool = False
+    type: str = ""

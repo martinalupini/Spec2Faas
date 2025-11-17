@@ -1,5 +1,7 @@
 from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
+from torch.cuda.profiler import start
+
 from .coding_agents.messages.MessagesTypes import *
 from experiments.MessageTypesTest import *
 from .coding_agents.utils.Utils import *
@@ -79,7 +81,7 @@ class Assistant(RoutedAgent):
         start_time = time.perf_counter()
         user_message = UserMessage(content=message.content, source="user")
         response = await self._model_client.create(
-            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+            self._system_messages_test + [user_message], cancellation_token=ctx.cancellation_token
         )
 
         usage_metadata = response.usage
@@ -90,4 +92,47 @@ class Assistant(RoutedAgent):
         end_time = time.perf_counter()
         return TestMessageResult(response.content.removeprefix("translation:"), end_time - start_time, tokens)
 
+    @message_handler
+    async def handle_test_system_user_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        print_green(f"{self.id.type} received message. Staring to analyze user's prompt.")
+        # Prepare input to the chat completion model.
+        total_tokens = message.tokens
+        total_time = message.time
+
+        start_time = time.perf_counter()
+        user_message = UserMessage(content=message.prompt, source="user")
+        response = await self._model_client.create(
+            self._system_messages_test + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        assert isinstance(response.content, str)
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+        total_tokens['assistant'] = tokens
+        total_time['assistant'] = end_time - start_time
+        # The translation is complete so we can send a message to the Coder and the TestDesigner
+        return_message = await self._runtime.send_message(
+            TestSystemMessage(tokens = total_tokens, time = total_time, prompt=response.content),
+            AgentId("entry_point", "default"))
+        end_time_system = time.perf_counter()
+        return_message.time['system'] = end_time_system - start_time
+        # case generation is not successful
+        if not return_message.generated:
+            return return_message
+        # case generation is successful return
+        else:
+            total_time = return_message.time
+            total_tokens = return_message.tokens
+            deploy_mess =  await self._runtime.send_message(TestDeployMessage(return_message.code_final_func), AgentId("faas_deployer", "default"))
+            total_tokens['faas_deployer'] = deploy_mess.tokens
+            total_time['faas_deployer'] = deploy_mess.time
+            if deploy_mess.result != "FAIL":
+                deployed = True
+            else:
+                deployed = False
+            return TestSystemMessage(tokens = total_tokens, time = total_time, prompt=return_message.prompt, signature = return_message.signature,
+                            original_func=return_message.original_func, tests_str = return_message.tests_str, final_func = return_message.final_func,
+                                     attempts = return_message.attempts, generated = return_message.generated,
+                                     result_deployment= deploy_mess.result, deployed = deployed)
 

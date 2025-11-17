@@ -189,6 +189,8 @@ class FaasDeployer(RoutedAgent):
     @message_handler
     async def handle_test_deploy_message(self, message: TestDeployMessage, ctx: MessageContext) -> TestDeployResult:
         print_green(f"{self.id.type} received message. Starting to deploy the function in FaaS.")
+        print_purple(str(message))
+
         r = None
 
         # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
