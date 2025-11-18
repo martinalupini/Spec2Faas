@@ -78,6 +78,7 @@ class TestSystemMessage:
     # From Coder
     original_func: str = ""
     code: str = ""
+    new_chat: bool = False
     # From test designer
     tests: str = ""
     tests_str: str = ""

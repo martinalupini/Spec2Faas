@@ -179,6 +179,7 @@ class FaasDeployer(RoutedAgent):
         # Run the tool and capture the result.
         try:
             arguments = json.loads(call.arguments)
+            print(arguments['code'])
             result = await tool.run_json(arguments, cancellation_token)
             return FunctionExecutionResult(
                 call_id=call.id, content=tool.return_value_as_string(result), is_error=False, name=tool.name

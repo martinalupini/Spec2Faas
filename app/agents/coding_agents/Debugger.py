@@ -55,14 +55,13 @@ class Debugger(RoutedAgent):
 
     @message_handler
     async def handle_test_debug_code_message(self, message: TestDebugMessage, ctx: MessageContext) -> TestDebugResult:
-        print_green(f"{self.id.type} received message. Attempt {self._counter}")
-        print_purple(str(message))
-
         if message.new_chat:
             self._counter = 0
             self._debug_chat: List[LLMMessage] = self._system_messages
         else:
             self._counter += 1
+        print_green(f"{self.id.type} received message. Attempt {self._counter}")
+        print_purple(str(message))
 
         # Prepare input to the chat completion model.
         prompt = "This is the function specification: " + message.specification + "\nThis is the function code: " + message.code + "\nAnd this is the error message: " + message.error_message + "\nCan you correct the code?"

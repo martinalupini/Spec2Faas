@@ -40,7 +40,6 @@ class Assistant(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
-        self._text = ""
         self._role = "Assistant"
         print_green(f"Hi I'm the assistant and I use {self._llm}.")
 

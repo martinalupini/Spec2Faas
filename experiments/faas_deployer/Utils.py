@@ -4,10 +4,14 @@ import json
 from typing import Tuple, List, Any
 import pandas as pd
 
-def extract_param_names(testo: str, entry_point: str) ->List[str]:
-    pattern = re.compile(r"def\s+" + re.escape(entry_point) + r"\s*\((.*?)\):")
+def extract_param_names(testo: str, entry_point: str, system: bool = False) ->List[str]:
 
-    match = pattern.search(testo)
+    if system:
+        match = re.search(r'\((.*?)\)', testo)
+        print(testo)
+    else:
+        pattern = re.compile(r"def\s+" + re.escape(entry_point) + r"\s*\((.*?)\):")
+        match = pattern.search(testo)
 
     if not match:
         return None

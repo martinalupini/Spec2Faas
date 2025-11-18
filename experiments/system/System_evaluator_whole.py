@@ -9,7 +9,7 @@ from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
-
+from experiments.faas_deployer.Utils import *
 from app.agents.coding_agents.TestDesigner import *
 from app.agents.coding_agents.Coder import *
 from app.agents.coding_agents.TestExecutor import *
@@ -144,8 +144,13 @@ async def main(config, models, system_prompt, server):
         CoG_original = 0
         coverage = 0
         json_filename = entry_point + ".json"
-        local_path = "../faas_deployer/inputs/" + task_id.split('/')[-1] + "_" + json_filename
-        remote_path = "serverledge/inputs" + "/" + json_filename
+        local_path = "system_results_whole/"+ "experiment_" + str(attempt) + "/inputs/" + task_id.split('/')[-1] + "_" + json_filename
+        remote_path = "serverledge/inputs_experiment_" + str(attempt) + "/" + json_filename
+
+        # Creating directory if it does not exists
+        directory = os.path.dirname(local_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
 
         canonical_code = prompt + canonical_solution
         CC_canonical = compute_CC(canonical_code)
@@ -162,6 +167,32 @@ async def main(config, models, system_prompt, server):
             messages += 1
 
             if response.deployed:
+
+                # Need to save json file containing arguments. Cannot reuse the one from the deployer experiment because
+                # the names of the arguments may be different.
+                param_names = extract_param_names(response.signature, "", True)
+                param_values = extract_param_values(test)
+                print(param_names)
+
+                try:
+                    sftp = server.open_sftp()
+
+                    try:
+                        sftp.stat(remote_path)
+                        continue
+                    except FileNotFoundError:
+                        create_json(param_names, param_values, local_path)
+                        sftp.put(local_path, remote_path)
+                        print("Json uploaded!")
+
+                except Exception as e:
+                    print(f"Error during file transfer: {e}")
+                    raise e
+                finally:
+                    if sftp:
+                        sftp.close()
+
+
                 command = "serverledge/bin/serverledge-cli invoke -f " + response.result_deployment + " --params_file " + remote_path + " --ret_output"
                 stdin, stdout, stderr = server.exec_command(command)
 
@@ -201,6 +232,7 @@ async def main(config, models, system_prompt, server):
                 test_correct = False
                 coverage = 0
             else:
+                print_blue(str(result.output))
                 test_correct = True
                 match = re.search(r'(\d+)\s*%', result.output)
                 if match:

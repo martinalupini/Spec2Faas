@@ -105,6 +105,6 @@ class Coder(RoutedAgent):
 
         assert isinstance(response.content, str)
         return_message = await self._runtime.send_message(
-            TestSystemMessage(tokens = total_tokens, time = total_time, prompt = message.prompt, signature = message.signature, original_func = original_function, code = response.content, sender = self.id.type),
+            TestSystemMessage(tokens = total_tokens, time = total_time, prompt = message.prompt, signature = message.signature, original_func = original_function, code = response.content, new_chat = True, sender = self.id.type),
             AgentId("test_executor", "default"))
         return return_message

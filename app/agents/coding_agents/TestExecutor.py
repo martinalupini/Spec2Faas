@@ -175,6 +175,12 @@ class TestExecutor(RoutedAgent):
     @message_handler
     async def handle_test_system_execute_code_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
         print_green(f"{self.id.type} received message from {message.sender}")
+
+        if message.new_chat:
+            self._code = ""
+            self._tests = ""
+            self._attempts = 0
+
         if self._tests == "":
             self._tests = message.tests
         if self._code == "":
