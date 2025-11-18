@@ -24,6 +24,9 @@ from experiments.MessageTypesTest import *
 import pandas as pd
 from experiments.coder.Metrics import *
 
+"""
+It executes the function given the tests provided by the dataset
+"""
 async def execute_function(function: str, test:str, entry_point, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\n```"
@@ -39,7 +42,9 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
 
     return result, end_time - start_time
 
-
+"""
+It executes the function given the generated tests. It also computes the coverage
+"""
 async def execute_tests(function: str, test:str, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\npip install coverage```"
@@ -55,6 +60,8 @@ async def execute_tests(function: str, test:str, executor, ctx):
 
     return result, end_time - start_time
 
+
+
 async def main(config, models, system_prompt, server):
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
@@ -62,6 +69,7 @@ async def main(config, models, system_prompt, server):
     attempt = config['experiment_number']
     llm = config['llm']
 
+    ################################## REGISTERING AGENTS ###############################################
     await Assistant.register(runtime, "assistant", lambda: Assistant(llm=llm['assistant'], model_client=models['assistant']))
     await EntryPoint.register(runtime, "entry_point",
                               lambda: EntryPoint(llm=llm['entry_point'], model_client=models['entry_point']))
@@ -83,6 +91,7 @@ async def main(config, models, system_prompt, server):
                                 lambda: TestExecutor(llm=llm['test_executor'], model_client=models['test_executor'],
                                                      code_executor=executor))
 
+    ############################### IMPORTING DATASET AND CREATING FILES ###################################
     #Importing the dataset
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
@@ -103,16 +112,18 @@ async def main(config, models, system_prompt, server):
         'CC_original', 'CC_final', 'CC_canonical', 'CoG_final', 'CoG_generated', 'CoG_canonical', 'time_assistant',
         'token_assistant', 'time_entry_point', 'token_entry_point', 'time_coder', 'token_coder', 'time_designer',
         'token_designer', 'time_executor', 'token_executor','time_debugger', 'token_debugger', 'time_deployer',
-        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged'
+        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged', 'canonical_solution', 'deployed_function'
     ]
 
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
+        print(results_df['task_id'])
     else:
         results_df = pd.DataFrame(columns=columns)
 
     runtime.start()  # Start processing messages in the background.
 
+    ################################# STARTING TESTS ########################################
     # Iterating through each row
     for row in df.itertuples(index=False):
         task_id = row.task_id
@@ -126,7 +137,6 @@ async def main(config, models, system_prompt, server):
         test = row.test
         canonical_solution = row.canonical_solution
         canonical_code = prompt + canonical_solution
-        messages = 1
         tokens = {'assistant': 0.0, 'entry_point': 0.0, 'coder': 0.0, 'test_designer': 0.0, 'test_executor': 0.0,
                         'debugger': 0.0,
                         'faas_deployer': 0.0}
@@ -147,7 +157,7 @@ async def main(config, models, system_prompt, server):
         local_path = "system_results_whole/"+ "experiment_" + str(attempt) + "/inputs/" + task_id.split('/')[-1] + "_" + json_filename
         remote_path = "serverledge/inputs_experiment_" + str(attempt) + "/" + json_filename
 
-        # Creating directory if it does not exists
+        # Creating directory if it does not exist
         directory = os.path.dirname(local_path)
         if directory:
             os.makedirs(directory, exist_ok=True)
@@ -157,22 +167,21 @@ async def main(config, models, system_prompt, server):
         CoG_canonical = compute_CoG(canonical_code)
 
         print_yellow(task_id)
+        # Start the test
         response = await runtime.send_message(TestSystemMessage(tokens = tokens, time = time, prompt=prompt), AgentId("assistant", "default"))
-        messages += 7 + response.attempts
 
         CC_original = compute_CC(response.original_func)
         CoG_original = compute_CoG(response.original_func)
 
         if response.generated:
-            messages += 1
 
             if response.deployed:
 
+                ########################## TESTING IF CAN EXECUTE ON SERVERLEDGE ###########################
                 # Need to save json file containing arguments. Cannot reuse the one from the deployer experiment because
                 # the names of the arguments may be different.
                 param_names = extract_param_names(response.signature, "", True)
                 param_values = extract_param_values(test)
-                print(param_names)
 
                 try:
                     sftp = server.open_sftp()
@@ -206,6 +215,8 @@ async def main(config, models, system_prompt, server):
                     print("--- Output ---")
                     print(output)
 
+
+        ######################## TESTING IF FINAL FUNCTION IS CORRECT ######################################
             result, execution_time_generated = await execute_function(response.final_func, test, entry_point,
                                                                       executor, CancellationToken())
             if "AssertionError" in result.output:
@@ -216,7 +227,8 @@ async def main(config, models, system_prompt, server):
             CC_final = compute_CC(response.final_func)
             CoG_final = compute_CoG(response.final_func)
 
-            # Checking if the original function is correct
+        ######################## TESTING IF ORIGINAL FUNCTION IS CORRECT ######################################
+
             result, execution_time_generated = await execute_function(response.original_func, test, entry_point,
                                                                       executor, CancellationToken())
             if "AssertionError" in result.output:
@@ -224,15 +236,22 @@ async def main(config, models, system_prompt, server):
             else:
                 original_function_correct = True
 
-            # Checking if the generated tests are correct
-
-            result, execution_time_generated = await execute_tests(canonical_code, response.tests_str, executor,
+        ######################## TESTING IF GENERATED TESTS ARE CORRECT ######################################
+            function_name_code = extract_function_name(canonical_code)
+            function_name_test = extract_function_name(response.signature)
+            print(function_name_code)
+            print(function_name_test)
+            if function_name_code != function_name_test:
+                new_canonical_code = canonical_code.replace(function_name_code, function_name_test)
+            else:
+                new_canonical_code = canonical_code
+            result, execution_time_generated = await execute_tests(new_canonical_code, response.tests_str, executor,
                                                                    CancellationToken())
-            if "AssertionError" in result.output:
+            if "AssertionError" in result.output or "Error" in result.output:
+                print_blue(str(result.output))
                 test_correct = False
                 coverage = 0
             else:
-                print_blue(str(result.output))
                 test_correct = True
                 match = re.search(r'(\d+)\s*%', result.output)
                 if match:
@@ -285,7 +304,9 @@ async def main(config, models, system_prompt, server):
             'tests': [response.tests_str],
             'coverage': [coverage],
             'debugging_attempts': [response.attempts],
-            'number_messages_exchanged': [messages]
+            'number_messages_exchanged': [response.messages],
+            'canonical_solution': [canonical_code],
+            'deployed_function': [response.deployed_function]
         }
 
         new_row_df = pd.DataFrame(new_data)

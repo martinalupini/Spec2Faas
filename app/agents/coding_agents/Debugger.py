@@ -48,13 +48,17 @@ class Debugger(RoutedAgent):
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
 
+        # Extract the markdown code
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
         code_block = match.group(1).strip()
 
+        # Respond back to the TestExecutor
         return DebugMessage(message.specification, code_block, "")
 
     @message_handler
     async def handle_test_debug_code_message(self, message: TestDebugMessage, ctx: MessageContext) -> TestDebugResult:
+        # In the tests the Debugger is called multiple times.
+        # The data structures need to be reset at each new entry of the dataset
         if message.new_chat:
             self._counter = 0
             self._debug_chat: List[LLMMessage] = self._system_messages
@@ -79,10 +83,14 @@ class Debugger(RoutedAgent):
 
             assert isinstance(response.content, str)
 
+            # Extract the markdown code
             match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)
             code_block = match.group(1).strip()
 
+            # Respond back to the TestExecutor
             return TestDebugResult(code_block, tokens)
         except Exception as e:
+
+            # If an exception occurs (i.e. maximum number of tokens) returns an empty string
             return TestDebugResult("", 1048575)
 

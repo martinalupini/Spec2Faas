@@ -8,7 +8,7 @@ def extract_param_names(testo: str, entry_point: str, system: bool = False) ->Li
 
     if system:
         match = re.search(r'\((.*?)\)', testo)
-        print(testo)
+
     else:
         pattern = re.compile(r"def\s+" + re.escape(entry_point) + r"\s*\((.*?)\):")
         match = pattern.search(testo)
@@ -49,6 +49,18 @@ def extract_param_values(code: str) -> Any:
                     return param_values[0]
                 else:
                     raise ValueError("The 'inputs' is empty or it's not a list")
+
+
+def extract_function_name(code: str) -> str:
+    pattern = r"def\s+([a-zA-Z_]\w*)\s*\("
+
+    match = re.search(pattern, code)
+
+    if match:
+        function_name = match.group(1)
+        return function_name
+    else:
+        return ""
 
 
 def create_json(names: list, values: list, filename: str):

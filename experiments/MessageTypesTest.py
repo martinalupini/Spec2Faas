@@ -24,6 +24,7 @@ class TestDeployResult:
     time: float
     tokens: float
     ctx: CancellationToken
+    deployed_function: str = ""
 
 @dataclass
 class TestExecCodeMessage:
@@ -71,24 +72,41 @@ class TestMessageResult:
 class TestSystemMessage:
     tokens: dict
     time: dict
+    # Number of messages exchanged
+    messages: int = 1
     # From Assistant
+    # The generated prompt
     prompt: str = ""
     # From Entry Point
+    # The generated signature
     signature: str = ""
     # From Coder
+    # The string of code of the original function
     original_func: str = ""
+    # The code of the original function
     code: str = ""
     new_chat: bool = False
     # From test designer
+    # The code of the tests
     tests: str = ""
+    # The string of code of the tests
     tests_str: str = ""
     sender: str = ""
     # From debugger and test executor
+    # The string of code of the final function
     final_func: str = ""
+    # The code of the final function
     code_final_func: str = ""
+    # The number of attempts
     attempts: int = 0
+    # If the function is generated
     generated: bool = False
     # From deployer
+    # The name of the handler
     result_deployment: str = ""
+    # If the function is deployed
     deployed: bool = False
+    # Only used in EntryPoint
     type: str = ""
+    # The string of code of the deployed function (function +
+    deployed_function: str = ""

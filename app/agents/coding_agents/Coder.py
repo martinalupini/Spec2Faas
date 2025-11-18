@@ -49,6 +49,8 @@ class Coder(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
+
+        # Return message to the entry_point
         return_message = await self._runtime.send_message(
             CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type),
             AgentId("test_executor", "default"))
@@ -95,16 +97,21 @@ class Coder(RoutedAgent):
         end_time = time.perf_counter()
         usage_metadata = response.usage
         tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+        # Updating time and tokens
         total_time['coder'] = end_time - start_time
         total_tokens['coder'] = tokens
 
+        # Extracting the function string
         function_code = extract_markdown_code_blocks(response.content)
         if function_code:
             original_function = function_code[0].code
         else: original_function = response.content
 
         assert isinstance(response.content, str)
+        # After generating the code the Coder sends a message to the TestExecutor to let it know the code
+        # new_chat flag is True to make TestExecutor reset its data structures
         return_message = await self._runtime.send_message(
-            TestSystemMessage(tokens = total_tokens, time = total_time, prompt = message.prompt, signature = message.signature, original_func = original_function, code = response.content, new_chat = True, sender = self.id.type),
+            TestSystemMessage(tokens = total_tokens, time = total_time, messages=message.messages +1, prompt = message.prompt, signature = message.signature, original_func = original_function, code = response.content, new_chat = True, sender = self.id.type),
             AgentId("test_executor", "default"))
         return return_message

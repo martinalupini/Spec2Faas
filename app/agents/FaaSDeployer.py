@@ -125,6 +125,7 @@ class FaasDeployer(RoutedAgent):
         self._tools = tool_schema
         self._llm = llm
         self._role = "FaaS Deployer"
+        self._full_function= ""
         print_green(f"Hi I'm the faas deployer and I use {self._llm}.")
 
     @message_handler
@@ -147,6 +148,7 @@ class FaasDeployer(RoutedAgent):
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
                 dialogue(create_result.content, self._role)
+                # Return the message with the LLM's response (can be successful or not)
                 return Message(content=create_result.content, type = "final_response")
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
@@ -161,7 +163,7 @@ class FaasDeployer(RoutedAgent):
             )
 
             for r in results:
-                # r è un FunctionExecutionResult
+                # r is a FunctionExecutionResult
                 dialogue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}", self._role)
 
             # Add the function execution results to the session.
@@ -179,7 +181,6 @@ class FaasDeployer(RoutedAgent):
         # Run the tool and capture the result.
         try:
             arguments = json.loads(call.arguments)
-            print(arguments['code'])
             result = await tool.run_json(arguments, cancellation_token)
             return FunctionExecutionResult(
                 call_id=call.id, content=tool.return_value_as_string(result), is_error=False, name=tool.name
@@ -212,6 +213,8 @@ class FaasDeployer(RoutedAgent):
             usage_metadata = create_result.usage
             tokens = tokens + usage_metadata.prompt_tokens + usage_metadata.completion_tokens
 
+            # These models return a string containing the function call.
+            # Need to convert that string into a real FunctionCall
             if "qwen2.5" in self._llm and "\"name\": \"create_json_serverledge\"" in create_result.content:
                 try:
                     content = get_func_call_from_json(create_result.content)
@@ -227,14 +230,15 @@ class FaasDeployer(RoutedAgent):
                 # If there are no tool calls, return the result.
                 if isinstance(create_result.content, str):
                     end_time = time.perf_counter()
+                    # If r has no content then there was no function call
                     if r is None or r.is_error:
                         final_response = "FAIL"
                     else:
                         # To extract the field from a string in json format
                         data = ast.literal_eval(r.content)
-                        # To extract the first value in the string
+                        # To extract the first value in the string (the name of the handler)
                         final_response = next(iter(data.values()))
-                    return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token)
+                    return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token, deployed_function=self._full_function)
                 assert isinstance(create_result.content, list) and all(
                     isinstance(call, FunctionCall) for call in create_result.content
                 )
@@ -243,6 +247,9 @@ class FaasDeployer(RoutedAgent):
 
             # Add the first model create result to the session.
             session.append(AssistantMessage(content=content, source="assistant"))
+
+            arguments = json.loads(content[0].arguments)
+            self._full_function = arguments['code']
 
             # Execute the tool calls.
             results = await asyncio.gather(

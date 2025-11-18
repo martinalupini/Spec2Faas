@@ -3,15 +3,15 @@ import ast
 from cognitive_complexity.api import get_cognitive_complexity
 
 
-
-
 def compute_CC(code: str):
 
     visitor = ComplexityVisitor.from_code(code)
 
-    results = visitor.functions[0]
-
-    return results.complexity
+    if len(visitor.functions) == 0:
+        return 0
+    else:
+        results = visitor.functions[0]
+        return results.complexity
 
 
 def compute_CoG(code: str):

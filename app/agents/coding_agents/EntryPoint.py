@@ -23,9 +23,12 @@ class EntryPoint(RoutedAgent):
 
     @message_handler
     async def handle_assistant_message(self, message: Message, ctx: MessageContext) -> Message:
+        # If the message type is "test_executor_response" then the entire coding process is concluded
         if message.type == "test_executor_response":
             print_green(f"{self.id.type} received message. Communicating final outcome.")
             return message
+
+        # If the message is not of this type then is the Assistant that wants to initiate the coding process
 
         print_green(f"{self.id.type} received message. Activating Coder and Test Designer.")
 
@@ -34,6 +37,8 @@ class EntryPoint(RoutedAgent):
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
         dialogue("The function signature is: " + response.content, "Entry Point")
+
+        # After generating the signature the EntryPoint send a message both to the Coder and the TestDesigner
         await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))
         return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("test_designer", "default"))
 
@@ -57,6 +62,7 @@ class EntryPoint(RoutedAgent):
 
     @message_handler
     async def handle_test_system_assistant_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:
+        # If the message type is "test_executor_response" then the entire coding process is concluded
         if message.type == "test_executor_response":
             print_green(f"{self.id.type} received message. Communicating final outcome.")
             print_purple(str(message))
@@ -76,11 +82,15 @@ class EntryPoint(RoutedAgent):
         end_time = time.perf_counter()
         usage_metadata = response.usage
         tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+        # Updating time and tokens
         total_time['entry_point'] = end_time - start_time
         total_tokens['entry_point'] = tokens
 
-        return_coder = await self._runtime.send_message(TestSystemMessage(tokens= total_tokens, time = total_time,prompt = message.prompt, signature = response.content),
+        # After generating the signature the EntryPoint send a message both to the Coder and the TestDesigner
+        return_coder = await self._runtime.send_message(TestSystemMessage(tokens= total_tokens, time = total_time, messages=message.messages +1, prompt = message.prompt, signature = response.content),
                                          AgentId("coder", "default"))
-        return_message = await self._runtime.send_message(TestSystemMessage(tokens= return_coder.tokens, time = return_coder.time, prompt = message.prompt, signature = response.content, original_func = return_coder.original_func, code = return_coder.code),
+        # It's importany to retrieve time and tokens data from the Coder (because they are updated)
+        return_message = await self._runtime.send_message(TestSystemMessage(tokens= return_coder.tokens, time = return_coder.time, messages=return_coder.messages +1, prompt = message.prompt, signature = response.content, original_func = return_coder.original_func, code = return_coder.code),
                                          AgentId("test_designer", "default"))
         return return_message
