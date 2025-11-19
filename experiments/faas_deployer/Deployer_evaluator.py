@@ -62,9 +62,12 @@ async def main(llm, client, server):
         if task_id in results_df['task_id'].values:
             continue
 
-        # First of all, saving the json files containing the inputs (if not yet saved)
+        # First of all, saving (locally and remotely) the json files containing the inputs (if not yet saved)
         if not os.path.exists(local_path):
+            # I need to create a json file with parameter_name : parameter_value
+            # The parameter names are taken from the prompt.
             param_names = extract_param_names(prompt, entry_point)
+            # The parameter values are taken from the tests
             param_values = extract_param_values(test)
 
             try:
@@ -87,10 +90,12 @@ async def main(llm, client, server):
 
         print_yellow(task_id)
 
-        # Extracting canonical solution
+        # Extracting canonical solution to deploy
         canonical_function_code = prompt + canonical_solution
         response= await runtime.send_message(TestDeployMessage(canonical_function_code), AgentId("faas_deployer", "default"))
         correctly_executed = False
+
+        # If deployed, test the correctness by invoking the function on Serverledge
         if response.result != 'FAIL':
             deployed = True
 

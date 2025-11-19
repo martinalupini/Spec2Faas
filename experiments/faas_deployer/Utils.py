@@ -4,6 +4,12 @@ import json
 from typing import Tuple, List, Any
 import pandas as pd
 
+
+"""
+It takes the parameter names from the prompt. 
+More specifically, since an additional helper function can be in the prompt, the entry_point of the target 
+function has to be specified
+"""
 def extract_param_names(testo: str, entry_point: str, system: bool = False) ->List[str]:
 
     if system:
@@ -31,6 +37,12 @@ def extract_param_names(testo: str, entry_point: str, system: bool = False) ->Li
     return param_names
 
 
+"""
+It takes the parameter names from the tests. 
+More specifically, it takes the first element of the list 'inputs'.
+The use of the module ast is necessary because only parsing the string is not sufficient, since the 
+list 'inputs' can take many forms.
+"""
 def extract_param_values(code: str) -> Any:
 
     tree = ast.parse(code)
@@ -51,6 +63,9 @@ def extract_param_values(code: str) -> Any:
                     raise ValueError("The 'inputs' is empty or it's not a list")
 
 
+"""
+It extracts the function name given a string.
+"""
 def extract_function_name(code: str) -> str:
     pattern = r"def\s+([a-zA-Z_]\w*)\s*\("
 
@@ -63,6 +78,9 @@ def extract_function_name(code: str) -> str:
         return ""
 
 
+"""
+Creating a json file locally
+"""
 def create_json(names: list, values: list, filename: str):
 
     if len(names) != len(values):
