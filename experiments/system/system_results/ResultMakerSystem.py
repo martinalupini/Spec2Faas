@@ -46,14 +46,14 @@ def write_csv():
 
     num_not_generated = 164 - num_generated
     num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
-    num_generated_and_not_debugged = num_generated - num_generated_and_debugged
+    num_generated_and_not_debugged = df[df['generated'] & ~df['debugged']].shape[0]
     num_debugged_not_generated = df[~df['generated'] & df['debugged']].shape[0]
 
 
     num_generated_debugged_deployed = df[df['generated'] & df['debugged'] & df['deployed']].shape[0]
     num_generated_not_debugged_deployed = df[df['generated'] & ~df['debugged'] & df['deployed']].shape[0]
-    num_generated_debugged_not_deployed = num_deployed - num_generated_debugged_deployed
-    num_generated_not_debugged_not_deployed = num_deployed - num_generated_not_debugged_deployed
+    num_generated_debugged_not_deployed = df[df['generated'] & df['debugged'] & ~df['deployed']].shape[0]
+    num_generated_not_debugged_not_deployed = df[df['generated'] & ~df['debugged'] & ~df['deployed']].shape[0]
 
     print(f"\n#Functions Generated: {num_generated}")
     print(f"\n#Functions Debugged: {num_debugged}")
@@ -266,7 +266,7 @@ def create_detailed_sankey_diagram(experiment):
                 row.num_debugged - row.num_generated_and_debugged,
                 row.num_generated_debugged_deployed,
                 row.num_generated_debugged_not_deployed,
-                row.num_debugged - row.num_generated_and_debugged,                row.num_generated_debugged_not_deployed,
+                row.num_debugged - row.num_generated_and_debugged,
                 row.num_generated_not_debugged_deployed,
                 row.num_generated_not_debugged_not_deployed,
                 row.num_correctly_executed,
