@@ -18,8 +18,6 @@ csv_file = "../results.csv"
 try:
     df = pd.read_parquet(file_path)
 
-    print(df.head(10))
-
     #print(df.info())
 
 except FileNotFoundError:
@@ -46,8 +44,18 @@ def write_csv():
     num_correctly_executed = df['correctly_executed'].sum()
     num_debugged = df['debugged'].sum()
 
-    print(f"\n#Functions Generated: {num_deployed}")
-    print(f"\n#Functions Debugged: {num_deployed}")
+    num_not_generated = 164 - num_generated
+    num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
+    num_generated_and_not_debugged = num_generated - num_generated_and_debugged
+
+
+    num_generated_debugged_deployed = df[df['generated'] & df['debugged'] & df['deployed']].shape[0]
+    num_generated_not_debugged_deployed = df[df['generated'] & ~df['debugged'] & df['deployed']].shape[0]
+    num_generated_debugged_not_deployed = num_deployed - num_generated_debugged_deployed
+    num_generated_not_debugged_not_deployed = num_deployed - num_generated_not_debugged_deployed
+
+    print(f"\n#Functions Generated: {num_generated}")
+    print(f"\n#Functions Debugged: {num_debugged}")
     print(f"\n#Functions Deployed: {num_deployed}")
     print(f"\n#Functions Correctly Executed {num_correctly_executed}")
 
@@ -58,9 +66,17 @@ def write_csv():
         'num_deployed': num_deployed,
         'num_correctly_executed': num_correctly_executed,
         'num_debugged': num_debugged,
+        'num_not_generated': num_not_generated,
+        'num_generated_and_debugged': num_generated_and_debugged,
+        'num_generated_and_not_debugged': num_generated_and_not_debugged,
+        'num_generated_debugged_deployed': num_generated_debugged_deployed,
+        'num_generated_not_debugged_deployed': num_generated_not_debugged_deployed,
+        'num_generated_not_debugged_not_deployed': num_generated_not_debugged_not_deployed,
+        'num_generated_debugged_not_deployed': num_generated_debugged_not_deployed,
     }
 
-    results_df = pd.DataFrame(results_data)
+    # Non so perchè in questo file serviva index altrimenti ho errore
+    results_df = pd.DataFrame(results_data, index=[0])
 
     file_exists = os.path.exists(csv_file)
 
@@ -131,13 +147,13 @@ def sankey_flow_diagram():
     # Selecting only the current experiment
     df_csv = df_csv[df_csv['experiment_number'] == experiment].copy()
 
-    for row in df.itertuples(index=False):
+    for row in df_csv.itertuples(index=False):
 
         num_generated = row.num_generated
         num_deployed = row.num_deployed
         num_debugged = row.num_debugged
         num_correctly_executed = row.num_correctly_executed
-        dir = "experiment_" + row.experiment_number + "/"
+        dir = "experiment_" + str(row.experiment_number) + "/"
 
         debugging_loss = num_generated - num_debugged
         deployment_loss = num_debugged - num_deployed
@@ -161,10 +177,109 @@ def sankey_flow_diagram():
             ))])
 
         fig.update_layout(title_text="Sankey Diagram of the Execution Flow", font_size=12)
-        plt.savefig('../' + dir + 'comparison.png', dpi=300)
+        plt.savefig( dir + 'comparison.png', dpi=300)
         fig.show()
+
+
+def create_detailed_sankey_diagram(experiment):
+
+    try:
+        df_csv = pd.read_csv('../results.csv')
+    except FileNotFoundError:
+        print("Error File not found")
+        return
+
+    df_experiment = df_csv[df_csv['experiment_number'] == experiment].copy()
+
+    if df_experiment.empty:
+        print(f"No data for experiment {experiment}")
+        return
+
+    for row in df_experiment.itertuples(index=False):
+        dir_name = f"experiment_{row.experiment_number}/"
+        os.makedirs(dir_name, exist_ok=True)
+
+        execution_loss = row.num_deployed - row.num_correctly_executed
+
+        # Nodes
+        nodes = dict(
+            pad=25,
+            thickness=20,
+            line=dict(color="black", width=0.5),
+            label=[
+                "Generated",  # 0
+                "Debugged",  # 1
+                "Not Debugged",  # 2
+                "Deployed",  # 3
+                "Not Deployed",  # 4
+                "Correctly Executed",  # 5
+                "Execution Failed"  # 6
+                "Not Generated" # 7
+            ],
+            color=[
+                "grey",  # Generated
+                "blue",  # Debugged
+                "orange",  # Not Debugged
+                "lightblue",  # Deployed
+                "red",  # Not Deployed
+                "green",  # Correctly Executed
+                "darkred"  # Execution Failed
+            ]
+        )
+
+        # Links between nodes
+        links = dict(
+            source=[
+                0,  # Generated -> Debugged
+                0,  # Generated -> Not Debugged
+                1,  # Debugged -> Deployed
+                1,  # Debugged -> Not Deployed
+                2,  # Not Debugged -> Deployed
+                2,  # Not Debugged -> Not Deployed
+                3,  # Deployed -> Correctly Executed
+                3,  # Deployed -> Execution Failed
+            ],
+            target=[
+                1,  # Debugged
+                2,  # Not Debugged
+                3,  # Deployed
+                4,  # Not Deployed
+                3,  # Deployed
+                4,  # Not Deployed
+                5,  # Correctly Executed
+                6,  # Execution Failed
+            ],
+            value=[
+                row.num_generated_and_debugged,
+                row.num_generated_and_not_debugged,
+                row.num_generated_debugged_deployed,
+                row.num_generated_debugged_not_deployed,
+                row.num_generated_not_debugged_deployed,
+                row.num_generated_not_debugged_not_deployed,
+                row.num_correctly_executed,
+                execution_loss
+            ]
+        )
+
+        fig = go.Figure(data=[go.Sankey(node=nodes, link=links)])
+
+        fig.update_layout(
+            title_text=f" (Experiment {experiment} Flow Diagram)",
+            font_size=14
+        )
+
+        fig.show()
+
+        try:
+            output_path = os.path.join(dir_name, 'detailed_sankey_flow.png')
+            fig.write_image(output_path, width=1200, height=800, scale=2)
+            print(f"Diagram saved in {output_path}")
+        except Exception as e:
+            print(f"Errore in saving the diagram: {e}")
+
+
+create_detailed_sankey_diagram(experiment)
 
 
 
 #write_csv()
-
