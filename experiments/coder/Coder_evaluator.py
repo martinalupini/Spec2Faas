@@ -22,6 +22,7 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
     dependencies = "```sh\npip install numpy\n```"
     code_block = extract_markdown_code_blocks(dependencies)
 
+    # Adding the line check(function) otherwise it will not work
     code = function + test + "\n\ncheck(" + entry_point + ")\n"
     invocation_code = CodeBlock(code=code, language='python')
     code_block.append(invocation_code)
