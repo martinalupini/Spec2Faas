@@ -81,7 +81,11 @@ async def main(llm, client, system_prompt):
 
         # Generated function execution
         function_code = extract_markdown_code_blocks(response.content)
-        function_code_string = function_code[0].code
+        if function_code:
+            function_code_string = function_code[0].code
+        else:
+            print(response.content)
+            function_code_string = response.content
         result, execution_time_generated = await execute_function(function_code_string, test, entry_point, executor, response.ctx)
         if "AssertionError" in result.output:
             print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")

@@ -9,7 +9,7 @@ from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
-
+from experiments.faas_deployer.Utils import *
 from app.agents.coding_agents.TestDesigner import *
 from app.agents.coding_agents.Coder import *
 from app.agents.coding_agents.TestExecutor import *
@@ -24,6 +24,9 @@ from experiments.MessageTypesTest import *
 import pandas as pd
 from experiments.coder.Metrics import *
 
+"""
+It executes the function given the tests provided by the dataset
+"""
 async def execute_function(function: str, test:str, entry_point, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\n```"
@@ -39,7 +42,9 @@ async def execute_function(function: str, test:str, entry_point, executor, ctx):
 
     return result, end_time - start_time
 
-
+"""
+It executes the function given the generated tests. It also computes the coverage
+"""
 async def execute_tests(function: str, test:str, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\npip install coverage```"
@@ -55,13 +60,16 @@ async def execute_tests(function: str, test:str, executor, ctx):
 
     return result, end_time - start_time
 
-async def main(config, models, system_prompt, server):
+
+
+async def main(config, models, server):
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
 
     attempt = config['experiment_number']
     llm = config['llm']
 
+    ################################## REGISTERING AGENTS ###############################################
     await Assistant.register(runtime, "assistant", lambda: Assistant(llm=llm['assistant'], model_client=models['assistant']))
     await EntryPoint.register(runtime, "entry_point",
                               lambda: EntryPoint(llm=llm['entry_point'], model_client=models['entry_point']))
@@ -83,6 +91,7 @@ async def main(config, models, system_prompt, server):
                                 lambda: TestExecutor(llm=llm['test_executor'], model_client=models['test_executor'],
                                                      code_executor=executor))
 
+    ############################### IMPORTING DATASET AND CREATING FILES ###################################
     #Importing the dataset
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
@@ -98,21 +107,23 @@ async def main(config, models, system_prompt, server):
     save_yaml(config_file_name, config)
 
     columns = [
-        'task_id', 'generated', 'deployed', 'correctly_executed', 'original_function_correct',
+        'task_id', 'generated', 'deployed', 'correctly_executed', 'debugged', 'original_function_correct',
         'final_function_correct', 'test_correct' , 'prompt', 'signature', 'original_function', 'final_function',
         'CC_original', 'CC_final', 'CC_canonical', 'CoG_final', 'CoG_generated', 'CoG_canonical', 'time_assistant',
         'token_assistant', 'time_entry_point', 'token_entry_point', 'time_coder', 'token_coder', 'time_designer',
         'token_designer', 'time_executor', 'token_executor','time_debugger', 'token_debugger', 'time_deployer',
-        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged'
+        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged', 'canonical_solution', 'deployed_function'
     ]
 
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
     else:
         results_df = pd.DataFrame(columns=columns)
+    print(results_df.empty)
 
     runtime.start()  # Start processing messages in the background.
 
+    ################################# STARTING TESTS ########################################
     # Iterating through each row
     for row in df.itertuples(index=False):
         task_id = row.task_id
@@ -126,103 +137,72 @@ async def main(config, models, system_prompt, server):
         test = row.test
         canonical_solution = row.canonical_solution
         canonical_code = prompt + canonical_solution
-        messages = 1
         tokens = {'assistant': 0.0, 'entry_point': 0.0, 'coder': 0.0, 'test_designer': 0.0, 'test_executor': 0.0,
                         'debugger': 0.0,
                         'faas_deployer': 0.0}
         time = {'assistant': 0.0, 'entry_point': 0.0, 'coder': 0.0, 'test_designer': 0.0, 'test_executor': 0.0,
                       'debugger': 0.0,
-                      'faas_deployer': 0.0}
-        generated = False
-        deployed = False
+                      'faas_deployer': 0.0, 'system': 0.0}
+
         correctly_executed = False
         original_function_correct = False
         final_function_correct = False
         test_correct = False
-        original_function = ""
-        final_function = ""
-        tests = ""
         CC_final = 0
         CoG_final = 0
         CC_original = 0
         CoG_original = 0
         coverage = 0
-        debugging_attempts = 0
-        generated_prompt = ""
-        signature = ""
+        json_created = True
         json_filename = entry_point + ".json"
-        local_path = "../faas_deployer/inputs/" + task_id.split('/')[-1] + "_" + json_filename
-        remote_path = "serverledge/inputs" + "/" + json_filename
+        local_path = "system_results/"+ "experiment_" + str(attempt) + "/inputs/" + task_id.split('/')[-1] + "_" + json_filename
+        remote_path = "serverledge/inputs_experiment_" + str(attempt) + "/" + json_filename
+
+        # Creating directory if it does not exist
+        directory = os.path.dirname(local_path)
+        if directory:
+            os.makedirs(directory, exist_ok=True)
 
         canonical_code = prompt + canonical_solution
         CC_canonical = compute_CC(canonical_code)
         CoG_canonical = compute_CoG(canonical_code)
 
         print_yellow(task_id)
-        response_assistant = await runtime.send_message(TestMessage(prompt), AgentId("assistant", "default"))
-        time['assistant'] = response_assistant.time
-        tokens['assistant'] = response_assistant.tokens
-        if response_assistant.content != "FAIL":
-            generated_prompt = response_assistant.content
-            messages += 1
-            response_entry_point = await runtime.send_message(TestMessage(generated_prompt), AgentId("entry_point", "default"))
-            time['entry_point'] = response_entry_point.time
-            tokens['entry_point'] = response_entry_point.tokens
-            signature = response_entry_point.content
-            messages += 2
-            response_coder = await runtime.send_message(TestCodeMessage(generated_prompt, signature, system_prompt), AgentId("coder", "default"))
-            function_code = extract_markdown_code_blocks(response_coder.content)
-            original_function = function_code[0].code
-            time['coder'] = response_coder.time
-            tokens['coder'] = response_coder.tokens
-            messages += 1
+        # Start the test
+        response = await runtime.send_message(TestSystemMessage(tokens = tokens, time = time, prompt=prompt), AgentId("assistant", "default"))
 
-            print(original_function)
+        if response.generated:
+            CC_original = compute_CC(response.original_func)
+            CoG_original = compute_CoG(response.original_func)
 
-            response_designer = await runtime.send_message(TestCodeMessage(generated_prompt, signature, system_prompt),
-                                                  AgentId("test_designer", "default"))
-            messages += 1
-            time['designer'] = response_designer.time
-            tokens['designer'] = response_designer.tokens
-            tests = response_designer.content
+            if response.deployed:
 
-            print(tests)
-            messages += 1
-            response_debug = await runtime.send_message(
-                TestExecCodeMessage(prompt, signature, original_function, tests, system=True),
-                AgentId("test_executor", "default"))
-            messages += 1
-            generated = response_debug.passed
+                ########################## TESTING IF CAN EXECUTE ON SERVERLEDGE ###########################
+                # Need to save json file containing arguments. Cannot reuse the one from the deployer experiment because
+                # the names of the arguments may be different.
+                param_names = extract_param_names(response.signature, "", True)
+                param_values = extract_param_values(test)
 
-            function_code = extract_markdown_code_blocks(response_coder.content)
-            if function_code:
-                final_function = function_code[0].code
-            else:
-                final_function = response_debug.final_function
-            time['debugger'] = response_debug.time_debugger
-            tokens['debugger'] = response_debug.tokens_debugger
-            time['test_executor'] = response_debug.time
-            tokens['test_executor'] = response_debug.tokens
-            debugging_attempts = response_debug.attempts
-            messages += debugging_attempts
+                try:
+                    sftp = server.open_sftp()
 
-            CC_original = compute_CC(original_function)
-            CoG_original = compute_CoG(original_function)
+                    try:
+                        sftp.stat(remote_path)
+                        continue
+                    except FileNotFoundError:
+                        create_json(param_names, param_values, local_path)
+                        sftp.put(local_path, remote_path)
+                        print("Json uploaded!")
 
-            # If the function is correctly generated then I can compute the CC and CoG and see if it's correct
-            if generated:
+                except Exception as e:
+                    print(f"Error during file transfer: {e}")
+                    json_created = False
+                finally:
+                    if sftp:
+                        sftp.close()
 
-                response_deployer = await runtime.send_message(TestDeployMessage(final_function),
-                                                               AgentId("faas_deployer", "default"))
-                messages += 1
-                tokens['faas_deployer'] = response_deployer.tokens
-                time['faas_deployer'] = response_deployer.time
-
-
-                if response_deployer.result != 'FAIL':
-                    deployed = True
-
-                    command = "serverledge/bin/serverledge-cli invoke -f " + response_deployer.result + " --params_file " + remote_path + " --ret_output"
+                if json_created:
+                    command = "serverledge/bin/serverledge-cli invoke -f " + response.result_deployment + " --params_file " + remote_path + " --ret_output"
                     stdin, stdout, stderr = server.exec_command(command)
 
                     output = stdout.read().decode('utf-8')
@@ -235,59 +215,69 @@ async def main(config, models, system_prompt, server):
                         print("--- Output ---")
                         print(output)
 
-                result, execution_time_generated = await execute_function(final_function, test, entry_point,
-                                                                          executor, CancellationToken())
-                if "AssertionError" in result.output:
-                    print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
-                    final_function_correct = False
-                else:
-                    final_function_correct = True
 
-                CC_final = compute_CC(final_function)
-                CoG_final = compute_CoG(final_function)
-
-
-            # Checking if the original function is correct
-            result, execution_time_generated = await execute_function(original_function, test, entry_point,
+        ######################## TESTING IF FINAL FUNCTION IS CORRECT ######################################
+            result, execution_time_generated = await execute_function(response.final_func, test, entry_point,
                                                                       executor, CancellationToken())
             if "AssertionError" in result.output:
-                print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
+                final_function_correct = False
+            else:
+                final_function_correct = True
+
+            CC_final = compute_CC(response.final_func)
+            CoG_final = compute_CoG(response.final_func)
+
+        ######################## TESTING IF ORIGINAL FUNCTION IS CORRECT ######################################
+
+            result, execution_time_generated = await execute_function(response.original_func, test, entry_point,
+                                                                      executor, CancellationToken())
+            if "AssertionError" in result.output:
                 original_function_correct = False
             else:
                 original_function_correct = True
 
-
-            # Checking if the generated tests are correct
-            test_code = extract_markdown_code_blocks(response_designer.content)
-            if test_code:
-                tests = test_code[0].code
-                result, execution_time_generated = await execute_tests(canonical_code, tests, executor,
-                                                                          response_designer.ctx)
-                if "AssertionError" in result.output:
-                    test_correct = False
-                    coverage = 0
-                else:
-                    test_correct = True
-                    match = re.search(r'(\d+)\s*%', result.output)
-                    if match:
-                        coverage = int(match.group(1))
-                    else:
-                        coverage = 0
+        ######################## TESTING IF GENERATED TESTS ARE CORRECT ######################################
+            function_name_code = extract_function_name(canonical_code)
+            function_name_test = extract_function_name(response.signature)
+            if function_name_code != function_name_test:
+                new_canonical_code = canonical_code.replace(function_name_code, function_name_test)
             else:
+                new_canonical_code = canonical_code
+            result, execution_time_generated = await execute_tests(new_canonical_code, response.tests_str, executor,
+                                                                   CancellationToken())
+            if "AssertionError" in result.output or "Error" in result.output:
+                print_blue(str(result.output))
                 test_correct = False
+                coverage = 0
+            else:
+                test_correct = True
+                match = re.search(r'(\d+)\s*%', result.output)
+                if match:
+                    coverage = int(match.group(1))
+                else:
+                    coverage = 0
+
+        time = response.time
+        tokens = response.tokens
+
+        if response.attempts == 0:
+            debugged = False
+        else:
+            debugged = True
 
         new_data = {
             'task_id': [str(task_id)],
-            'generated': [generated],
-            'deployed': [deployed],
+            'generated': [response.generated],
+            'deployed': [response.deployed],
             'correctly_executed': [correctly_executed],
+            'debugged': [debugged],
             'original_function_correct': [original_function_correct],
             'final_function_correct': [final_function_correct],
             'test_correct': [test_correct],
-            'prompt': [generated_prompt],
-            'signature': [signature],
-            'original_function': [original_function],
-            'final_function': [final_function],
+            'prompt': [response.prompt],
+            'signature': [response.signature],
+            'original_function': [response.original_func],
+            'final_function': [response.final_func],
             'CC_original': [CC_original],
             'CC_final': [CC_final],
             'CC_canonical': [CC_canonical],
@@ -301,6 +291,7 @@ async def main(config, models, system_prompt, server):
             'time_executor': [time['test_executor']],
             'time_debugger': [time['debugger']],
             'time_deployer': [time['faas_deployer']],
+            'time_system': [time['system']],
             'token_assistant': [tokens['assistant']],
             'token_entry_point': [tokens['entry_point']],
             'token_coder': [tokens['coder']],
@@ -308,10 +299,12 @@ async def main(config, models, system_prompt, server):
             'token_executor': [tokens['test_executor']],
             'token_debugger': [tokens['debugger']],
             'token_deployer': [tokens['faas_deployer']],
-            'tests': [tests],
+            'tests': [response.tests_str],
             'coverage': [coverage],
-            'debugging_attempts': [debugging_attempts],
-            'number_messages_exchanged': [messages]
+            'debugging_attempts': [response.attempts],
+            'number_messages_exchanged': [response.messages],
+            'canonical_solution': [canonical_code],
+            'deployed_function': [response.deployed_function]
         }
 
         new_row_df = pd.DataFrame(new_data)
@@ -325,7 +318,7 @@ async def main(config, models, system_prompt, server):
 
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
-    for model in models:
+    for model in models.values():
         model.close()
 
 
@@ -344,12 +337,7 @@ if __name__ == "__main__":
     SERVER_USERNAME = os.environ.get("SERVERLEDGE_USERNAME")
     SERVER_PASSWORD = os.environ.get("SERVERLEDGE_PASS")
 
-    if llm['coder_prompt'] == "Yes":
-        prompt = True
-    else:
-        prompt = False
     models = {}
-
 
     for llm_name in llm.keys():
         system_component = llm[llm_name]
@@ -389,6 +377,6 @@ if __name__ == "__main__":
                    password=SERVER_PASSWORD)
 
     try:
-        asyncio.run(main(config, models, prompt, client))
+        asyncio.run(main(config, models, client))
     finally:
         logging.shutdown()

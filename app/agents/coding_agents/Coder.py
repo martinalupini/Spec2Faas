@@ -65,9 +65,13 @@ class Coder(RoutedAgent):
         # Prepare input to the chat completion model.
         prompt = "Function specification: " + message.specification + "\nFunction signature: " + message.function_signature
         user_message = UserMessage(content=prompt, source="user")
+        if message.prompt:
+            final_prompt = self._system_messages + [user_message]
+        else:
+            final_prompt = prompt
         start_time = time.perf_counter()
         response = await self._model_client.create(
-            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+            final_prompt, cancellation_token=ctx.cancellation_token
         )
         end_time = time.perf_counter()
         execution_time = end_time - start_time

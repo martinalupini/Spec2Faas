@@ -1,7 +1,7 @@
 experiment_number: 0
 llm:
   assistant: gemini-2.0-flash
-  coder: deepseek-coder-v2
+  coder: qwen3
   coder_prompt: 'Yes'
   debugger: gemini-2.5-pro
   entry_point: gemini-2.0-flash
