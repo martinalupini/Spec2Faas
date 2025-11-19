@@ -17,7 +17,10 @@ from experiments.MessageTypesTest import *
 import pandas as pd
 
 
-
+"""
+This function is different from the ones in the other evaluators. That's because it 
+needs to download the package 'coverage' to calculate the coverage.
+"""
 async def execute_function(function: str, test:str, executor, ctx):
     # Installing dependencies in container
     dependencies = "```sh\npip install numpy\npip install coverage```"
@@ -89,12 +92,15 @@ async def main(llm, client, system_prompt):
                 coverage = 0
             else:
                 passed = True
+                # I need to extract the coverage value from the output string
                 match = re.search(r'(\d+)\s*%', result.output)
                 if match:
                     coverage = int(match.group(1))
                 else:
+                    # Cover the cases where the output is nor an AssertionError neither a coverage report
                     coverage = 0
         else:
+            # In the case no code can be extracted from the TestDesigner response we consider it a failure
             passed = False
 
 
