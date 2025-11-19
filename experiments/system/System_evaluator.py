@@ -119,7 +119,6 @@ async def main(config, models, server):
         results_df = pd.read_parquet(file_name)
     else:
         results_df = pd.DataFrame(columns=columns)
-    print(results_df.empty)
 
     runtime.start()  # Start processing messages in the background.
 
@@ -214,7 +213,6 @@ async def main(config, models, server):
                     if output is not None:
                         print("--- Output ---")
                         print(output)
-
 
         ######################## TESTING IF FINAL FUNCTION IS CORRECT ######################################
             result, execution_time_generated = await execute_function(response.final_func, test, entry_point,
@@ -319,7 +317,7 @@ async def main(config, models, server):
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
     for model in models.values():
-        model.close()
+        await model.close()
 
 
 
