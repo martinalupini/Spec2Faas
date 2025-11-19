@@ -47,6 +47,7 @@ def write_csv():
     num_not_generated = 164 - num_generated
     num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
     num_generated_and_not_debugged = num_generated - num_generated_and_debugged
+    num_debugged_not_generated = df[~df['generated'] & df['debugged']].shape[0]
 
 
     num_generated_debugged_deployed = df[df['generated'] & df['debugged'] & df['deployed']].shape[0]
@@ -73,6 +74,7 @@ def write_csv():
         'num_generated_not_debugged_deployed': num_generated_not_debugged_deployed,
         'num_generated_not_debugged_not_deployed': num_generated_not_debugged_not_deployed,
         'num_generated_debugged_not_deployed': num_generated_debugged_not_deployed,
+        'num_debugged_not_generated': num_debugged_not_generated,
     }
 
     # Non so perchè in questo file serviva index altrimenti ho errore
@@ -207,14 +209,15 @@ def create_detailed_sankey_diagram(experiment):
             thickness=20,
             line=dict(color="black", width=0.5),
             label=[
-                "Generated",  # 0
+                "Total",  # 0
                 "Debugged",  # 1
-                "Not Debugged",  # 2
-                "Deployed",  # 3
-                "Not Deployed",  # 4
-                "Correctly Executed",  # 5
-                "Execution Failed"  # 6
-                "Not Generated" # 7
+                "Corrected",  # 2
+                "Not Corrected",  # 3
+                "Not Debugged",  # 4
+                "Deployed",  # 5
+                "Not Deployed"  # 6
+                "Correctly Executed" # 7
+                "Execution Failed"
             ],
             color=[
                 "grey",  # Generated
@@ -223,37 +226,47 @@ def create_detailed_sankey_diagram(experiment):
                 "lightblue",  # Deployed
                 "red",  # Not Deployed
                 "green",  # Correctly Executed
-                "darkred"  # Execution Failed
+                "darkred",  # Execution Failed
+                "black"
             ]
         )
 
         # Links between nodes
         links = dict(
             source=[
-                0,  # Generated -> Debugged
-                0,  # Generated -> Not Debugged
-                1,  # Debugged -> Deployed
-                1,  # Debugged -> Not Deployed
-                2,  # Not Debugged -> Deployed
-                2,  # Not Debugged -> Not Deployed
-                3,  # Deployed -> Correctly Executed
-                3,  # Deployed -> Execution Failed
+                0,  # Total -> Debugged
+                0,  # Total -> Not Debugged
+                1,  # Debugged -> Corrected
+                1,  # Debugged -> Not Corrected
+                2,  # Corrected -> Deployed
+                2,  # Corrected -> Not Deployed
+                3,  # Not Corrected -> Not Deployed
+                4,  # Not Debugged -> Deployed
+                4,  # Not Debugged -> Not Deployed
+                5,  # Deployed -> Correctly Executed
+                5   # Deployed -> Execution Failed
             ],
             target=[
                 1,  # Debugged
-                2,  # Not Debugged
-                3,  # Deployed
-                4,  # Not Deployed
-                3,  # Deployed
-                4,  # Not Deployed
-                5,  # Correctly Executed
-                6,  # Execution Failed
+                4,  # Not Debugged
+                2,  # Corrected
+                3,  # Not Corrected
+                5,  # Deployed
+                6,  # Not Deployed
+                6,  # Not Deployed (Corretto da 5)
+                5,  # Deployed (Corretto da 6)
+                6,  # Not Deployed (Corretto da 7)
+                7,  # Correctly Executed (Corretto da 8)
+                8  # Execution Failed (Aggiunto)
             ],
             value=[
+                row.num_debugged,
+                164 - row.num_debugged,
                 row.num_generated_and_debugged,
-                row.num_generated_and_not_debugged,
+                row.num_debugged - row.num_generated_and_debugged,
                 row.num_generated_debugged_deployed,
                 row.num_generated_debugged_not_deployed,
+                row.num_debugged - row.num_generated_and_debugged,                row.num_generated_debugged_not_deployed,
                 row.num_generated_not_debugged_deployed,
                 row.num_generated_not_debugged_not_deployed,
                 row.num_correctly_executed,
