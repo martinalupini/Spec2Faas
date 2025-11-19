@@ -8,7 +8,7 @@ from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
-
+from experiments.coder.Metrics import *
 from app.agents.coding_agents.Coder import *
 from app.agents.coding_agents.Debugger import *
 from app.agents.coding_agents.TestExecutor import *
@@ -73,13 +73,14 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
     columns = [
         'task_id', 'passed', 'passed_after_debugging','debugging_tokens', 'total_tokens',
         'generation_time', 'debugging_time', 'attempts',
-        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'Original_function', 'Debugged_function'
+        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'Original_function', 'Debugged_function', 'CC_debugged', 'CoG_debugged'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
     else:
         results_df = pd.DataFrame(columns=columns)
 
+    # Retrieving data from the coder file
     coder_path = "../coder/coder_results/" + coder + ".parquet"
     coder_df = pd.read_parquet(coder_path)
 
@@ -88,15 +89,14 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
     # Iterating through each row
     for row, row_coder_df in zip(df.itertuples(index=False), coder_df.itertuples(index=False)):
         task_id = row.task_id
-        entry_point = row.entry_point
-        prompt = row.prompt
-        test = modify_tests(row.test)
-        canonical_solution = row.canonical_solution
-        debugged_function = ""
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
             continue
+
+        entry_point = row.entry_point
+        prompt = row.prompt
+        test = modify_tests(row.test)
 
         print_yellow(task_id)
 
@@ -110,7 +110,10 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
         CoG_canonical = row_coder_df.CoG_canonical
 
 
-        # TODO: aggiungere una colonna con la CC e la CoG della funzione corretta
+        CC_debugged = compute_CC(response_debug.final_function)
+        CoG_debugged = compute_CoG(response_debug.final_function)
+
+
         new_data = {
             'task_id': [str(task_id)],
             'passed': [row_coder_df.passed],
@@ -125,7 +128,9 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
             'CoG_generation': [CoG_generated],
             'CoG_canonical': [CoG_canonical],
             'Original_function': [function_code_string],
-            'Debugged_function': [response_debug.final_function]
+            'Debugged_function': [response_debug.final_function],
+            'CC_debugged': [CC_debugged],
+            'CoG_debugged': [CoG_debugged]
         }
 
         new_row_df = pd.DataFrame(new_data)
@@ -140,8 +145,6 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()
-
-
 
 
 
@@ -173,7 +176,17 @@ if __name__ == "__main__":
             },
         )
     else:
-        model_client = None
+        model_client = OllamaChatCompletionClient(
+            model=coder,
+            host="160.80.97.151:11434",
+            model_info={
+                "family": ModelFamily.UNKNOWN,
+                "function_calling": True,
+                "json_output": True,
+                "vision": False,
+                "structured_output": True,
+            }
+        )
 
     if debugger == "gemini-2.5-pro" or debugger == "gemini-2.0-flash":
         model_client_debugger = OpenAIChatCompletionClient(

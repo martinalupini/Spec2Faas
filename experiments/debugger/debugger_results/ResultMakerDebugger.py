@@ -35,6 +35,8 @@ def write_csv():
     avg_generation_time = df['generation_time'].mean()
     avg_debugging_time = df['debugging_time'].mean()
     avg_attempts_debugging = df['attempts'].mean()
+    avg_CC_debugged = df['CC_debugged'].mean()
+    avg_CoG_debugged = df['CoG_debugged'].mean()
 
 
     print(f"Passed after generation: {passed_after_generation:.4f}")
@@ -46,6 +48,8 @@ def write_csv():
     print(f"\nPassed after debugging: {passed_after_debugging:.4f}")
     print(f"\nNumber passed after debugging: {number_passed_after_debugging:.4f}")
     print(f"\nAverage attempts debugging: {avg_attempts_debugging:.4f}")
+    print(f"\nAverage CC_debugged: {avg_CC_debugged}")
+    print(f"\nAverage CoG_debugged: {avg_CoG_debugged}")
 
     results_data = {
         'coder': [coder],
@@ -60,6 +64,8 @@ def write_csv():
         'passed_after_debugging': [passed_after_debugging],
         'number_passed_after_debugging': [number_passed_after_debugging],
         'avg_attempts_debugging': [avg_attempts_debugging],
+        'avg_CC_debugged': [avg_CC_debugged],
+        'avg_CoG_debugged': [avg_CoG_debugged],
     }
 
     results_df = pd.DataFrame(results_data)
@@ -137,6 +143,64 @@ def make_plot():
     plt.show()
 
 
+def make_plot_2():
+    df_csv = pd.read_csv('../results.csv')
+    df_csv = df_csv[df_csv['coder'] == coder].copy()
+    models = df_csv['debugger'].tolist()
+    metrics = df_csv.columns.drop(['coder', 'debugger','passed_after_generation', 'number_passed_after_generation', 'avg_generation_time (s)', 'avg_total_tokens', 'average_total_time (s)', 'passed_after_debugging']).tolist()
+    df_csv_no_canonical = df_csv[df_csv['debugger'] != "no debugger"].copy()
+    models_no_canonical = df_csv_no_canonical['debugger'].tolist()
 
-#write_csv()
-make_plot()
+
+    n_metrics = len(metrics)
+    cols = min(n_metrics, 3)
+    rows = math.ceil(n_metrics / cols)
+
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(6 * cols, 5 * rows))
+    axes = np.array(axes).reshape(-1)
+
+    for ax in axes.flatten()[len(metrics):]:
+        ax.set_visible(False)
+
+    fig.suptitle('', fontsize=24, weight='bold')
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    color_map = {model: color for model, color in zip(models, colors)}
+
+    for ax, metric in zip(axes.flatten(), metrics):
+
+        if metric == 'average_debugging_time (s)' or metric == 'avg_attempts_debugging' or metric == 'avg_debugging_tokens':
+            df_value = df_csv_no_canonical.copy()
+            models_plot = models_no_canonical
+        else:
+            df_value = df_csv.copy()
+            models_plot = models
+
+
+        valori = df_value[metric]
+
+        plot_colors = [color_map[model] for model in models_plot]
+
+        bars = ax.bar(models_plot, valori, color=plot_colors)
+
+        ax.set_title(metric, fontsize=12, weight='bold')
+        ax.set_ylabel(metric, fontsize=10)
+        ax.tick_params(axis='x', rotation=45, labelsize=8)
+        ax.yaxis.grid(True, linestyle='--', alpha=0.6)
+
+        for bar in bars:
+            yval = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width() / 2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom',
+                    fontsize=8)
+
+    plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
+
+    plt.savefig('../comparison_2_'+ coder+'.png', dpi=300)
+
+    plt.show()
+
+
+
+write_csv()
+#make_plot()
+#make_plot_2()
