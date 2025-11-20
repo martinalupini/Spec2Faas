@@ -4,7 +4,73 @@ import matplotlib.pyplot as plt
 import math
 
 
-def make_plot():
+# TODO: Correct the names at the end
+def make_vertical_bar_plot():
+    df_csv = pd.read_csv('../results.csv')
+
+    canonical_df = df_csv[df_csv['model'] == 'canonical']
+
+    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt', 'canonical']
+    df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
+
+
+    metrics = df_csv.columns.drop(['model']).tolist()
+    models = df_csv['model'].tolist()
+
+    n_metrics = len(metrics)
+    cols = min(n_metrics, 3)
+    rows = math.ceil(n_metrics / cols)
+
+    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(6 * cols, 5 * rows))
+    axes = np.array(axes).reshape(-1)
+
+    for ax in axes.flatten()[len(metrics):]:
+        ax.set_visible(False)
+
+    fig.suptitle('', fontsize=24, weight='bold')
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    color_map = {model: color for model, color in zip(models, colors)}
+
+    for ax, metric in zip(axes.flatten(), metrics):
+        if metric == 'pass@1' or metric == 'avg_generation_time (s)' or metric == 'avg_tokens':
+            is_canonical = False
+        else:
+            is_canonical = True
+            canonical_value = canonical_df[metric].iloc[0]
+
+        valori = df_csv[metric]
+
+        plot_colors = [color_map[model] for model in models]
+
+        bars = ax.bar(models, valori, color=plot_colors, width=0.6)
+
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        if is_canonical:
+            ax.axhline(y=canonical_value, color='red', linestyle='--', linewidth=2,
+                       label=f'Value of canonical solution ({canonical_value})')
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), fancybox=True, shadow=True, ncol=1)
+
+        ax.set_title(metric, fontsize=12, weight='bold')
+        ax.set_ylabel(metric, fontsize=10)
+        ax.tick_params(axis='x', rotation=45, labelsize=8)
+        ax.yaxis.grid(True, linestyle='--', alpha=0.6)
+
+        for bar in bars:
+            yval = bar.get_height()
+            ax.text(bar.get_x() + bar.get_width()/2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom', fontsize=8)
+
+    plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
+
+    plt.savefig('../comparison.png', dpi=300)
+
+    plt.show()
+
+
+
+def make_horizontal_bar_plot():
     df_csv = pd.read_csv('../results.csv')
     canonical_df = df_csv[df_csv['model'] == 'canonical']
     avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt', 'canonical']
