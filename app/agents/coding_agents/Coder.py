@@ -68,7 +68,7 @@ class Coder(RoutedAgent):
         if message.prompt:
             final_prompt = self._system_messages + [user_message]
         else:
-            final_prompt = prompt
+            final_prompt = [user_message]
         start_time = time.perf_counter()
         response = await self._model_client.create(
             final_prompt, cancellation_token=ctx.cancellation_token

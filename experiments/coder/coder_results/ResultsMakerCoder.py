@@ -140,5 +140,5 @@ def make_plot():
     plt.show()
 
 
-#write_csv()
-make_plot()
+write_csv()
+#make_plot()
