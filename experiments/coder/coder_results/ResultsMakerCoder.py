@@ -123,7 +123,10 @@ def make_plot():
 
         plot_colors = [color_map[model] for model in models]
 
-        bars = ax.bar(models, valori, color=plot_colors)
+        bars = ax.bar(models, valori, color=plot_colors, width=0.6)
+
+        for spine in ax.spines.values():
+            spine.set_visible(False)
 
         if is_canonical:
             ax.axhline(y=canonical_value, color='red', linestyle='--', linewidth=2,
