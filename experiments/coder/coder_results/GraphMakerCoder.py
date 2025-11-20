@@ -1,35 +1,7 @@
 import numpy as np
 import pandas as pd
-import os
-from app.Utils import *
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import math
-
-llm = get_config_data("../../config_test.yaml")
-coder = llm['coder']
-if llm['coder_prompt'] == "Yes":
-    prompt = True
-else:
-    prompt = False
-
-if not prompt:
-    coder = coder + "_no_prompt"
-
-file_path = coder + ".parquet"
-csv_file = "../results.csv"
-
-try:
-    df = pd.read_parquet(file_path)
-
-    #print(df.head(10))
-
-    #print(df.info())
-
-except FileNotFoundError:
-    print(f"Errore: File non trovato a questo percorso: {file_path}")
-except Exception as e:
-    print(f"Si è verificato un errore durante la lettura del file: {e}")
 
 
 def make_plot():
@@ -92,4 +64,95 @@ def make_plot():
 
 
 
-make_plot()
+def make_radar_plot():
+    df_csv = pd.read_csv('../results.csv')
+    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt',
+                    'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt', 'canonical']
+    df_csv = df_csv[~df_csv['model'].isin(avoid_models)].reset_index(drop=True)
+
+    models = df_csv['model'].tolist()
+
+    metrics = [
+        'pass@1',
+        'avg_generation_time (s)',
+        'avg_tokens',
+        'avg_execution_time (s)',
+        'avg_cc_generation',
+        'avg_cog_generation'
+    ]
+
+    name_metrics = [
+        'pass@1',
+        'avgerage\ngeneration\ntime (s)',
+        'avgerage\ntokens',
+        'avgerage\nexecution\ntime (s)',
+        'avgerage\nCC generation',
+        'avgerage\nCoG generation'
+    ]
+
+    df_filtered = df_csv[['model'] + metrics]
+
+    # Data has to be normalized because each metric has it own scale
+    df_normalized = df_filtered.drop('model', axis=1)
+    lower_is_better = ['avg_generation_time (s)', 'avg_execution_time (s)', 'avg_tokens', 'avg_cc_generation',
+                       'avg_cog_generation']
+    new_min, new_max = 0.1, 1.0
+
+    for metric in metrics:
+        min_val, max_val = df_normalized[metric].min(), df_normalized[metric].max()
+        if max_val - min_val == 0:
+            df_normalized[metric] = new_max
+            continue
+
+        if metric in lower_is_better:
+            df_normalized[metric] = new_min + ((max_val - df_normalized[metric]) / (max_val - min_val)) * (
+                        new_max - new_min)
+        else:
+            df_normalized[metric] = new_min + ((df_normalized[metric] - min_val) / (max_val - min_val)) * (
+                        new_max - new_min)
+
+    num_vars = len(metrics)
+    angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
+    angles += angles[:1]
+
+    fig, ax = plt.subplots(figsize=(14, 14), subplot_kw=dict(polar=True))
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    color_map = {model: color for model, color in zip(models, colors)}
+
+    for i, model in enumerate(models):
+        values = df_normalized.iloc[i].values.flatten().tolist()
+        values += values[:1]
+        color = color_map[model]
+
+        ax.plot(angles, values, color=color, linewidth=2, linestyle='solid', label=model, marker='o')
+        ax.fill(angles, values, color=color, alpha=0.2)
+
+
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels(name_metrics, size=14)
+    ax.tick_params(axis='x', pad=30)
+
+    yticks = np.arange(new_min, new_max + 0.1, 0.1)
+    ax.set_yticks(yticks)
+
+    ax.set_yticklabels([f'{tick:.1f}' for tick in yticks], color="grey", size=10)
+
+    ax.set_rlabel_position(30)
+    ax.set_ylim(0, 1.1)
+
+    plt.title('Comparing Performances', size=26, y=1.1)
+
+    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=14)
+
+    plt.tight_layout(pad=1.5)
+
+    plt.savefig('../radar_comparison_final.png', dpi=300)
+    plt.show()
+
+
+
+
+#make_plot()
+make_radar_plot()
+
