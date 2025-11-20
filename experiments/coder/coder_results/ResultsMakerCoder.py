@@ -88,13 +88,14 @@ def write_csv():
 def make_plot():
     df_csv = pd.read_csv('../results.csv')
 
-    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt']
+    canonical_df = df_csv[df_csv['model'] == 'canonical']
+
+    avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt', 'canonical']
     df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
 
-    models = df_csv['model'].tolist()
+
     metrics = df_csv.columns.drop(['model']).tolist()
-    df_csv_no_canonical = df_csv[df_csv['model'] != "canonical"].copy()
-    models_no_canonical = df_csv_no_canonical['model'].tolist()
+    models = df_csv['model'].tolist()
 
     n_metrics = len(metrics)
     cols = min(n_metrics, 3)
@@ -113,16 +114,21 @@ def make_plot():
 
     for ax, metric in zip(axes.flatten(), metrics):
         if metric == 'pass@1' or metric == 'avg_generation_time (s)' or metric == 'avg_tokens':
-            df_value = df_csv_no_canonical.copy()
-            models_plot = models_no_canonical
+            is_canonical = False
         else:
-            df_value = df_csv.copy()
-            models_plot = models
-        valori = df_value[metric]
+            is_canonical = True
+            canonical_value = canonical_df[metric].iloc[0]
 
-        plot_colors = [color_map[model] for model in models_plot]
+        valori = df_csv[metric]
 
-        bars = ax.bar(models_plot, valori, color=plot_colors)
+        plot_colors = [color_map[model] for model in models]
+
+        bars = ax.bar(models, valori, color=plot_colors)
+
+        if is_canonical:
+            ax.axhline(y=canonical_value, color='red', linestyle='--', linewidth=2,
+                       label=f'Value of canonical solution ({canonical_value})')
+            ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.3), fancybox=True, shadow=True, ncol=1)
 
         ax.set_title(metric, fontsize=12, weight='bold')
         ax.set_ylabel(metric, fontsize=10)
@@ -140,5 +146,5 @@ def make_plot():
     plt.show()
 
 
-write_csv()
-#make_plot()
+#write_csv()
+make_plot()
