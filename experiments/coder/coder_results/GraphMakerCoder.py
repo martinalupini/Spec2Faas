@@ -219,6 +219,6 @@ def make_radar_plot():
 
 
 
-#make_plot()
-make_radar_plot()
+make_vertical_bar_plot()
+#make_radar_plot()
 
