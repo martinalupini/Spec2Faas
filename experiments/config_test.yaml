@@ -17,5 +17,7 @@ llm:
   faas_deployer: "gemini-2.0-flash"
   #faas_deployer: "qwen3"
   #faas_deployer: "qwen2.5-coder"
+  #faas_deployer: "gemini-2.5-pro"
+  #faas_deployer: "qwen2.5-coder:32b"
 
 experiment_number: 0

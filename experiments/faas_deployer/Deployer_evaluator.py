@@ -3,6 +3,7 @@ import asyncio
 import sys
 import tempfile
 import time
+import codecs
 import paramiko
 from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_core.models import ModelFamily
@@ -38,7 +39,7 @@ async def main(llm, client, server):
     file_name = "deployer_results/"+ llm+".parquet"
     columns = [
         'task_id', 'tokens',
-        'deployment time', 'deployed', 'correctly executed'
+        'deployment time', 'deployed', 'correctly executed', 'invocation_attempts',
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
@@ -75,7 +76,6 @@ async def main(llm, client, server):
 
                 try:
                     sftp.stat(remote_path)
-                    continue
                 except FileNotFoundError:
                     create_json(param_names, param_values, local_path)
                     sftp.put(local_path, remote_path)
@@ -122,7 +122,8 @@ async def main(llm, client, server):
             'tokens': [response.tokens],
             'deployment time': [response.time],
             'deployed': [deployed],
-            'correctly executed': [correctly_executed]
+            'correctly executed': [correctly_executed],
+            'invocation attempts': [response.invocation_attempts]
         }
 
         new_row_df = pd.DataFrame(new_data)

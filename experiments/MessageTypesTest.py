@@ -25,6 +25,7 @@ class TestDeployResult:
     tokens: float
     ctx: CancellationToken
     deployed_function: str = ""
+    invocation_attempts: int = 0
 
 @dataclass
 class TestExecCodeMessage:

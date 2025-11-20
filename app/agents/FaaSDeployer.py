@@ -40,9 +40,11 @@ def _pystring_to_tarBase64(py_code, filename) -> str:
 async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: int, CPUDemand: int) -> dict:
     #print_yellow("\nThis is the name:\n" + name)
     #print_yellow("This is the code:\n" + code)
+    new_code = code.lstrip('\n')
 
     filename = name +".py"
-    tar_b64 = _pystring_to_tarBase64(code, filename=filename)
+    print(new_code)
+    tar_b64 = _pystring_to_tarBase64(new_code, filename=filename)
     handler = name + ".handler"
 
     payload = {
@@ -202,6 +204,7 @@ class FaasDeployer(RoutedAgent):
 
         start_time = time.perf_counter()
         tokens = 0
+        invokation_attempts = 0
         while True:
             # Run the chat completion with the tools.
             create_result = await self._model_client.create(
@@ -224,7 +227,7 @@ class FaasDeployer(RoutedAgent):
                     end_time = time.perf_counter()
                     print("Failed to invoke tool.")
                     return TestDeployResult(result="FAIL", time=end_time - start_time, tokens=tokens,
-                                        ctx=ctx.cancellation_token)
+                                        ctx=ctx.cancellation_token, invocation_attempts=invokation_attempts)
             else:
 
                 # If there are no tool calls, return the result.
@@ -238,7 +241,7 @@ class FaasDeployer(RoutedAgent):
                         data = ast.literal_eval(r.content)
                         # To extract the first value in the string (the name of the handler)
                         final_response = next(iter(data.values()))
-                    return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token, deployed_function=self._full_function)
+                    return TestDeployResult(result=final_response, time=end_time-start_time, tokens=tokens, ctx=ctx.cancellation_token, deployed_function=self._full_function, invocation_attempts=invokation_attempts)
                 assert isinstance(create_result.content, list) and all(
                     isinstance(call, FunctionCall) for call in create_result.content
                 )
@@ -255,6 +258,7 @@ class FaasDeployer(RoutedAgent):
             results = await asyncio.gather(
                 *[self._execute_tool_call(call, ctx.cancellation_token) for call in content]
             )
+            invokation_attempts += 1
 
             r = results[0]
 
