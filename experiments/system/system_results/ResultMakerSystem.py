@@ -2,6 +2,9 @@ import numpy as np
 import pandas as pd
 import os
 import plotly.graph_objects as go
+import matplotlib.colors as mcolors
+from sympy.physics.units import length
+
 from app.Utils import *
 from experiments.faas_deployer.Utils import *
 import matplotlib.pyplot as plt
@@ -205,8 +208,8 @@ def create_detailed_sankey_diagram(experiment):
 
         # Nodes
         nodes = dict(
-            pad=25,
-            thickness=20,
+            pad=100,
+            thickness=18,
             line=dict(color="black", width=0.5),
             label=[
                 "Total",  # 0
@@ -215,25 +218,28 @@ def create_detailed_sankey_diagram(experiment):
                 "Not Corrected",  # 3
                 "Not Debugged",  # 4
                 "Deployed",  # 5
-                "Not Deployed"  # 6
-                "Correctly Executed" # 7
-                "Execution Failed"
+                "Not Deployed",  # 6
+                "Correctly Executed", # 7
+                "Execution Failed" # 8
             ],
             color=[
-                "grey",  # Generated
+                "grey",  # Total
                 "blue",  # Debugged
-                "orange",  # Not Debugged
-                "lightblue",  # Deployed
+                "lightblue", #Corrected
+                "orange",  # Not Corrected
+                "magenta",  # Not Debugged
+                "purple", #Deployed
                 "red",  # Not Deployed
                 "green",  # Correctly Executed
-                "darkred",  # Execution Failed
-                "black"
-            ]
+                "darkred"  # Execution Failed
+            ],
+            x=[0.01, 0.3, 0.5, 0.5, 0.3, 0.7, 0.7, 0.99, 0.99],
+            #y=[0.5, 0.8, 0.7, 0.95, 0.2, 0.3, 0.85, 0.2, 0.8],
+            y=[0.5, 0.75, 0.7, 0.93, 0.3, 0.35, 0.93, 0.3, 0.8],
+            align="left"
         )
 
-        # Links between nodes
-        links = dict(
-            source=[
+        source_nodes = [
                 0,  # Total -> Debugged
                 0,  # Total -> Not Debugged
                 1,  # Debugged -> Corrected
@@ -245,7 +251,20 @@ def create_detailed_sankey_diagram(experiment):
                 4,  # Not Debugged -> Not Deployed
                 5,  # Deployed -> Correctly Executed
                 5   # Deployed -> Execution Failed
-            ],
+            ]
+
+        alpha = 0.4
+
+        link_colors = []
+        for src_index in source_nodes:
+            color_name = nodes['color'][src_index]
+            r, g, b, _ = mcolors.to_rgba(color_name)
+            color_string = f'rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, {alpha})'
+            link_colors.append(color_string)
+
+        # Links between nodes
+        links = dict(
+            source=source_nodes,
             target=[
                 1,  # Debugged
                 4,  # Not Debugged
@@ -253,11 +272,11 @@ def create_detailed_sankey_diagram(experiment):
                 3,  # Not Corrected
                 5,  # Deployed
                 6,  # Not Deployed
-                6,  # Not Deployed (Corretto da 5)
-                5,  # Deployed (Corretto da 6)
-                6,  # Not Deployed (Corretto da 7)
-                7,  # Correctly Executed (Corretto da 8)
-                8  # Execution Failed (Aggiunto)
+                6,  # Not Deployed
+                5,  # Deployed
+                6,  # Not Deployed
+                7,  # Correctly Executed
+                8  # Execution Failed
             ],
             value=[
                 row.num_debugged,
@@ -271,21 +290,25 @@ def create_detailed_sankey_diagram(experiment):
                 row.num_generated_not_debugged_not_deployed,
                 row.num_correctly_executed,
                 execution_loss
-            ]
+            ],
+            color=link_colors
         )
 
-        fig = go.Figure(data=[go.Sankey(node=nodes, link=links)])
+        fig = go.Figure(data=[go.Sankey(node=nodes, link=links, arrangement='freeform')])
 
         fig.update_layout(
-            title_text=f" (Experiment {experiment} Flow Diagram)",
-            font_size=14
+            title_text=f"Flow Diagram Experiment {experiment}",
+            font=dict(
+                size=20,  # Mantiene la dimensione del font che abbiamo impostato prima
+                color="black"  # Imposta il colore del testo a nero
+            )
         )
 
         fig.show()
 
         try:
-            output_path = os.path.join(dir_name, 'detailed_sankey_flow.png')
-            fig.write_image(output_path, width=1200, height=800, scale=2)
+            output_path = os.path.join(dir_name, 'detailed_sankey_flow.svg')
+            fig.write_image(output_path, width=2000, height=800, scale=2)
             print(f"Diagram saved in {output_path}")
         except Exception as e:
             print(f"Errore in saving the diagram: {e}")
