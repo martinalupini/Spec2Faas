@@ -54,7 +54,7 @@ async def main(llm, client, system_prompt):
     columns = [
         'task_id', 'passed', 'generation_time', 'tokens',
         'execution_time', 'execution_time_canonical',
-        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'function'
+        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'function', 'error'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
@@ -66,14 +66,16 @@ async def main(llm, client, system_prompt):
     # Iterating through each row
     for row in df.itertuples(index=False):
         task_id = row.task_id
-        entry_point = row.entry_point
-        prompt = row.prompt
-        test = row.test
-        canonical_solution = row.canonical_solution
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
             continue
+
+        entry_point = row.entry_point
+        prompt = row.prompt
+        test = row.test
+        canonical_solution = row.canonical_solution
+        error = ""
 
         print_yellow(task_id)
         response= await runtime.send_message(TestCodeMessage(prompt, entry_point, system_prompt), AgentId("coder", "default"))
@@ -87,9 +89,10 @@ async def main(llm, client, system_prompt):
             print(response.content)
             function_code_string = response.content
         result, execution_time_generated = await execute_function(function_code_string, test, entry_point, executor, response.ctx)
-        if "AssertionError" in result.output:
+        if "Error" in result.output:
             print_blue(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
             passed = False
+            error = result.output
         else:
             passed = True
 
@@ -117,7 +120,8 @@ async def main(llm, client, system_prompt):
             'CC_canonical': [CC_canonical],
             'CoG_generation': [CoG_generated],
             'CoG_canonical': [CoG_canonical],
-            'function': [function_code_string]
+            'function': [function_code_string],
+            'error': [error]
         }
 
         new_row_df = pd.DataFrame(new_data)

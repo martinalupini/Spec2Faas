@@ -44,6 +44,8 @@ class TestExecCodeResult:
     attempts: int
     tokens_debugger:float = 0
     time_debugger: float = 0
+    first_error: str = ""
+    last_error: str = ""
 
 @dataclass
 class TestDebugMessage:
@@ -94,6 +96,8 @@ class TestSystemMessage:
     tests_str: str = ""
     sender: str = ""
     # From debugger and test executor
+    first_error: str = ""
+    last_error: str = ""
     # The string of code of the final function
     final_func: str = ""
     # The code of the final function

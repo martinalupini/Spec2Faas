@@ -101,7 +101,7 @@ def write_csv():
 
 """
 def make_plot():
-    df_csv = pd.read_csv('../results.csv')
+    df_csv = pd.read_csv('../results_old.csv')
 
     models = df_csv['model'].tolist()
     metrics = df_csv.columns.drop(['model']).tolist()

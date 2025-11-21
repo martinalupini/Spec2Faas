@@ -15,7 +15,7 @@ def make_vertical_bar_plot():
 
 
     metrics = df_csv.columns.drop(['model']).tolist()
-    models = df_csv['model'].tolist()
+    models = df_csv['model', 'avg_execution_time (s)'].tolist()
 
     n_metrics = len(metrics)
     cols = min(n_metrics, 3)
@@ -33,7 +33,7 @@ def make_vertical_bar_plot():
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric in zip(axes.flatten(), metrics):
-        if metric == 'pass@1' or metric == 'avg_generation_time (s)' or metric == 'avg_tokens':
+        if metric == 'pass@1' or metric == 'number_func_generated' or metric == 'avg_tokens':
             is_canonical = False
         else:
             is_canonical = True
@@ -76,7 +76,7 @@ def make_horizontal_bar_plot():
     avoid_models = ['deepseek-coder-v2_no_prompt', 'qwen2.5-coder_no_prompt', 'gemini-2.0-flash_no_prompt', 'gemini-2.5-pro_no_prompt', 'qwen2.5-coder:32b_no_prompt', 'canonical']
     df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
 
-    metrics = df_csv.columns.drop(['model']).tolist()
+    metrics = df_csv.columns.drop(['model', 'avg_execution_time (s)']).tolist()
     models = df_csv['model'].tolist()
 
     n_metrics = len(metrics)
@@ -95,7 +95,7 @@ def make_horizontal_bar_plot():
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric in zip(axes.flatten(), metrics):
-        if metric == 'pass@1' or metric == 'avg_generation_time (s)' or metric == 'avg_tokens':
+        if metric == 'pass@1' or metric == 'number_func_generated' or metric == 'avg_tokens':
             is_canonical = False
         else:
             is_canonical = True

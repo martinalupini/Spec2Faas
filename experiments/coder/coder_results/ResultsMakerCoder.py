@@ -29,6 +29,7 @@ except Exception as e:
 
 def write_csv():
     pass_at_1 = df['passed'].mean()
+    num_generated = df['passed'].sum()
     avg_generation_time = df['generation_time'].mean()
     avg_tokens = df['tokens'].mean()
     avg_execution_time_generation = df['execution_time'].mean()
@@ -54,6 +55,7 @@ def write_csv():
     results_data = {
         'model': [coder],
         'pass@1': [pass_at_1],
+        'number_func_generated': [num_generated],
         'avg_generation_time (s)': [avg_generation_time],
         'avg_tokens': [avg_tokens],
         'avg_execution_time (s)': [avg_execution_time_generation],

@@ -1,92 +1,15 @@
 import numpy as np
 import pandas as pd
-import os
-from app.Utils import *
 import matplotlib.pyplot as plt
 import math
+from app.Utils import *
 
 llm = get_config_data("../../config_test.yaml")
 debugger = llm['debugger']
 coder = llm['coder']
 
 
-def write_csv():
-    file_path = coder + "_" + debugger + ".parquet"
-    csv_file = "../results.csv"
-
-    try:
-        df = pd.read_parquet(file_path)
-
-        # print(df.head(10))
-
-        # print(df.info())
-
-    except FileNotFoundError:
-        print(f"Errore: File non trovato a questo percorso: {file_path}")
-    except Exception as e:
-        print(f"Si è verificato un errore durante la lettura del file: {e}")
-
-    passed_after_generation = df['passed'].mean()
-    number_passed_after_generation = df['passed'].sum()
-    passed_after_debugging = df['passed_after_debugging'].mean()
-    number_passed_after_debugging = df['passed_after_debugging'].sum()
-    avg_tokens = df['total_tokens'].mean()
-    avg_debug_tokens = df['debugging_tokens'].mean()
-    avg_generation_time = df['generation_time'].mean()
-    avg_debugging_time = df['debugging_time'].mean()
-    avg_attempts_debugging = df['attempts'].mean()
-    avg_CC_debugged = df['CC_debugged'].mean()
-    avg_CoG_debugged = df['CoG_debugged'].mean()
-
-
-    print(f"Passed after generation: {passed_after_generation:.4f}")
-    print(f"\nNumber passed after generation: {number_passed_after_generation:.4f}")
-    print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
-    print(f"\nAverage Debugging Time: {avg_debugging_time:.4f}")
-    print(f"\nAverage Tokens: {avg_tokens:.4f}")
-    print(f"\nAverage Debugging Tokens: {avg_debug_tokens:.4f}")
-    print(f"\nPassed after debugging: {passed_after_debugging:.4f}")
-    print(f"\nNumber passed after debugging: {number_passed_after_debugging:.4f}")
-    print(f"\nAverage attempts debugging: {avg_attempts_debugging:.4f}")
-    print(f"\nAverage CC_debugged: {avg_CC_debugged}")
-    print(f"\nAverage CoG_debugged: {avg_CoG_debugged}")
-
-    results_data = {
-        'coder': [coder],
-        'debugger': [debugger],
-        'passed_after_generation': [passed_after_generation],
-        'number_passed_after_generation': [number_passed_after_generation],
-        'avg_generation_time (s)': [avg_generation_time],
-        'average_debugging_time (s)': [avg_debugging_time],
-        'average_total_time (s)': [avg_generation_time + avg_debugging_time],
-        'avg_debugging_tokens': [avg_debug_tokens],
-        'avg_total_tokens': [avg_tokens],
-        'passed_after_debugging': [passed_after_debugging],
-        'number_passed_after_debugging': [number_passed_after_debugging],
-        'avg_attempts_debugging': [avg_attempts_debugging],
-        'avg_CC_debugged': [avg_CC_debugged],
-        'avg_CoG_debugged': [avg_CoG_debugged],
-    }
-
-    results_df = pd.DataFrame(results_data)
-
-    file_exists = os.path.exists(csv_file)
-
-    try:
-        # Usa mode='a' (append) per aggiungere dati alla fine del file.
-        # L'intestazione viene scritta solo se il file non esiste (header=not file_exists).
-        results_df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
-
-        if file_exists:
-            print(f"\nAppended a new row to '{csv_file}'")
-        else:
-            print(f"\nCreated a new file and saved results to '{csv_file}'")
-
-    except Exception as e:
-        print(f"\nAn error occurred while saving the file: {e}")
-
-
-def make_plot():
+def make_vertical_bar_plot():
     df_csv = pd.read_csv('../results.csv')
     df_csv = df_csv[df_csv['coder'] == coder].copy()
     models = df_csv['debugger'].tolist()
@@ -124,7 +47,10 @@ def make_plot():
 
         plot_colors = [color_map[model] for model in models_plot]
 
-        bars = ax.bar(models_plot, valori, color=plot_colors)
+        bars = ax.bar(models_plot, valori, color=plot_colors, width=0.6)
+
+        for spine in ax.spines.values():
+            spine.set_visible(False)
 
         ax.set_title(metric, fontsize=12, weight='bold')
         ax.set_ylabel(metric, fontsize=10)
@@ -143,7 +69,7 @@ def make_plot():
     plt.show()
 
 
-def make_plot_2():
+def make_vertical_bar_plot_2():
     df_csv = pd.read_csv('../results.csv')
     df_csv = df_csv[df_csv['coder'] == coder].copy()
     models = df_csv['debugger'].tolist()
@@ -181,7 +107,9 @@ def make_plot_2():
 
         plot_colors = [color_map[model] for model in models_plot]
 
-        bars = ax.bar(models_plot, valori, color=plot_colors)
+        bars = ax.bar(models_plot, valori, color=plot_colors, width=0.6)
+        for spine in ax.spines.values():
+            spine.set_visible(False)
 
         ax.set_title(metric, fontsize=12, weight='bold')
         ax.set_ylabel(metric, fontsize=10)
@@ -198,9 +126,3 @@ def make_plot_2():
     plt.savefig('../comparison_2_'+ coder+'.png', dpi=300)
 
     plt.show()
-
-
-
-write_csv()
-#make_plot()
-#make_plot_2()

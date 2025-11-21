@@ -78,23 +78,6 @@ class Assistant(RoutedAgent):
             dialogue(response.content, self._role)
             return Message(content=response.content, type="request")
 
-    @message_handler
-    async def handle_test_user_message(self, message: TestMessage, ctx: MessageContext) -> TestMessageResult:
-        print_green(f"{self.id.type} received message. Staring to analyze user's prompt.")
-        # Prepare input to the chat completion model.
-        start_time = time.perf_counter()
-        user_message = UserMessage(content=message.content, source="user")
-        response = await self._model_client.create(
-            self._system_messages_test + [user_message], cancellation_token=ctx.cancellation_token
-        )
-
-        usage_metadata = response.usage
-        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
-
-        assert isinstance(response.content, str)
-
-        end_time = time.perf_counter()
-        return TestMessageResult(response.content.removeprefix("translation:"), end_time - start_time, tokens)
 
     @message_handler
     async def handle_test_system_user_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:

@@ -67,13 +67,13 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "debugger_results/"+ llm + "_" + debugger +".parquet"
+        file_name = "debugger_results2/"+ llm + "_" + debugger +".parquet"
     else:
-        file_name = "debugger_results/"+  llm + "_" + debugger +"_no_prompt.parquet"
+        file_name = "debugger_results2/"+  llm + "_" + debugger +"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'passed_after_debugging','debugging_tokens', 'total_tokens',
         'generation_time', 'debugging_time', 'attempts',
-        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'Original_function', 'Debugged_function', 'CC_debugged', 'CoG_debugged'
+        'CC_generation', 'CC_canonical', 'CoG_generation', 'CoG_canonical', 'Original_function', 'Debugged_function', 'CC_debugged', 'CoG_debugged', 'first_error', 'last_error'
     ]
     if os.path.exists(file_name):
         results_df = pd.read_parquet(file_name)
@@ -103,34 +103,62 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
         function_code_string = row_coder_df.function
         CC_generated = row_coder_df.CC_generation
         CoG_generated = row_coder_df.CoG_generation
-
-        response_debug= await runtime.send_message(TestExecCodeMessage(prompt, entry_point, function_code_string, test), AgentId("test_executor", "default"))
-
         CC_canonical = row_coder_df.CC_canonical
         CoG_canonical = row_coder_df.CoG_canonical
 
+        generation_time = row_coder_df.generation_time
 
-        CC_debugged = compute_CC(response_debug.final_function)
-        CoG_debugged = compute_CoG(response_debug.final_function)
+        if row_coder_df.passed:
+            passed_after_debugging = True
+            debugging_tokens = 0
+            total_tokens = row_coder_df.tokens
+            debugging_time = 0
+            debugging_attempts = 0
+            CC_debugged = 0
+            CoG_debugged = 0
+            final_function = function_code_string
+            first_error = ""
+            last_error = ""
+
+        else:
+
+            response_debug= await runtime.send_message(TestExecCodeMessage(prompt, entry_point, function_code_string, test), AgentId("test_executor", "default"))
+
+
+            CC_debugged = compute_CC(response_debug.final_function)
+            CoG_debugged = compute_CoG(response_debug.final_function)
+
+            passed_after_debugging = response_debug.passed
+            debugging_tokens = response_debug.tokens
+            total_tokens = row_coder_df.tokens + response_debug.tokens
+            debugging_time = response_debug.time
+            debugging_attempts = response_debug.attempts
+            final_function = response_debug.final_function
+
+            first_error = response_debug.first_error
+            last_error = response_debug.last_error
+
 
 
         new_data = {
             'task_id': [str(task_id)],
             'passed': [row_coder_df.passed],
-            'passed_after_debugging': [response_debug.passed],
-            'debugging_tokens': [response_debug.tokens],
-            'total_tokens': [row_coder_df.tokens + response_debug.tokens],
-            'generation_time': [row_coder_df.generation_time],
-            'debugging_time': [response_debug.time],
-            'attempts': [response_debug.attempts],
+            'passed_after_debugging': [passed_after_debugging],
+            'debugging_tokens': [debugging_tokens],
+            'total_tokens': [total_tokens],
+            'generation_time': [generation_time],
+            'debugging_time': [debugging_time],
+            'attempts': [debugging_attempts],
             'CC_generation': [CC_generated],
             'CC_canonical': [CC_canonical],
             'CoG_generation': [CoG_generated],
             'CoG_canonical': [CoG_canonical],
             'Original_function': [function_code_string],
-            'Debugged_function': [response_debug.final_function],
+            'Debugged_function': [final_function],
             'CC_debugged': [CC_debugged],
-            'CoG_debugged': [CoG_debugged]
+            'CoG_debugged': [CoG_debugged],
+            'first_error': [first_error],
+            'last_error': [last_error]
         }
 
         new_row_df = pd.DataFrame(new_data)
