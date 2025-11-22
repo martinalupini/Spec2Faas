@@ -14,8 +14,8 @@ def make_vertical_bar_plot():
     df_csv = df_csv[~df_csv['model'].isin(avoid_models)]
 
 
-    metrics = df_csv.columns.drop(['model']).tolist()
-    models = df_csv['model', 'avg_execution_time (s)'].tolist()
+    metrics = df_csv.columns.drop(['model', 'avg_execution_time (s)']).tolist()
+    models = df_csv['model'].tolist()
 
     n_metrics = len(metrics)
     cols = min(n_metrics, 3)
@@ -218,7 +218,7 @@ def make_radar_plot():
 
 
 
-
-make_vertical_bar_plot()
-#make_radar_plot()
+#make_horizontal_bar_plot()
+#make_vertical_bar_plot()
+make_radar_plot()
 
