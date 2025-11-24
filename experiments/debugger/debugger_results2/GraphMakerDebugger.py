@@ -126,3 +126,6 @@ def make_vertical_bar_plot_2():
     plt.savefig('../comparison_2_'+ coder+'.png', dpi=300)
 
     plt.show()
+
+
+make_vertical_bar_plot_2()
