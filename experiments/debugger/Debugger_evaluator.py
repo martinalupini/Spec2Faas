@@ -67,9 +67,9 @@ async def main(llm, client, system_prompt, debugger, client_debugger):
 
     # Creating file to store data
     if system_prompt:
-        file_name = "debugger_results2/"+ llm + "_" + debugger +".parquet"
+        file_name = "debugger_results/"+ llm + "_" + debugger +".parquet"
     else:
-        file_name = "debugger_results2/"+  llm + "_" + debugger +"_no_prompt.parquet"
+        file_name = "debugger_results/"+  llm + "_" + debugger +"_no_prompt.parquet"
     columns = [
         'task_id', 'passed', 'passed_after_debugging','debugging_tokens', 'total_tokens',
         'generation_time', 'debugging_time', 'attempts',
