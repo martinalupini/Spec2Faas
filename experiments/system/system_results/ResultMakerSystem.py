@@ -46,6 +46,8 @@ def write_csv():
     num_deployed = df['deployed'].sum()
     num_correctly_executed = df['correctly_executed'].sum()
     num_debugged = df['debugged'].sum()
+    func_correct = df['final_function_correct'].mean()
+    print(func_correct)
 
     num_not_generated = 164 - num_generated
     num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
@@ -314,8 +316,8 @@ def create_detailed_sankey_diagram(experiment):
             print(f"Errore in saving the diagram: {e}")
 
 
-create_detailed_sankey_diagram(experiment)
+#create_detailed_sankey_diagram(experiment)
 
 
 
-#write_csv()
+write_csv()
