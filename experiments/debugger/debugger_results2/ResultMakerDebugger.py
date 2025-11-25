@@ -27,12 +27,12 @@ def write_csv():
     passed_after_debugging = df['passed_after_debugging'].mean()
     number_passed_after_debugging = df['passed_after_debugging'].sum()
     avg_tokens = df['total_tokens'].mean()
-    avg_debug_tokens = df['debugging_tokens'].mean()
+    avg_debug_tokens = df[df['passed'] == False]['debugging_tokens'].mean()
     avg_generation_time = df['generation_time'].mean()
-    avg_debugging_time = df['debugging_time'].mean()
-    avg_attempts_debugging = df['attempts'].mean()
-    avg_CC_debugged = df['CC_debugged'].mean()
-    avg_CoG_debugged = df['CoG_debugged'].mean()
+    avg_debugging_time = df[df['passed'] == False]['debugging_time'].mean()
+    avg_attempts_debugging = df[df['passed'] == False]['attempts'].mean()
+    avg_CC_debugged = df[df['passed'] == False]['CC_debugged'].mean()
+    avg_CoG_debugged = df[df['passed'] == False]['CoG_debugged'].mean()
 
 
     print(f"Passed after generation: {passed_after_generation:.4f}")
