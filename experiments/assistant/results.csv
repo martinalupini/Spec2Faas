@@ -1,2 +1,4 @@
 model,number_correct_deployment,number_correct_translation,number_translation_as_other,number_translation_as_deployment,number_deployment_as_other,number_deployment_as_translation,avg_tokens,avg_time,correct_deployment,correct_translation
 gemini-2.0-flash,163,17,0,147,0,1,572.6371951219512,1.638685181189006,0.4969512195121951,0.051829268292682924
+gemini-2.5-pro,164,63,0,101,0,0,547.1951219512196,7.2269638396829805,0.5,0.19207317073170732
+qwen3,160,43,8,113,0,4,1437.9756097560976,21.633461491695105,0.4878048780487805,0.13109756097560976
