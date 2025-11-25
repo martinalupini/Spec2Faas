@@ -69,6 +69,7 @@ class TestMessageResult:
     content: str
     time : float
     tokens: float
+    type: str = ""
 
 
 @dataclass

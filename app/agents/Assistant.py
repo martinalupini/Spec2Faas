@@ -78,6 +78,32 @@ class Assistant(RoutedAgent):
             dialogue(response.content, self._role)
             return Message(content=response.content, type="request")
 
+    @message_handler
+    async def handle_test_user_message(self, message: TestMessage, ctx: MessageContext) -> TestMessageResult:
+        # Prepare input to the chat completion model.
+        start_time = time.perf_counter()
+        user_message = UserMessage(content=message.content, source="user")
+        response = await self._model_client.create(
+            self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
+        )
+
+        assert isinstance(response.content, str)
+        # In the case it receives a finished function as input it deploys it
+
+        end_time = time.perf_counter()
+        usage_metadata = response.usage
+        tokens = usage_metadata.prompt_tokens + usage_metadata.completion_tokens
+
+        if response.content.startswith("deployment"):
+            return TestMessageResult(content=response.content, time = end_time - start_time, tokens = tokens, type="deployment")
+        # If the prompt contains a specification it starts the coding phase
+        elif response.content.startswith("translation"):
+
+            return TestMessageResult(content=response.content, time = end_time - start_time, tokens = tokens, type="translation")
+        else:
+            # The prompt is unclear. We need more context from the user
+            return TestMessageResult(content=response.content, time = end_time - start_time, tokens = tokens, type="other")
+
 
     @message_handler
     async def handle_test_system_user_message(self, message: TestSystemMessage, ctx: MessageContext) -> TestSystemMessage:

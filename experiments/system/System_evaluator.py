@@ -326,7 +326,7 @@ async def main(config, models, server):
 if __name__ == "__main__":
 
     load_env_variables()
-    log_path = "../../output/designer/log"
+    log_path = "../../output/system/log"
     set_logging_config(log_path)
     config = get_config_data_full("../config_test.yaml")
     llm = config['llm']
