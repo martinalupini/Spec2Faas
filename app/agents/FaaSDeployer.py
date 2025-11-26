@@ -18,7 +18,7 @@ from experiments.MessageTypesTest import *
 from .coding_agents.utils.Utils import *
 from autogen_core.tools import FunctionTool, Tool
 
-from ..Utils import get_func_call_from_json
+from .Utils_deployer import *
 
 
 def _pystring_to_tarBase64(py_code, filename) -> str:
