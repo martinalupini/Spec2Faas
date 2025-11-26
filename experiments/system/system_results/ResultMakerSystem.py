@@ -316,8 +316,8 @@ def create_detailed_sankey_diagram(experiment):
             print(f"Errore in saving the diagram: {e}")
 
 
-#create_detailed_sankey_diagram(experiment)
+create_detailed_sankey_diagram(experiment)
 
 
 
-write_csv()
+#write_csv()
