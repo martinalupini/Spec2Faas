@@ -7,6 +7,7 @@ from autogen_core import SingleThreadedAgentRuntime, AgentId
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_core.models import ModelFamily
 from autogen_ext.models.openai import OpenAIChatCompletionClient
+from autogen_ext.models.ollama import OllamaChatCompletionClient
 from agents.Assistant import *
 from agents.coding_agents.Coder import *
 from agents.coding_agents.EntryPoint import *
@@ -22,53 +23,54 @@ from server import Server
 
 
 async def main(llm, server, user_text):
+    models = {}
 
-    model_client = OpenAIChatCompletionClient(
-        model="gemini-2.0-flash",
-        api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        max_retries=10,
-        # perché il modello non è “OpenAI”, serve descriverne le capacità:
-        model_info={
-            "family": ModelFamily.GEMINI_2_0_FLASH,
-            "function_calling": True,
-            "json_output": True,
-            "vision": False,
-            "structured_output" : True,
-        },
-    )
-
-    model_client_pro = OpenAIChatCompletionClient(
-        model="gemini-2.5-pro",
-        api_key=os.environ["GEMINI_API_KEY"],  # chiave di Google AI Studio
-        base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
-        max_retries=10,
-        # perché il modello non è “OpenAI”, serve descriverne le capacità:
-        model_info={
-            "family": ModelFamily.GEMINI_2_0_FLASH,
-            "function_calling": True,
-            "json_output": True,
-            "vision": False,
-            "structured_output": True,
-        },
-    )
+    for llm_name in llm.keys():
+        system_component = llm[llm_name]
+        if system_component == "gemini-2.5-pro" or system_component == "gemini-2.0-flash":
+            llm_model = OpenAIChatCompletionClient(
+                model=system_component,
+                api_key=os.environ["GEMINI_API_KEY"],
+                base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
+                max_retries=10,
+                model_info={
+                    "family": ModelFamily.GEMINI_2_0_FLASH,
+                    "function_calling": True,
+                    "json_output": True,
+                    "vision": False,
+                    "structured_output": True,
+                },
+            )
+        else:
+            llm_model = OllamaChatCompletionClient(
+                model=system_component,
+                host="160.80.97.151:11434",
+                model_info={
+                    "family": ModelFamily.UNKNOWN,
+                    "function_calling": True,
+                    "json_output": True,
+                    "vision": False,
+                    "structured_output": True,
+                }
+            )
+        models[llm_name] = llm_model
 
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
-    await Assistant.register(runtime, "assistant", lambda: Assistant(llm = llm['assistant'],model_client=model_client, server = server))
-    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(llm = llm['entry_point'], model_client=model_client, server = server))
-    await Coder.register(runtime, "coder", lambda: Coder(llm = llm['coder'], model_client=model_client, server = server))
-    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=model_client_pro, server = server))
-    await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=model_client_pro, server = server))
+    await Assistant.register(runtime, "assistant", lambda: Assistant(llm = llm['assistant'],model_client=models['assistant'], server = server))
+    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(llm = llm['entry_point'], model_client=models['entry_point'], server = server))
+    await Coder.register(runtime, "coder", lambda: Coder(llm = llm['coder'], model_client=models['coder'], server = server))
+    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=models['test_designer'], server = server))
+    await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=models['debugger'], server = server))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
-    await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm['faas_deployer'], model_client=model_client, tool_schema=tools, server = server))
+    await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm['faas_deployer'], model_client=models['faas_deployer'], tool_schema=tools, server = server))
     # Registering the Test Executor
     executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
     #This method sets the working environment variables, connects to Docker and starts the code executor. If no working directory was provided to the code executor, it creates a temporary directory and sets it as the code executor working directory.
     #https://microsoft.github.io/autogen/stable//reference/python/autogen_ext.code_executors.docker.html#autogen_ext.code_executors.docker.DockerCommandLineCodeExecutor
     await executor.start()
-    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(llm = llm['test_executor'], model_client = model_client, code_executor = executor, server = server))
+    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(llm = llm['test_executor'], model_client = models['test_executor'], code_executor = executor, server = server))
 
 
     runtime.start()  # Start processing messages in the background.
@@ -85,14 +87,16 @@ async def main(llm, server, user_text):
     response = await runtime.send_message(Message(user_text, type="request"), AgentId("assistant", "default"))
     if response.type == "request":
         dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
+        await executor.stop()
         await runtime.stop()  # Stop processing messages in the background.
-        await model_client.close()
-        await model_client_pro.close()
+        for model in models.values():
+            await model.close()
         exit()
 
+    await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
-    await model_client.close()
-    await model_client_pro.close()
+    for model in models.values():
+        await model.close()
 
 
 if __name__ == "__main__":
