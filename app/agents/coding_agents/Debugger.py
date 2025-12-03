@@ -7,7 +7,7 @@ from experiments.MessageTypesTest import *
 from .utils.Utils import *
 
 class Debugger(RoutedAgent):
-    def __init__(self,llm: str, model_client: ChatCompletionClient) -> None:
+    def __init__(self,llm: str, model_client: ChatCompletionClient, server = None) -> None:
         super().__init__("Skilled software debugger")
         self._system_messages = [SystemMessage(content="You are a very skilled software programmer specialized in debugging code."
                     "As a debugger, you are required to correct the code given as input"
@@ -30,6 +30,7 @@ class Debugger(RoutedAgent):
         self._counter = 0
         self._llm = llm
         self._role = "Debugger"
+        self._server = server
         print_green(f"Hi I'm the debugger and I use {self._llm}.")
 
     @message_handler
@@ -47,6 +48,7 @@ class Debugger(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
+        self._server.send_chunk(response.content, "debugger")
 
         # Extract the markdown code
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)

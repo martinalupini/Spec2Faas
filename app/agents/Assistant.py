@@ -8,7 +8,7 @@ from .coding_agents.utils.Utils import *
 import time
 
 class Assistant(RoutedAgent):
-    def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient, server = None) -> None:
         super().__init__("An helpful assistant ")
         self._system_messages = [SystemMessage(
             content="You are the entry point to a code generator and deployment app."
@@ -41,6 +41,7 @@ class Assistant(RoutedAgent):
         self._model_client = model_client
         self._llm = llm
         self._role = "Assistant"
+        self._server = server
         print_green(f"Hi I'm the assistant and I use {self._llm}.")
 
     @message_handler
@@ -57,15 +58,18 @@ class Assistant(RoutedAgent):
         # In the case it receives a finished function as input it deploys it
         if response.content.startswith("deployment"):
             dialogue(response.content, self._role)
+            #self._server.send_chunk(response.content, "assistant", "text")
             await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
             return Message(content="The function is successfully deployed.", type="deployment")
         # If the prompt contains a specification it starts the coding phase
         elif response.content.startswith("translation"):
             dialogue(response.content, self._role)
+            #self._server.send_chunk(response.content, "assistant", "text")
             # The translation is complete so we can send a message to the EntryPoint
             return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
             # The coding team could not generate a correct function
             if return_message.content == "FAIL":
+                self._server.send_chunk("We couldn't generate a correct function given the specification.", "assistant", "text")
                 return Message(content="We couldn't generate a correct function given the specification.", type="failure")
             else:
                 # The coding team generated a function.
@@ -76,6 +80,7 @@ class Assistant(RoutedAgent):
         else:
             # The prompt is unclear. We need more context from the user
             dialogue(response.content, self._role)
+            self._server.send_chunk("", "assistant", "request")
             return Message(content=response.content, type="request")
 
     @message_handler

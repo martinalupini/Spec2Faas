@@ -11,7 +11,7 @@ import time
 
 
 class EntryPoint(RoutedAgent):
-    def __init__(self, llm: str,  model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str,  model_client: ChatCompletionClient, server = None) -> None:
         super().__init__("The entry point of the coding.")
         self._system_messages = [SystemMessage(
             content="Given the function specification create a signature for the function. "
@@ -19,6 +19,7 @@ class EntryPoint(RoutedAgent):
         )]
         self._model_client = model_client
         self._llm = llm
+        self._server = server
         print_green(f"Hi I'm the entry point of the coding system and I use {self._llm}.")
 
     @message_handler
@@ -37,6 +38,7 @@ class EntryPoint(RoutedAgent):
             self._system_messages + [user_message], cancellation_token=ctx.cancellation_token
         )
         dialogue("The function signature is: " + response.content, "Entry Point")
+        #self._server.send_chunk("The function signature is: " + response.content, "entry_point")
 
         # After generating the signature the EntryPoint send a message both to the Coder and the TestDesigner
         await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type), AgentId("coder", "default"))

@@ -7,7 +7,7 @@ from experiments.MessageTypesTest import *
 import time
 
 class TestDesigner(RoutedAgent):
-    def __init__(self, llm: str, model_client: ChatCompletionClient) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient, server = None) -> None:
         super().__init__("Skilled test designer")
         self._system_messages = [SystemMessage(
             content="You are a very skilled test designer specializing in designing comprehensive and well-documented test cases for Python functions."
@@ -33,6 +33,7 @@ class TestDesigner(RoutedAgent):
         self._llm = llm
         self._client = None
         self._role = "Test Designer"
+        self._server = server
         print_green(f"Hi I'm the test designer and I use {self._llm}.")
 
     @message_handler
@@ -48,6 +49,7 @@ class TestDesigner(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
+        self._server.send_chunk(response.content, "test_designer")
 
         # Sending a message to TestExecutor
         return_message = await self._runtime.send_message(

@@ -6,6 +6,8 @@ import asyncio
 from Utils import *
 from flask_cors import CORS
 import threading
+import json
+from typing import Set
 
 
 
@@ -32,6 +34,24 @@ class Server:
             except Exception as e:
                 self.connected_clients.discard(ws)
 
+    def send_chunk(self, text: str, sender: str, message_type: str = "text"):
+
+        message_data = {
+            "type": message_type,
+            "text": text,
+            "sender": sender
+        }
+
+        json_message = json.dumps(message_data)
+
+        clients = list(self.connected_clients)
+        for ws in clients:
+            try:
+                ws.send(json_message)
+            except Exception as e:
+                print(f"Error: {e}")
+                self.connected_clients.discard(ws)
+
     # To manage incoming WebSocket connections
     def stream(self, ws):
         self.connected_clients.add(ws)
@@ -43,6 +63,8 @@ class Server:
         finally:
             self.connected_clients.discard(ws)
 
+    def index(self):
+        return "Server WebSocket active."
 
     # Processing after POST request
     def start_processing(self):
@@ -64,10 +86,9 @@ class Server:
     def run_main_in_background(self, llm, user_text):
         from main import main
         try:
-            # Crea un nuovo event loop per il thread corrente
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-            loop.run_until_complete(main(llm, self))
+            loop.run_until_complete(main(llm, self, user_text))
         except Exception as e:
             print(f"Error during background execution: {e}")
         finally:

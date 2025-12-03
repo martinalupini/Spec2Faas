@@ -70,7 +70,7 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
 
 
 class FaasDeployer(RoutedAgent):
-    def __init__(self, llm: str, model_client: ChatCompletionClient, tool_schema: List[Tool]) -> None:
+    def __init__(self, llm: str, model_client: ChatCompletionClient, tool_schema: List[Tool], server = None) -> None:
         super().__init__("The agents responsible for deploying the function in FaaS.")
 
         self._system_messages = [SystemMessage(
@@ -128,6 +128,7 @@ class FaasDeployer(RoutedAgent):
         self._llm = llm
         self._role = "FaaS Deployer"
         self._full_function= ""
+        self._server = server
         print_green(f"Hi I'm the faas deployer and I use {self._llm}.")
 
     @message_handler
@@ -150,6 +151,7 @@ class FaasDeployer(RoutedAgent):
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
                 dialogue(create_result.content, self._role)
+                self._server.send_chunk(create_result.content, "faas_deployer")
                 # Return the message with the LLM's response (can be successful or not)
                 return Message(content=create_result.content, type = "final_response")
             assert isinstance(create_result.content, list) and all(

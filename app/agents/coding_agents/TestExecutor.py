@@ -11,7 +11,7 @@ from .utils.Utils import *
 from .utils.Code_Extractors import *
 
 class TestExecutor(RoutedAgent):
-    def __init__(self, llm:str, model_client: ChatCompletionClient, code_executor: CodeExecutor) -> None:
+    def __init__(self, llm:str, model_client: ChatCompletionClient, code_executor: CodeExecutor, server = None) -> None:
         super().__init__("Skilled test executor")
         self._system_messages = [SystemMessage(
             content="You are a very skilled test executor."
@@ -29,6 +29,7 @@ class TestExecutor(RoutedAgent):
         self._max_attempts = int(os.getenv("MAX_DEBUG_ATTEMPTS"))
         self._llm = llm
         self._role = "Test Executor"
+        self._server = server
         print_green(f"Hi I'm the test executor and I use {self._llm}.")
 
     @message_handler
@@ -62,11 +63,13 @@ class TestExecutor(RoutedAgent):
                     )
                     if result.output == "":
                         print_yellow(f"\n{'-' * 130}\nExecutor:\nThe function passes all the tests.\n{'-' * 130}")
+                        self._server.send_chunk("The function passes all the tests.", "test_executor")
                     else:
                         print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
 
                     # If there is an AssertionError the function does not pass all the tests
                     if "Error" in result.output:
+                        self._server.send_chunk("The function fails the tests. Starting to debug...", "test_executor")
                         debug_message = await self._runtime.send_message(
                             DebugMessage(message.specification, message.code, result.output),
                             AgentId("debugger", "default"))
@@ -79,6 +82,7 @@ class TestExecutor(RoutedAgent):
                         # The function has been corrected and can be returned
                         return Message(self._code, "test_executor_response")
             # Max attempts number reached
+            self._server.send_chunk("Maximum number of debugging attempts reached.", "test_executor")
             return Message("FAIL", "test_executor_response")
 
         # This is returned the first time the executor receives a message from Coder or TestDesigner

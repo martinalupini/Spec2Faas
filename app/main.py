@@ -1,6 +1,5 @@
 import logging
 import asyncio
-import sys
 import tempfile
 import sys
 from typing import List
@@ -19,9 +18,10 @@ from autogen_core.tools import FunctionTool, Tool
 from agents.coding_agents.utils.Utils import *
 from Utils import *
 
+from server import Server
 
 
-async def main(llm):
+async def main(llm, server, user_text):
 
     model_client = OpenAIChatCompletionClient(
         model="gemini-2.0-flash",
@@ -55,20 +55,20 @@ async def main(llm):
 
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
-    await Assistant.register(runtime, "assistant", lambda: Assistant(llm = llm['assistant'],model_client=model_client))
-    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(llm = llm['entry_point'], model_client=model_client))
-    await Coder.register(runtime, "coder", lambda: Coder(llm = llm['coder'], model_client=model_client))
-    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=model_client_pro))
-    await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=model_client_pro))
+    await Assistant.register(runtime, "assistant", lambda: Assistant(llm = llm['assistant'],model_client=model_client, server = server))
+    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(llm = llm['entry_point'], model_client=model_client, server = server))
+    await Coder.register(runtime, "coder", lambda: Coder(llm = llm['coder'], model_client=model_client, server = server))
+    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=model_client_pro, server = server))
+    await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=model_client_pro, server = server))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
-    await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm['faas_deployer'], model_client=model_client, tool_schema=tools))
+    await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm['faas_deployer'], model_client=model_client, tool_schema=tools, server = server))
     # Registering the Test Executor
     executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
     #This method sets the working environment variables, connects to Docker and starts the code executor. If no working directory was provided to the code executor, it creates a temporary directory and sets it as the code executor working directory.
     #https://microsoft.github.io/autogen/stable//reference/python/autogen_ext.code_executors.docker.html#autogen_ext.code_executors.docker.DockerCommandLineCodeExecutor
     await executor.start()
-    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(llm = llm['test_executor'], model_client = model_client, code_executor = executor))
+    await TestExecutor.register(runtime, "test_executor", lambda: TestExecutor(llm = llm['test_executor'], model_client = model_client, code_executor = executor, server = server))
 
 
     runtime.start()  # Start processing messages in the background.
@@ -80,17 +80,15 @@ async def main(llm):
     dialogue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
           "Press ENTER two times to continue.", "Assistant")
 
-    while response.type == "request":
-        lines = []
-        for line in sys.stdin:
-            if line.strip() == "":
-                break
-            lines.append(line)
 
-        user_input = "".join(lines)
-        response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
-        if response.type == "request":
-            dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
+
+    response = await runtime.send_message(Message(user_text, type="request"), AgentId("assistant", "default"))
+    if response.type == "request":
+        dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
+        await runtime.stop()  # Stop processing messages in the background.
+        await model_client.close()
+        await model_client_pro.close()
+        exit()
 
     await runtime.stop()  # Stop processing messages in the background.
     await model_client.close()

@@ -8,7 +8,7 @@ import ollama
 import time
 
 class Coder(RoutedAgent):
-    def __init__(self,llm: str, model_client: ChatCompletionClient = None) -> None:
+    def __init__(self,llm: str, model_client: ChatCompletionClient = None, server = None) -> None:
         super().__init__("Skilled software programmer")
         self._system_messages = [SystemMessage(
             content="You are a very skilled software programmer."
@@ -34,6 +34,7 @@ class Coder(RoutedAgent):
         self._text = ""
         self._role = "Software Programmer"
         self._client = None
+        self._server = server
         print_green(f"Hi I'm the software programmer and I use {self._llm}.")
 
     @message_handler
@@ -49,6 +50,7 @@ class Coder(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
+        self._server.send_chunk(response.content, "coder")
 
         # Return message to the entry_point
         return_message = await self._runtime.send_message(
