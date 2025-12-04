@@ -1,0 +1,25 @@
+model,metric,value
+qwen2.5-coder:32b,code generation,142
+deepseek-coder-v2,code generation,117
+gemini-2.5-pro,code generation,158
+gemini-2.0-flash,code generation,134
+qwen3,code generation,105
+qwen2.5-coder,code generation,134
+gemini-2.5-pro,debugging,159.7
+qwen3,debugging,154.3
+gemini-2.0-flash,debugging,153.7
+qwen2.5-coder:32b,debugging, 146.3
+deepseek-coder-v2,debugging,140.7
+qwen2.5-coder,debugging,0
+qwen2.5-coder:32b,test generation,70
+deepseek-coder-v2,test generation,50
+gemini-2.5-pro,test generation,105
+qwen2.5-coder,test generation,76
+gemini-2.0-flash,test generation,77
+qwen3,test generation,129
+gemini-2.0-flash,deployment,140
+qwen3,deployment,150
+gemini-2.5-pro,deployment,163
+qwen2.5-coder,deployment,154
+qwen2.5-coder:32b,deployment,0
+deepseek-coder-v2,deployment,0
