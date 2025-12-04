@@ -117,7 +117,6 @@ class FaasDeployer(RoutedAgent):
                     "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
                     "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
                     "The handler should return a dictionary."
-                    #"The handler receives input as a string. Make sure to cast the input to the appropriate data type (e.g., int, float, bool, etc.) based on the expected arguments of the target function before calling it."
                     "If you obtain errors from the server reflect on these errors. For example if the error is 404 'Chosen runtime does not exists' choose python310. "
                     "If the error is 409 'Function already exists' choose another name for the function."
                     "Only stop invoking tools when the server response is 200."
