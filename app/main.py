@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import os
 import tempfile
 import sys
 from typing import List
@@ -63,7 +64,7 @@ async def main(llm, server, user_text):
     await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=models['test_designer'], server = server))
     await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=models['debugger'], server = server))
     # creating the tools for the FaaS deployer
-    tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
+    tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge and deploys the function on Serveledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm['faas_deployer'], model_client=models['faas_deployer'], tool_schema=tools, server = server))
     # Registering the Test Executor
     executor = DockerCommandLineCodeExecutor(work_dir=work_dir)
@@ -75,23 +76,33 @@ async def main(llm, server, user_text):
 
     runtime.start()  # Start processing messages in the background.
 
-    response = Message("","request")
-    #print_blue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
-          #"Press ENTER two times to continue.")
+    if os.getenv("UI") == "False":
+        response = Message("","request")
+        dialogue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
+                 "Press ENTER two times to continue.", "Assistant")
+        while response.type == "request":
+            lines = []
+            for line in sys.stdin:
+                if line.strip() == "":
+                    break
+                lines.append(line)
 
-    dialogue("Hi! Write here your function to deploy or the specification of the function you want to write.\n"
-          "Press ENTER two times to continue.", "Assistant")
+            user_input = "".join(lines)
+            response = await runtime.send_message(Message(user_input, type="request"), AgentId("assistant", "default"))
+            if response.type == "request":
+                dialogue(
+                    "The input is not clear. Please provide more information about the function you want to deploy.",
+                    "Assistant")
 
-
-
-    response = await runtime.send_message(Message(user_text, type="request"), AgentId("assistant", "default"))
-    if response.type == "request":
-        dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
-        await executor.stop()
-        await runtime.stop()  # Stop processing messages in the background.
-        for model in models.values():
-            await model.close()
-        exit()
+    else:
+        response = await runtime.send_message(Message(user_text, type="request"), AgentId("assistant", "default"))
+        if response.type == "request":
+            dialogue("The input is not clear. Please provide more information about the function you want to deploy.", "Assistant")
+            await executor.stop()
+            await runtime.stop()  # Stop processing messages in the background.
+            for model in models.values():
+                await model.close()
+            exit()
 
     await executor.stop()
     await runtime.stop()  # Stop processing messages in the background.
@@ -101,13 +112,14 @@ async def main(llm, server, user_text):
 
 if __name__ == "__main__":
 
+    os.environ['UI'] = 'False'
     load_env_variables()
     log_path = os.getenv("LOG_PATH")
     set_logging_config(log_path)
     llm = get_config_data("../config.yaml")
 
     try:
-        asyncio.run(main(llm))
+        asyncio.run(main(llm, None, ""))
     finally:
         logging.shutdown()
 

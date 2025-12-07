@@ -101,4 +101,5 @@ class Server:
 
 if __name__ == "__main__":
     server = Server()
+    os.environ['UI'] = 'True'
     server.run()

@@ -159,7 +159,7 @@ def make_debugging_gain_plot():
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    title_text = f'Debbugging gain for coder {coder}'
+    title_text = f'Debugging gain for coder {coder}'
     ax.set_title(title_text, fontsize=14, weight='bold')
     ax.set_ylabel('Number of corrected functions', fontsize=10)
     ax.tick_params(axis='x', rotation=45, labelsize=10)

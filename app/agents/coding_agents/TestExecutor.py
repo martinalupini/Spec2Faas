@@ -63,13 +63,15 @@ class TestExecutor(RoutedAgent):
                     )
                     if result.output == "":
                         print_yellow(f"\n{'-' * 130}\nExecutor:\nThe function passes all the tests.\n{'-' * 130}")
-                        self._server.send_chunk("The function passes all the tests.", "test_executor")
+                        if os.getenv("UI") == "True":
+                            self._server.send_chunk("The function passes all the tests.", "test_executor")
                     else:
                         print_yellow(f"\n{'-' * 130}\nExecutor:\n{result.output}\n{'-' * 130}")
 
                     # If there is an AssertionError the function does not pass all the tests
                     if "Error" in result.output:
-                        self._server.send_chunk("The function fails the tests. Starting to debug...", "test_executor")
+                        if os.getenv("UI") == "True":
+                            self._server.send_chunk("The function fails the tests. Starting to debug...", "test_executor")
                         debug_message = await self._runtime.send_message(
                             DebugMessage(message.specification, message.code, result.output),
                             AgentId("debugger", "default"))
@@ -82,7 +84,8 @@ class TestExecutor(RoutedAgent):
                         # The function has been corrected and can be returned
                         return Message(self._code, "test_executor_response")
             # Max attempts number reached
-            self._server.send_chunk("Maximum number of debugging attempts reached.", "test_executor")
+            if os.getenv("UI") == "True":
+                self._server.send_chunk("Maximum number of debugging attempts reached.", "test_executor")
             return Message("FAIL", "test_executor_response")
 
         # This is returned the first time the executor receives a message from Coder or TestDesigner

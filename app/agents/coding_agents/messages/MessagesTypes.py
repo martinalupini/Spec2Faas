@@ -41,3 +41,10 @@ class DebugMessage:
     specification: str
     code:str
     error_message: str
+
+
+@dataclass
+class FaasMessage:
+    content: str
+    arguments: dict
+    error_message: str

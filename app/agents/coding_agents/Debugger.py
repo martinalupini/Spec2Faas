@@ -1,5 +1,6 @@
 from typing import List
 import re
+import os
 from autogen_core import MessageContext, RoutedAgent, message_handler, AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage, LLMMessage, AssistantMessage
 from .messages.MessagesTypes import *
@@ -48,7 +49,8 @@ class Debugger(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
-        self._server.send_chunk(response.content, "debugger")
+        if os.getenv("UI") == "True":
+            self._server.send_chunk(response.content, "debugger")
 
         # Extract the markdown code
         match = re.search(r"(```python\n.*?```)", response.content, re.DOTALL)

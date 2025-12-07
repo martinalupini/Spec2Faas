@@ -1,3 +1,5 @@
+import os
+
 from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
 from torch.cuda.profiler import start
@@ -57,30 +59,59 @@ class Assistant(RoutedAgent):
         assert isinstance(response.content, str)
         # In the case it receives a finished function as input it deploys it
         if response.content.startswith("deployment"):
-            dialogue(response.content, self._role)
-            #self._server.send_chunk(response.content, "assistant", "text")
-            await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
-            return Message(content="The function is successfully deployed.", type="deployment")
+            dialogue("I'll deploy the function you provided as input.", self._role)
+            if os.getenv("UI") == "True":
+                self._server.send_chunk("I'll deploy the function you provided as input.", "assistant", "text")
+            faas_message = await self._runtime.send_message(DeployMessage(code=response.content.removeprefix("deployment:")),AgentId("faas_deployer", "default"))
+            if faas_message.error_message != "":
+                dialogue("I'm sorry that the function couldn't be deployed.\nMake sure that the FaaS platform is up and running before trying again.", self._role)
+                if os.getenv("UI") == "True":
+                    self._server.send_chunk("I'm sorry that the function couldn't be deployed.\nMake sure that the FaaS platform is up and running before trying again. Do you want to try again?", "assistant", "final")
+            else:
+                dialogue(
+                    "Thanks for using Spec2FaaS. I hope to see you soon!",
+                    self._role)
+                if os.getenv("UI") == "True":
+                    self._server.send_chunk("Thanks for using Spec2FaaS. Do you have something else in mind?",
+                        "assistant", "final")
+            return Message(content=faas_message.content, type="deployment")
         # If the prompt contains a specification it starts the coding phase
         elif response.content.startswith("translation"):
             dialogue(response.content, self._role)
-            #self._server.send_chunk(response.content, "assistant", "text")
             # The translation is complete so we can send a message to the EntryPoint
             return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
             # The coding team could not generate a correct function
             if return_message.content == "FAIL":
-                self._server.send_chunk("We couldn't generate a correct function given the specification.", "assistant", "text")
+                if os.getenv("UI") == "True":
+                    self._server.send_chunk("We couldn't generate a correct function given the specification. Do you want to try again?", "assistant", "final")
                 return Message(content="We couldn't generate a correct function given the specification.", type="failure")
             else:
                 # The coding team generated a function.
                 # Sending a message to the Deployer
                 mess = await self._runtime.send_message(DeployMessage(code=return_message.content),
                                                  AgentId("faas_deployer", "default"))
+
+                if mess.error_message != "":
+                    dialogue(
+                        "I'm sorry that the function couldn't be deployed.\nMake sure that the FaaS platform is up and running before trying again.",
+                        self._role)
+                    if os.getenv("UI") == "True":
+                        self._server.send_chunk(
+                            "I'm sorry that the function couldn't be deployed.\nMake sure that the FaaS platform is up and running before trying again. Do you want to try again?",
+                            "assistant", "final")
+                else:
+                    dialogue(
+                        "Thanks for using Spec2FaaS. I hope to see you soon!",
+                        self._role)
+                    if os.getenv("UI") == "True":
+                        self._server.send_chunk("Thanks for using Spec2FaaS. Do have something else in mind?",
+                                                "assistant", "final")
                 return Message(content=mess.content, type="deployment")
         else:
             # The prompt is unclear. We need more context from the user
             dialogue(response.content, self._role)
-            self._server.send_chunk("", "assistant", "request")
+            if os.getenv("UI") == "True":
+                self._server.send_chunk("", "assistant", "request")
             return Message(content=response.content, type="request")
 
     @message_handler

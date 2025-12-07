@@ -1,5 +1,6 @@
 import json
 import uuid
+import re
 from typing import List
 from autogen_core import FunctionCall
 
@@ -99,3 +100,35 @@ def fix_json_string_with_code(malformed_json: str) -> str:
 
     # Reassemble the corrected JSON string
     return f"{part_before}{escaped_code}{part_after}"
+
+
+def find_arguments(code_string):
+
+    for line in code_string.splitlines():
+        clean_line = line.strip()
+
+        if clean_line.startswith("def ") and '(' in clean_line and ':' in clean_line:
+
+            try:
+                start_paren_index = clean_line.index('(')
+                end_paren_index = clean_line.rindex(')')
+                colon_index = clean_line.rindex(':')
+            except ValueError:
+                continue
+
+            if end_paren_index > colon_index:
+                continue
+
+            name_part = clean_line[4:start_paren_index].strip()
+            function_name = name_part.split()[0]
+
+            if function_name == 'handler':
+                continue
+
+
+            parameters = clean_line[start_paren_index + 1: end_paren_index].strip()
+
+            return parameters  # Return the result immediately
+
+    return ""
+

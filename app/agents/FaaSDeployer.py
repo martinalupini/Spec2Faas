@@ -57,7 +57,7 @@ async def create_json_serverledge(code: str, name: str, runtime: str, memoryMB: 
     }
 
     headers = {"Content-Type": "application/json"}
-    url = os.getenv("SERVERLEDGE_URL")
+    url = os.getenv("SERVERLEDGE_URL") + "/create"
     async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
         async with session.post(url, headers=headers, json=payload) as resp:
             print_yellow(f"Resp status: {resp.status} Resp text: {await resp.text()}")
@@ -77,8 +77,9 @@ class FaasDeployer(RoutedAgent):
             content="You are an expert cloud engineer responsible for deploying Python functions to a FaaS platform."
                     "Your task is to follow a strict two-step process using the available tools."
                     "The input will be a Python function code."
+                    "The tool you can use is create_json_serverledge and its description is 'Create the json payload for a request for Serverledge and deploys the function on Serveledge.'"
 
-                    "Step 1: Prepare the deployment payload."
+                    "Step 1: Create the handler."
                     "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
                     "Import necessary libraries outside the handler."
                     "Example 1: "
@@ -113,7 +114,7 @@ class FaasDeployer(RoutedAgent):
                     "lines = text.split('\n')"
                     "result = [line for line in lines if re.search(pattern, line)]"
                     "return '\n'.join(result)"
-                    "Step 2: After reformatting the code, you MUST call the `create_json_serverledge` tool to register the function. "
+                    "Step 2: Prepare the json payload and deploy the function to Serverledge."
                     "Choose the appropriate Name, Runtime (default is python310), MemoryMB, CPUDemand and Handler."
                     "The handler should invoke the function and return the result. The definition of the function has to be outside of the handler. Look carefully at the examples provided."
                     "The handler should return a dictionary."
@@ -127,11 +128,13 @@ class FaasDeployer(RoutedAgent):
         self._llm = llm
         self._role = "FaaS Deployer"
         self._full_function= ""
+        self._arguments = None
+        self._error_message = ""
         self._server = server
         print_green(f"Hi I'm the faas deployer and I use {self._llm}.")
 
     @message_handler
-    async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> Message:
+    async def handle_deploy_message(self, message: DeployMessage, ctx: MessageContext) -> FaasMessage:
         print_green(f"{self.id.type} received message. Starting to deploy the function in FaaS.")
 
         # The following code follows the guide at https://microsoft.github.io/autogen/stable//user-guide/core-user-guide/components/tools.html#tool-equipped-agent
@@ -149,16 +152,28 @@ class FaasDeployer(RoutedAgent):
 
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
-                dialogue(create_result.content, self._role)
-                self._server.send_chunk(create_result.content, "faas_deployer")
+
+                if self._error_message == "":
+                    response = "The function was successfully deployed.\n\nYou can invoke the function using the name " + self._arguments['name'] + ".\n\nThe parameters are: '" + find_arguments(self._arguments['code']) + "'"
+                else:
+                    response = "The function couldn't be deployed. The error is:\n\n" +  self._error_message
+
+                dialogue(response, self._role)
+                if os.getenv("UI") == "True":
+                    self._server.send_chunk(response, "faas_deployer")
                 # Return the message with the LLM's response (can be successful or not)
-                return Message(content=create_result.content, type = "final_response")
+                return FaasMessage(content=create_result.content, arguments=self._arguments, error_message=self._error_message)
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
             )
 
             # Add the first model create result to the session.
             session.append(AssistantMessage(content=create_result.content, source="assistant"))
+
+            content = create_result.content
+
+            arguments = json.loads(content[0].arguments)
+            self._arguments = arguments
 
             # Execute the tool calls.
             results = await asyncio.gather(
@@ -167,7 +182,10 @@ class FaasDeployer(RoutedAgent):
 
             for r in results:
                 # r is a FunctionExecutionResult
-                dialogue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}", self._role)
+                #dialogue(f"[{self._role}] Tool '{r.name}' responded (error={r.is_error}): {r.content}", self._role)
+
+                if r.is_error:
+                    self._error_message = r.content
 
             # Add the function execution results to the session.
             session.append(FunctionExecutionResultMessage(content=results))

@@ -6,6 +6,7 @@ from .utils.Code_Extractors import *
 from experiments.MessageTypesTest import *
 import ollama
 import time
+import os
 
 class Coder(RoutedAgent):
     def __init__(self,llm: str, model_client: ChatCompletionClient = None, server = None) -> None:
@@ -50,7 +51,8 @@ class Coder(RoutedAgent):
 
         assert isinstance(response.content, str)
         dialogue(response.content, self._role)
-        self._server.send_chunk(response.content, "coder")
+        if os.getenv("UI") == "True":
+            self._server.send_chunk(response.content, "coder")
 
         # Return message to the entry_point
         return_message = await self._runtime.send_message(

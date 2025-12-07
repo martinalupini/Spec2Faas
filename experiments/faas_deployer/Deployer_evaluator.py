@@ -57,7 +57,6 @@ async def main(llm, client, server):
         canonical_solution = row.canonical_solution
         json_filename = entry_point + ".json"
         local_path = "inputs/"+ task_id.split('/')[-1] + "_" + json_filename
-        remote_path = "serverledge/inputs" + "/" + json_filename
 
         # Function already seen in a previous experiment
         if task_id in results_df['task_id'].values:
@@ -71,22 +70,10 @@ async def main(llm, client, server):
             # The parameter values are taken from the tests
             param_values = extract_param_values(test)
 
-            try:
-                sftp = server.open_sftp()
-
-                try:
-                    sftp.stat(remote_path)
-                except FileNotFoundError:
-                    create_json(param_names, param_values, local_path)
-                    sftp.put(local_path, remote_path)
-                    print("Json uploaded!")
-
-            except Exception as e:
-                print(f"Error during file transfer: {e}")
-                raise e
-            finally:
-                if sftp:
-                    sftp.close()
+            created_json = create_json(param_names, param_values, local_path)
+        else:
+            with open(local_path, 'r') as file:
+                created_json = json.load(file)
 
         print_yellow(task_id)
 
@@ -99,19 +86,17 @@ async def main(llm, client, server):
         if response.result != 'FAIL':
             deployed = True
 
-            command = "serverledge/bin/serverledge-cli invoke -f " + response.result +" --params_file " + remote_path + " --ret_output"
-            stdin, stdout, stderr = server.exec_command(command)
+            payload = {
+                "Params": created_json
+            }
 
-            output = stdout.read().decode('utf-8')
-            error = stderr.read().decode('utf-8')
-
-            if "\"Success\": true," in output:
-                correctly_executed = True
-
-            if output is not None:
-                print("--- Output ---")
-                print(output)
-            
+            headers = {"Content-Type": "application/json"}
+            url = os.getenv("SERVERLEDGE_URL") + "/invoke/" + str(response.result)
+            async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+                async with session.post(url, headers=headers, json=payload) as resp:
+                    print(f"Resp status: {resp.status} Resp text: {await resp.text()}")
+                    if resp.status == 200:
+                        correctly_executed = True
         else:
             print("Failed to deploy.")
             deployed = False
