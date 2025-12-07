@@ -161,14 +161,14 @@ def make_debugging_gain_plot():
 
     title_text = f'Debugging gain for coder {coder}'
     ax.set_title(title_text, fontsize=14, weight='bold')
-    ax.set_ylabel('Number of corrected functions', fontsize=10)
-    ax.tick_params(axis='x', rotation=45, labelsize=10)
+    ax.set_ylabel('Number of corrected functions', fontsize=16)
+    ax.tick_params(axis='x', rotation=45, labelsize=14)
     ax.yaxis.grid(True, linestyle='--', alpha=0.6)
 
     for bar in bars:
         yval = bar.get_height()
         ax.text(bar.get_x() + bar.get_width() / 2.0, yval * 1.01, f'{yval:.0f}', ha='center', va='bottom',
-                fontsize=9, weight='bold')
+                fontsize=11, weight='bold')
 
     ax.set_ylim(bottom=0)
 

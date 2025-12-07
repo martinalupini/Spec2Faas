@@ -11,7 +11,6 @@ def make_radar_plot():
     df_wide = df_csv.pivot_table(index='model', columns='metric', values='value', aggfunc='first')
     df_wide.reset_index(inplace=True)
 
-    print(df_wide)
     df_wide = df_wide.drop_duplicates()
 
     models = df_wide['model'].tolist()
@@ -32,9 +31,9 @@ def make_radar_plot():
 
     num_vars = len(metrics)
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
-    angles += angles[:1]  # Aggiungi il primo angolo alla fine per chiudere il cerchio
+    angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(14, 14), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(14, 10), subplot_kw=dict(polar=True))
 
     colors = plt.cm.get_cmap('Set1', len(models))
     color_map = {model: colors(i) for i, model in enumerate(models)}
@@ -51,10 +50,43 @@ def make_radar_plot():
         ax.plot(angles, values, color=color, linewidth=2, linestyle='solid', label=model, marker='o')
         ax.fill(angles, values, color=color, alpha=0.2)
 
-    ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(name_metrics, size=14)
-    ax.tick_params(axis='x', pad=30)
 
+    ax.set_xticks(angles[:-1])
+    ax.set_xticklabels([])
+    ax.tick_params(axis='x', pad=0)
+
+    R_NORMAL = max_value * 1.05
+    R_WIDE = max_value * 1.07
+
+
+    for i, angle in enumerate(angles[:-1]):
+        label = name_metrics[i]
+
+        ha = 'center'
+        va = 'center'
+        r_label_position = R_NORMAL
+
+        if i == 0:  # 0°: 'Code Generation'
+            ha = 'left'
+            r_label_position = R_WIDE
+
+        elif i == 1:  # 90°: 'Debugging'
+            va = 'bottom'
+
+        elif i == 2:  # 180°: 'Test Generation'
+            ha = 'right'
+            r_label_position = R_WIDE
+
+        elif i == 3:  # 270°: 'Deployment'
+            va = 'top'
+
+        ax.text(angle,
+                r_label_position,
+                label,
+                size=14,
+                weight='bold',
+                horizontalalignment=ha,
+                verticalalignment=va)
     yticks = np.arange(0, max_value, 16)
     ax.set_yticks(yticks)
 
@@ -70,6 +102,6 @@ def make_radar_plot():
     plt.tight_layout(pad=1.5)
 
     plt.savefig('radar_comparison.png', dpi=300)
-    plt.show()
+    #plt.show()
 
 make_radar_plot()

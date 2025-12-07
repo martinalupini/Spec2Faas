@@ -453,8 +453,9 @@ def create_detailed_sankey_diagram(experiment):
 
         fig.update_layout(
             font=dict(
-                size=20,
-                color="black"
+                size=28,
+                color="black",
+                weight="bold"
             )
         )
 
