@@ -79,7 +79,7 @@ async def main(config, models, server):
     await Debugger.register(runtime, "debugger", lambda: Debugger(llm=llm['debugger'], model_client=models['debugger']))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [
-        FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
+        FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge and deploy the function on Serveledge.")]
     await FaasDeployer.register(runtime, "faas_deployer",
                                 lambda: FaasDeployer(llm=llm['faas_deployer'], model_client=models['faas_deployer'], tool_schema=tools))
     # Registering the Test Executor

@@ -25,7 +25,7 @@ from Utils import *
 async def main(llm, client, server):
 
     runtime = SingleThreadedAgentRuntime()
-    tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge.")]
+    tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge and deploy the function on Serveledge.")]
     await FaasDeployer.register(runtime, "faas_deployer", lambda: FaasDeployer(llm = llm, model_client=client, tool_schema=tools))
 
     work_dir = tempfile.mkdtemp()

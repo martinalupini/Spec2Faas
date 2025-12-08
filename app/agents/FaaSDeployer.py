@@ -77,7 +77,7 @@ class FaasDeployer(RoutedAgent):
             content="You are an expert cloud engineer responsible for deploying Python functions to a FaaS platform."
                     "Your task is to follow a strict two-step process using the available tools."
                     "The input will be a Python function code."
-                    "The tool you can use is create_json_serverledge and its description is 'Create the json payload for a request for Serverledge and deploys the function on Serveledge.'"
+                    "The tool you can use is create_json_serverledge and its description is 'Create the json payload for a request for Serverledge and deploy the function on Serveledge.'"
 
                     "Step 1: Create the handler."
                     "First, you must reformat the user's Python code into a valid handler structure. Do not modify the user's code provided but just add the handler."
