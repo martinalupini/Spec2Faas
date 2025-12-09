@@ -148,6 +148,7 @@ class FaasDeployer(RoutedAgent):
             # If there are no tool calls, return the result.
             if isinstance(create_result.content, str):
                 dialogue(create_result.content, self._role)
+                print(time.perf_counter())
             assert isinstance(create_result.content, list) and all(
                 isinstance(call, FunctionCall) for call in create_result.content
             )
