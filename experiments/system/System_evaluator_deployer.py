@@ -98,7 +98,7 @@ async def main(config, llm_model):
         'CC_original', 'CC_final', 'CC_canonical', 'CoG_final', 'CoG_generated', 'CoG_canonical', 'time_assistant',
         'token_assistant', 'time_entry_point', 'token_entry_point', 'time_coder', 'token_coder', 'time_designer',
         'token_designer', 'time_executor', 'token_executor','time_debugger', 'token_debugger', 'time_deployer',
-        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged', 'canonical_solution', 'deployed_function', 'execution_output'
+        'token_deployer', 'tests', 'coverage', 'debugging_attempts', 'number_messages_exchanged', 'canonical_solution', 'deployed_function', 'execution_output', 'invocation_attempts'
     ]
 
     old_results_df = pd.read_parquet(old_file_name)
@@ -114,6 +114,12 @@ async def main(config, llm_model):
     # Iterating through each row
     for row in df.itertuples(index=False):
         task_id = row.task_id
+
+
+        # Function already generated in a previous experiment
+        if task_id in results_df['task_id'].values:
+            continue
+
         entry_point = row.entry_point
         test = row.test
 
@@ -122,18 +128,17 @@ async def main(config, llm_model):
         deployed_function = ""
         time_deployer = 0
         tokens_deployer = 0
-        number_messages_exchanged = 0
         execution_output = ""
-
-        # Function already generated in a previous experiment
-        if task_id in results_df['task_id'].values:
-            continue
+        deployment_attempts = 0
+        json_created = True
 
         print_yellow(task_id)
 
         old_row = old_results_df.loc[old_results_df['task_id'] == task_id].iloc[0]
+        number_messages_exchanged = old_row['number_messages_exchanged']
 
         if old_row['generated']:
+            number_messages_exchanged += 1
             json_filename = entry_point + ".json"
             local_path = "system_results/"+ "experiment_" + str(attempt) + "/inputs/" + task_id.split('/')[-1] + "_" + json_filename
 
@@ -147,6 +152,7 @@ async def main(config, llm_model):
             deploy_mess =  await runtime.send_message(TestDeployMessage(old_row['final_function']), AgentId("faas_deployer", "default"))
             tokens_deployer = deploy_mess.tokens
             time_deployer = deploy_mess.time
+            deployment_attempts = deploy_mess.invocation_attempts
 
             if deploy_mess.result != "FAIL":
                 deployed = True
@@ -164,21 +170,31 @@ async def main(config, llm_model):
                 param_names = extract_param_names(old_row['signature'], "", True)
                 param_values = extract_param_values(test)
 
-                created_json = create_json(param_names, param_values, local_path)
+                try:
+                    # If it throws an exception it means that the number of arguments in the function signature (generated)
+                    # don't match the number of arguments in the tests (from the dataset)
+                    create_json(param_names, param_values, local_path)
+                    with open(local_path, 'r') as file:
+                        created_json = json.load(file)
+                except Exception as e:
+                    print(f"Error during creation of json file: {e}")
+                    json_created = False
 
-                payload = {
-                    "Params": created_json
-                }
 
-                headers = {"Content-Type": "application/json"}
-                url = os.getenv("SERVERLEDGE_URL") + "/invoke/" + str(deploy_mess.result)
-                async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
-                    async with session.post(url, headers=headers, json=payload) as resp:
-                        resp_text = await resp.text()
-                        print(f"Resp status: {resp.status} Resp text: {resp_text}")
-                        if resp.status == 200:
-                            correctly_executed = True
-                        execution_output = resp_text
+                if json_created:
+                    payload = {
+                        "Params": created_json
+                    }
+
+                    headers = {"Content-Type": "application/json"}
+                    url = os.getenv("SERVERLEDGE_URL") + "/invoke/" + str(deploy_mess.result)
+                    async with aiohttp.ClientSession(timeout=aiohttp.ClientTimeout(total=30)) as session:
+                        async with session.post(url, headers=headers, json=payload) as resp:
+                            resp_text = await resp.text()
+                            print(f"Resp status: {resp.status} Resp text: {resp_text}")
+                            if resp.status == 200:
+                                correctly_executed = True
+                            execution_output = resp_text
 
 
         new_data = {
@@ -221,7 +237,8 @@ async def main(config, llm_model):
             'number_messages_exchanged': [number_messages_exchanged],
             'canonical_solution': [old_row['canonical_solution']],
             'deployed_function': [deployed_function],
-            'execution_output': [execution_output]
+            'execution_output': [execution_output],
+            'deployment_attempts': [deployment_attempts]
         }
 
         new_row_df = pd.DataFrame(new_data)
