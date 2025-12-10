@@ -97,7 +97,7 @@ async def main(config, models, server):
 
     # Creating files to store data
     file_name = "system_results/"+ "experiment_" + str(attempt) + "/results.parquet"
-    config_file_name = "system_results/"+ "experiment_" + str(attempt) + "/config.json"
+    config_file_name = "system_results/"+ "experiment_" + str(attempt) + "/config.yaml"
 
     directory = os.path.dirname(config_file_name)
     if directory:
