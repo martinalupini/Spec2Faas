@@ -17,9 +17,9 @@ gemini-2.5-pro,test generation,105
 qwen2.5-coder,test generation,76
 gemini-2.0-flash,test generation,77
 qwen3,test generation,129
-gemini-2.0-flash,deployment,140
-qwen3,deployment,150
-gemini-2.5-pro,deployment,163
-qwen2.5-coder,deployment,154
+gemini-2.0-flash,deployment,159
+qwen3,deployment,157
+gemini-2.5-pro,deployment,164
+qwen2.5-coder,deployment,136
 qwen2.5-coder:32b,deployment,0
 deepseek-coder-v2,deployment,0

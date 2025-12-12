@@ -22,7 +22,7 @@ from Utils import *
 
 
 
-async def main(llm, client, server):
+async def main(llm, client):
 
     runtime = SingleThreadedAgentRuntime()
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge and deploy the function on Serveledge.")]
@@ -36,7 +36,7 @@ async def main(llm, client, server):
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
 
-    file_name = "deployer_results/"+ llm+".parquet"
+    file_name = "deployer_results/"+ llm+"2.parquet"
     columns = [
         'task_id', 'tokens',
         'deployment time', 'deployed', 'correctly executed', 'invocation_attempts',
@@ -70,10 +70,10 @@ async def main(llm, client, server):
             # The parameter values are taken from the tests
             param_values = extract_param_values(test)
 
-            created_json = create_json(param_names, param_values, local_path)
-        else:
-            with open(local_path, 'r') as file:
-                created_json = json.load(file)
+            create_json(param_names, param_values, local_path)
+
+        with open(local_path, 'r') as file:
+            created_json = json.load(file)
 
         print_yellow(task_id)
 
@@ -168,15 +168,7 @@ if __name__ == "__main__":
             }
         )
 
-    # Connection to the server
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-    client.connect(hostname=SERVER_HOSTNAME, port=int(SERVER_PORT), username=SERVER_USERNAME, password=SERVER_PASSWORD)
-
     try:
-        asyncio.run(main(deployer, model_client, client))
+        asyncio.run(main(deployer, model_client))
     finally:
-        if client:
-            client.close()
         logging.shutdown()
