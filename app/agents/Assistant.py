@@ -2,7 +2,6 @@ import os
 
 from autogen_core import MessageContext, RoutedAgent, message_handler,AgentId
 from autogen_core.models import ChatCompletionClient, SystemMessage, UserMessage
-from torch.cuda.profiler import start
 
 from .coding_agents.messages.MessagesTypes import *
 from experiments.MessageTypesTest import *

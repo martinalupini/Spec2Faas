@@ -13,10 +13,9 @@ from autogen_ext.memory.chromadb import ChromaDBVectorMemory, PersistentChromaDB
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
 from agents.Assistant import *
-from agents.coding_agents.Coder import *
 from agents.coding_agents.Coder_RAG import *
-from agents.coding_agents.EntryPoint import *
-from agents.coding_agents.TestDesigner import *
+from agents.coding_agents.EntryPoint_RAG import *
+from agents.coding_agents.TestDesigner_RAG import *
 from agents.coding_agents.TestExecutor import *
 from agents.coding_agents.Debugger import *
 from agents.FaaSDeployer import *
@@ -76,9 +75,9 @@ async def main(llm, server, user_text):
     work_dir = tempfile.mkdtemp()
     runtime = SingleThreadedAgentRuntime()
     await Assistant.register(runtime, "assistant", lambda: Assistant(llm = llm['assistant'],model_client=models['assistant'], server = server))
-    await EntryPoint.register(runtime, "entry_point", lambda: EntryPoint(llm = llm['entry_point'], model_client=models['entry_point'], server = server))
-    await Coder_RAG2.register(runtime, "coder", lambda: Coder_RAG2(llm = llm['coder'], model_client=models['coder'], server = server, memory = chroma_user_memory))
-    await TestDesigner.register(runtime, "test_designer", lambda: TestDesigner(llm = llm['test_designer'], model_client=models['test_designer'], server = server))
+    await EntryPoint_RAG.register(runtime, "entry_point", lambda: EntryPoint_RAG(llm = llm['entry_point'], model_client=models['entry_point'], server = server, memory = chroma_user_memory))
+    await Coder_RAG.register(runtime, "coder", lambda: Coder_RAG(llm = llm['coder'], model_client=models['coder'], server = server))
+    await TestDesigner_RAG.register(runtime, "test_designer", lambda: TestDesigner_RAG(llm = llm['test_designer'], model_client=models['test_designer'], server = server))
     await Debugger.register(runtime, "debugger", lambda: Debugger(llm = llm['debugger'], model_client=models['debugger'], server = server))
     # creating the tools for the FaaS deployer
     tools: List[Tool] = [FunctionTool(create_json_serverledge, description="Create the json payload for a request for Serverledge and deploy the function on Serveledge.")]
@@ -139,5 +138,4 @@ if __name__ == "__main__":
         asyncio.run(main(llm, None, ""))
     finally:
         logging.shutdown()
-
 

@@ -23,6 +23,7 @@ class CodeMessage:
     code: str
     tests: str
     sender: str
+    memory_context: str = ""
 
 
 """

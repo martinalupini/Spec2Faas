@@ -36,7 +36,7 @@ async def main(llm, client):
     df = pd.read_parquet("hf://datasets/evalplus/humanevalplus/data/test-00000-of-00001-5973903632b82d40.parquet")
 
 
-    file_name = "deployer_results/"+ llm+"2.parquet"
+    file_name = "deployer_results/"+ llm+".parquet"
     columns = [
         'task_id', 'tokens',
         'deployment time', 'deployed', 'correctly executed', 'invocation_attempts',
