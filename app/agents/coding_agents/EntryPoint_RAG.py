@@ -44,7 +44,7 @@ class EntryPoint_RAG(RoutedAgent):
             retrieved_content = "\n\n".join([doc.content for doc in retrieved_docs.results])
             rag_context = (
                 "\n\n<CONTEXT FROM MEMORY>\n"
-                "The following useful code snippets/functions were retrieved from memory:\n"
+                "The following useful pseudocode were retrieved from memory:\n"
                 f"{retrieved_content}"
                 "\n</CONTEXT FROM MEMORY>\n"
             )
