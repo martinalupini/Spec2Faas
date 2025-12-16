@@ -246,16 +246,29 @@ def create_detailed_sankey_diagram(experiment):
             print(f"Errore in saving the diagram: {e}")
 
 
+import pandas as pd
+import plotly.graph_objects as go
+import matplotlib.colors as mcolors
+import os
+
+
 def create_sankey_from_dataframe(experiment):
     dir_name = f"experiment_{experiment}/"
     os.makedirs(dir_name, exist_ok=True)
 
-    df = pd.read_parquet(dir_name + "results.parquet")
+    # Assumiamo che df sia definito come nel codice originale
+    # e che pd e os siano importati
+    try:
+        df = pd.read_parquet(dir_name + "results.parquet")
+    except FileNotFoundError:
+        print(f"File non trovato per l'esperimento {experiment}")
+        return
 
     if df.empty:
         print(f"No data for experiment {experiment}")
         return
 
+    # Aggiunto il nodo 12 "total functions"
     node_labels = [
         "generated functions",  # 0
         "original correct",  # 1
@@ -268,6 +281,8 @@ def create_sankey_from_dataframe(experiment):
         "not deployed",  # 8
         "correctly executed",  # 9
         "not correctly executed",  # 10
+        "not generated functions",  # 11
+        "total functions",  # 12 - NUOVO NODO INIZIALE
     ]
 
     COLS = {
@@ -279,60 +294,55 @@ def create_sankey_from_dataframe(experiment):
         'EXECUTED': 'correctly_executed'
     }
 
-    df_gen = df[df[COLS['GENERATED']] == True]  # Il flusso parte solo dalle funzioni generate
+    # Calcolo dei totali di partenza
+    TOTAL_FUNCTIONS = 164  # Valore fornito dall'utente
 
-    # Flusso A: generated functions -> original correct
-    flow_A = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]
-    # Flusso B: generated functions -> original not correct
-    flow_B = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]
+    df_gen = df[df[COLS['GENERATED']] == True]
+    df_not_gen = df[df[COLS['GENERATED']] == False]
 
-    # Flusso C: original correct -> debugged
+    flow_0_total_gen = df_gen.shape[0]  # 12 -> 0
+    flow_0_total_not_gen = df_not_gen.shape[0]  # 12 -> 11
+
+    # Calcoli dei flussi tra i nodi esistenti (come definiti in precedenza)
+
+    # Flussi da generated functions (0)
+    flow_A = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 0 -> 1
+    flow_B = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 0 -> 2
+
+    # Flussi da not generated functions (11)
+    flow_A_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 11 -> 1
+    flow_B_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 11 -> 2
+
+    # Flussi da original correct (1) - solo da df_gen (come da logica precedente)
     df_OC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == True)]
-    flow_C = df_OC_D.shape[0]
-    # Flusso D: original correct -> not debugged
+    flow_C = df_OC_D.shape[0]  # 1 -> 3
     df_OC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == False)]
-    flow_D = df_OC_ND.shape[0]
+    flow_D = df_OC_ND.shape[0]  # 1 -> 4
 
-    # Flusso E: original not correct -> debugged
+    # Flussi da original not correct (2) - solo da df_gen (come da logica precedente)
     df_ONC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == True)]
-    flow_E = df_ONC_D.shape[0]
-    # Flusso F: original not correct -> not debugged
+    flow_E = df_ONC_D.shape[0]  # 2 -> 3
     df_ONC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == False)]
-    flow_F = df_ONC_ND.shape[0]
+    flow_F = df_ONC_ND.shape[0]  # 2 -> 4
 
-    # Flusso G: debugged -> final function correct
-    flow_G = df_gen[df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]
-    # Flusso H: debugged -> final function not correct
-    flow_H = df_gen[df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]
+    # Flussi successivi (3 -> 5,6; 4 -> 5,6; 5 -> 7,8; 6 -> 7,8; 7 -> 9,10)
+    # Rimanengono invariati e basati su df_gen.
+    flow_G = df_gen[df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 5
+    flow_H = df_gen[df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 6
+    flow_I = df_gen[~df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 4 -> 5
+    flow_J = df_gen[~df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 4 -> 6
+    flow_K = df_gen[df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]].shape[0]  # 5 -> 7
+    flow_L = df_gen[df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]].shape[0]  # 5 -> 8
+    flow_M = df_gen[~df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]].shape[0]  # 6 -> 7
+    flow_N = df_gen[~df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]].shape[0]  # 6 -> 8
+    flow_O = df_gen[df_gen[COLS['DEPLOYED']] & df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 9
+    flow_P = df_gen[df_gen[COLS['DEPLOYED']] & ~df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 10
 
-    # Flusso I: not debugged -> final function correct
-    flow_I = df_gen[~df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]
-    # Flusso J: not debugged -> final function not correct
-    flow_J = df_gen[~df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]
-
-    # Flusso K: final function correct -> deployed
-    df_FC_D = df_gen[df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]]
-    flow_K = df_FC_D.shape[0]
-    # Flusso L: final function correct -> not deployed
-    df_FC_ND = df_gen[df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]]
-    flow_L = df_FC_ND.shape[0]
-
-    # Flusso M: final function not correct -> deployed
-    df_FNC_D = df_gen[~df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]]
-    flow_M = df_FNC_D.shape[0]
-    # Flusso N: final function not correct -> not deployed
-    df_FNC_ND = df_gen[~df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]]
-    flow_N = df_FNC_ND.shape[0]
-
-    # Flusso O: deployed -> correctly executed
-    df_D_CE = df_gen[df_gen[COLS['DEPLOYED']] & df_gen[COLS['EXECUTED']]]
-    flow_O = df_D_CE.shape[0]
-    # Flusso P: deployed -> not correctly executed
-    df_D_NCE = df_gen[df_gen[COLS['DEPLOYED']] & ~df_gen[COLS['EXECUTED']]]
-    flow_P = df_D_NCE.shape[0]
-
+    # Aggiornamento delle liste di flussi, sorgenti e destinazioni
     link_values = [
+        flow_0_total_gen, flow_0_total_not_gen,  # 12 -> 0, 12 -> 11 - NUOVI FLUSSI
         flow_A, flow_B,  # 0 -> 1, 0 -> 2
+        flow_A_NG, flow_B_NG,  # 11 -> 1, 11 -> 2
         flow_C, flow_D,  # 1 -> 3, 1 -> 4
         flow_E, flow_F,  # 2 -> 3, 2 -> 4
         flow_G, flow_H,  # 3 -> 5, 3 -> 6
@@ -343,7 +353,9 @@ def create_sankey_from_dataframe(experiment):
     ]
 
     source_nodes = [
+        12, 12,  # total functions - NUOVE SORGENTI
         0, 0,  # generated functions
+        11, 11,  # not generated functions
         1, 1,  # original correct
         2, 2,  # original not correct
         3, 3,  # debugged
@@ -353,6 +365,8 @@ def create_sankey_from_dataframe(experiment):
         7, 7  # deployed
     ]
     target_nodes = [
+        0, 11,  # generated functions, not generated functions - NUOVI TARGET
+        1, 2,  # original correct, original not correct
         1, 2,  # original correct, original not correct
         3, 4,  # debugged, not debugged
         3, 4,  # debugged, not debugged
@@ -370,20 +384,27 @@ def create_sankey_from_dataframe(experiment):
             filtered_targets.append(t)
             filtered_values.append(v)
 
+    # Calcolo dei totali dei nodi
     node_totals = [0] * len(node_labels)
-    node_totals[0] = df_gen.shape[0]
+    # Impostiamo i nodi di partenza dal conteggio totale/dataframe
+    node_totals[12] = TOTAL_FUNCTIONS
+    node_totals[0] = flow_0_total_gen
+    node_totals[11] = flow_0_total_not_gen
 
+    # Calcoliamo i totali dei nodi intermedi e finali dalla somma dei flussi in ingresso
+    # Si sommano solo i flussi in ingresso per i nodi da 1 a 10
     for src, tgt, val in zip(filtered_sources, filtered_targets, filtered_values):
-        if tgt < len(node_labels):
+        if 1 <= tgt <= 10:
             node_totals[tgt] += val
 
     updated_labels = []
     for i, label in enumerate(node_labels):
-        if node_totals[i] > 0 or i == 0:
+        if node_totals[i] > 0 or i == 12:  # Includi il nodo iniziale anche se il totale fosse 0
             updated_labels.append(f"{label} ({node_totals[i]})")
         else:
             updated_labels.append(label)
 
+    # Aggiornamento colori (aggiunto il nodo 12)
     colors = [
         "grey",  # 0 generated functions
         "blue",  # 1 original correct
@@ -396,10 +417,13 @@ def create_sankey_from_dataframe(experiment):
         "darkgrey",  # 8 not deployed
         "lightgreen",  # 9 correctly executed
         "crimson",  # 10 not correctly executed
+        "cyan",  # 11 not generated functions
+        "black",  # 12 total functions - NUOVO COLORE
     ]
 
+    # Aggiornamento posizioni (aggiunto il nodo 12)
     node_y = [
-        0.50,  # 0 generated functions
+        0.30,  # 0 generated functions
         0.45,  # 1 original correct
         0.99,  # 2 original not correct
         0.07,  # 3 debugged
@@ -410,20 +434,24 @@ def create_sankey_from_dataframe(experiment):
         0.70,  # 8 not deployed
         0.99,  # 9 correctly executed
         0.3,  # 10 not correctly executed
+        0.90,  # 11 not generated functions
+        0.50,  # 12 total functions - NUOVA POSIZIONE
     ]
 
     node_x = [
-        0.01,  # 0 generated functions
-        0.20,  # 1 original correct
-        0.20,  # 2 original not correct
-        0.35,  # 3 debugged
-        0.35,  # 4 not debugged
-        0.5,  # 5 final function correct
-        0.5,  # 6 final function not correct
-        0.70,  # 7 deployed
-        0.70,  # 8 not deployed
+        0.10,  # 0 generated functions
+        0.30,  # 1 original correct
+        0.30,  # 2 original not correct
+        0.45,  # 3 debugged
+        0.45,  # 4 not debugged
+        0.6,  # 5 final function correct
+        0.6,  # 6 final function not correct
+        0.80,  # 7 deployed
+        0.80,  # 8 not deployed
         0.99,  # 9 correctly executed
-        0.85,  # 10 not correctly executed
+        0.90,  # 10 not correctly executed
+        0.10,  # 11 not generated functions
+        0.01,  # 12 total functions - NUOVA POSIZIONE
     ]
 
     link_colors = []
@@ -458,8 +486,7 @@ def create_sankey_from_dataframe(experiment):
             size=28,
             color="black",
             weight="bold"
-        )
-    )
+        ))
 
     fig.show()
 

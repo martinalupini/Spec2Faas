@@ -93,4 +93,22 @@ def write_csv():
         print(f"\nAn error occurred while saving the file: {e}")
 
 
-write_csv()
+#write_csv()
+
+print(f"Correctly executed after deployment and final function correct: {df[df['correctly_executed'] & df['final_function_correct']].shape[0]}")
+print(f"Correctly executed after deployment and original function correct: {df[df['correctly_executed'] & df['original_function_correct']].shape[0]}")
+print(f"Original function correct: {df['original_function_correct'].sum()}")
+print(f"Original correct and  deployed: {df[df['original_function_correct'] & df['deployed']].shape[0]}")
+print(f"Original correct and not deployed: {df[df['original_function_correct'] & ~df['deployed']].shape[0]}")
+print(f"Final function correct: {df['final_function_correct'].sum()}")
+print(f"Original correct and final not correct: {df[df['original_function_correct'] & ~df['final_function_correct']].shape[0]}")
+print(f"Original and final function correct but original has been debugged: {df[df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0]}")
+print(f"Original and final function correct and original has not been debugged: {df[df['original_function_correct'] & df['final_function_correct'] & ~df['debugged']].shape[0]}")
+print(f"Original not correct and final function correct but original has been debugged: {df[~df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0]}")
+print(f"Original not correct and has not been debugged: {df[~df['original_function_correct'] & ~df['debugged']].shape[0]}")
+print(f"Original not correct and has been debugged: {df[~df['original_function_correct'] & df['debugged']].shape[0]}")
+print(f"Original not correct and final not correct: {df[~df['original_function_correct'] & ~df['final_function_correct']].shape[0]}")
+#print(df[df['original_function_correct'] & ~df['generated']].shape[0]) #=0
+print(f"Final not correct and deployed: {df[df['deployed'] & ~df['final_function_correct']].shape[0]}")
+print(f"Final not correct and not deployed: {df[~df['deployed'] & ~df['final_function_correct']].shape[0]}")
+
