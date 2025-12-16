@@ -84,7 +84,7 @@ class Server:
         return jsonify({"status": "ok", "message": "Processing started in background", "received": text})
 
     def run_main_in_background(self, llm, user_text):
-        from main import main
+        from main_RAG import main
         try:
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
