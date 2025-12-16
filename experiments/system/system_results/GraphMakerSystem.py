@@ -246,4 +246,229 @@ def create_detailed_sankey_diagram(experiment):
             print(f"Errore in saving the diagram: {e}")
 
 
-create_detailed_sankey_diagram(experiment)
+def create_sankey_from_dataframe(experiment):
+    dir_name = f"experiment_{experiment}/"
+    os.makedirs(dir_name, exist_ok=True)
+
+    df = pd.read_parquet(dir_name + "results.parquet")
+
+    if df.empty:
+        print(f"No data for experiment {experiment}")
+        return
+
+    node_labels = [
+        "generated functions",  # 0
+        "original correct",  # 1
+        "original not correct",  # 2
+        "debugged",  # 3
+        "not debugged",  # 4
+        "final function correct",  # 5
+        "final function not correct",  # 6
+        "deployed",  # 7
+        "not deployed",  # 8
+        "correctly executed",  # 9
+        "not correctly executed",  # 10
+    ]
+
+    COLS = {
+        'GENERATED': 'generated',
+        'ORIGINAL_CORRECT': 'original_function_correct',
+        'DEBUGGED': 'debugged',
+        'FINAL_CORRECT': 'final_function_correct',
+        'DEPLOYED': 'deployed',
+        'EXECUTED': 'correctly_executed'
+    }
+
+    df_gen = df[df[COLS['GENERATED']] == True]  # Il flusso parte solo dalle funzioni generate
+
+    # Flusso A: generated functions -> original correct
+    flow_A = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]
+    # Flusso B: generated functions -> original not correct
+    flow_B = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]
+
+    # Flusso C: original correct -> debugged
+    df_OC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == True)]
+    flow_C = df_OC_D.shape[0]
+    # Flusso D: original correct -> not debugged
+    df_OC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == False)]
+    flow_D = df_OC_ND.shape[0]
+
+    # Flusso E: original not correct -> debugged
+    df_ONC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == True)]
+    flow_E = df_ONC_D.shape[0]
+    # Flusso F: original not correct -> not debugged
+    df_ONC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == False)]
+    flow_F = df_ONC_ND.shape[0]
+
+    # Flusso G: debugged -> final function correct
+    flow_G = df_gen[df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]
+    # Flusso H: debugged -> final function not correct
+    flow_H = df_gen[df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]
+
+    # Flusso I: not debugged -> final function correct
+    flow_I = df_gen[~df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]
+    # Flusso J: not debugged -> final function not correct
+    flow_J = df_gen[~df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]
+
+    # Flusso K: final function correct -> deployed
+    df_FC_D = df_gen[df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]]
+    flow_K = df_FC_D.shape[0]
+    # Flusso L: final function correct -> not deployed
+    df_FC_ND = df_gen[df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]]
+    flow_L = df_FC_ND.shape[0]
+
+    # Flusso M: final function not correct -> deployed
+    df_FNC_D = df_gen[~df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]]
+    flow_M = df_FNC_D.shape[0]
+    # Flusso N: final function not correct -> not deployed
+    df_FNC_ND = df_gen[~df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]]
+    flow_N = df_FNC_ND.shape[0]
+
+    # Flusso O: deployed -> correctly executed
+    df_D_CE = df_gen[df_gen[COLS['DEPLOYED']] & df_gen[COLS['EXECUTED']]]
+    flow_O = df_D_CE.shape[0]
+    # Flusso P: deployed -> not correctly executed
+    df_D_NCE = df_gen[df_gen[COLS['DEPLOYED']] & ~df_gen[COLS['EXECUTED']]]
+    flow_P = df_D_NCE.shape[0]
+
+    link_values = [
+        flow_A, flow_B,  # 0 -> 1, 0 -> 2
+        flow_C, flow_D,  # 1 -> 3, 1 -> 4
+        flow_E, flow_F,  # 2 -> 3, 2 -> 4
+        flow_G, flow_H,  # 3 -> 5, 3 -> 6
+        flow_I, flow_J,  # 4 -> 5, 4 -> 6
+        flow_K, flow_L,  # 5 -> 7, 5 -> 8
+        flow_M, flow_N,  # 6 -> 7, 6 -> 8
+        flow_O, flow_P  # 7 -> 9, 7 -> 10
+    ]
+
+    source_nodes = [
+        0, 0,  # generated functions
+        1, 1,  # original correct
+        2, 2,  # original not correct
+        3, 3,  # debugged
+        4, 4,  # not debugged
+        5, 5,  # final function correct
+        6, 6,  # final function not correct
+        7, 7  # deployed
+    ]
+    target_nodes = [
+        1, 2,  # original correct, original not correct
+        3, 4,  # debugged, not debugged
+        3, 4,  # debugged, not debugged
+        5, 6,  # final function correct, final function not correct
+        5, 6,  # final function correct, final function not correct
+        7, 8,  # deployed, not deployed
+        7, 8,  # deployed, not deployed
+        9, 10  # correctly executed, not correctly executed
+    ]
+
+    filtered_sources, filtered_targets, filtered_values = [], [], []
+    for s, t, v in zip(source_nodes, target_nodes, link_values):
+        if v > 0:
+            filtered_sources.append(s)
+            filtered_targets.append(t)
+            filtered_values.append(v)
+
+    node_totals = [0] * len(node_labels)
+    node_totals[0] = df_gen.shape[0]
+
+    for src, tgt, val in zip(filtered_sources, filtered_targets, filtered_values):
+        if tgt < len(node_labels):
+            node_totals[tgt] += val
+
+    updated_labels = []
+    for i, label in enumerate(node_labels):
+        if node_totals[i] > 0 or i == 0:
+            updated_labels.append(f"{label} ({node_totals[i]})")
+        else:
+            updated_labels.append(label)
+
+    colors = [
+        "grey",  # 0 generated functions
+        "blue",  # 1 original correct
+        "red",  # 2 original not correct
+        "darkgreen",  # 3 debugged
+        "orange",  # 4 not debugged
+        "purple",  # 5 final function correct
+        "brown",  # 6 final function not correct
+        "magenta",  # 7 deployed
+        "darkgrey",  # 8 not deployed
+        "lightgreen",  # 9 correctly executed
+        "crimson",  # 10 not correctly executed
+    ]
+
+    node_y = [
+        0.50,  # 0 generated functions
+        0.35,  # 1 original correct
+        0.65,  # 2 original not correct
+        0.30,  # 3 debugged
+        0.70,  # 4 not debugged
+        0.25,  # 5 final function correct
+        0.75,  # 6 final function not correct
+        0.30,  # 7 deployed
+        0.70,  # 8 not deployed
+        0.20,  # 9 correctly executed
+        0.80,  # 10 not correctly executed
+    ]
+
+    node_x = [
+        0.01,  # 0 generated functions
+        0.20,  # 1 original correct
+        0.20,  # 2 original not correct
+        0.40,  # 3 debugged
+        0.40,  # 4 not debugged
+        0.60,  # 5 final function correct
+        0.60,  # 6 final function not correct
+        0.80,  # 7 deployed
+        0.80,  # 8 not deployed
+        0.99,  # 9 correctly executed
+        0.99,  # 10 not correctly executed
+    ]
+
+    link_colors = []
+    alpha = 0.4
+    for src_index in filtered_sources:
+        color_name = colors[src_index]
+        r, g, b, _ = mcolors.to_rgba(color_name)
+        color_string = f'rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, {alpha})'
+        link_colors.append(color_string)
+
+    nodes_config = dict(
+        pad=15,
+        thickness=20,
+        line=dict(color="black", width=0.5),
+        label=updated_labels,
+        color=colors,
+        x=node_x,
+        y=node_y,
+        align="left"
+    )
+
+    links_config = dict(
+        source=filtered_sources,
+        target=filtered_targets,
+        value=filtered_values,
+        color=link_colors
+    )
+
+    fig = go.Figure(data=[go.Sankey(node=nodes_config, link=links_config, arrangement='fixed')])
+    fig.update_layout(
+        font=dict(
+            size=28,
+            color="black",
+            weight="bold"
+        )
+    )
+
+    fig.show()
+
+    try:
+        output_path = os.path.join(dir_name, 'detailed_sankey_flow_correct.png')
+        fig.write_image(output_path, width=3000, height=800, scale=2)
+        print(f"Diagram saved in {output_path}")
+    except Exception as e:
+        print(f"Errore in saving the diagram: {e}")
+
+#create_detailed_sankey_diagram(experiment)
+create_sankey_from_dataframe(experiment)
