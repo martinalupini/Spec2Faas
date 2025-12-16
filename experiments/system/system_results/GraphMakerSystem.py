@@ -400,16 +400,16 @@ def create_sankey_from_dataframe(experiment):
 
     node_y = [
         0.50,  # 0 generated functions
-        0.35,  # 1 original correct
-        0.65,  # 2 original not correct
-        0.5,  # 3 debugged
-        0.20,  # 4 not debugged
-        0.25,  # 5 final function correct
-        0.75,  # 6 final function not correct
-        0.20,  # 7 deployed
+        0.45,  # 1 original correct
+        0.99,  # 2 original not correct
+        0.07,  # 3 debugged
+        0.6,  # 4 not debugged
+        0.4,  # 5 final function correct
+        0.95,  # 6 final function not correct
+        0.45,  # 7 deployed
         0.70,  # 8 not deployed
-        0.01,  # 9 correctly executed
-        0.9,  # 10 not correctly executed
+        0.99,  # 9 correctly executed
+        0.3,  # 10 not correctly executed
     ]
 
     node_x = [
@@ -423,7 +423,7 @@ def create_sankey_from_dataframe(experiment):
         0.70,  # 7 deployed
         0.70,  # 8 not deployed
         0.99,  # 9 correctly executed
-        0.99,  # 10 not correctly executed
+        0.85,  # 10 not correctly executed
     ]
 
     link_colors = []
@@ -452,7 +452,7 @@ def create_sankey_from_dataframe(experiment):
         color=link_colors
     )
 
-    fig = go.Figure(data=[go.Sankey(node=nodes_config, link=links_config, arrangement='snap')])
+    fig = go.Figure(data=[go.Sankey(node=nodes_config, link=links_config, arrangement='freeform')])
     fig.update_layout(
         font=dict(
             size=28,
