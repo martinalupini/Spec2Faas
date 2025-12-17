@@ -129,26 +129,6 @@ async def main(config, models, server):
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
-            entry_point = row.entry_point
-            test = row.test
-
-            original_function_code = results_df.loc[
-                results_df['task_id'] == task_id,
-                'original_function'
-            ].item()
-
-            result, execution_time_generated = await execute_function(original_function_code, test, entry_point,
-                                                                      executor, CancellationToken())
-            if "AssertionError" in result.output:
-                original_function_correct = False
-            else:
-                original_function_correct = True
-
-            results_df.loc[results_df['task_id'] == task_id, 'original_function_correct'] = original_function_correct
-
-            results_df.to_parquet(file_name, index=False)  # 'index=False' per non salvare l'indice di pandas come colonna
-
-
             continue
 
         entry_point = row.entry_point
