@@ -13,6 +13,7 @@ llm:
   #debugger: "qwen3"
   #test_designer: "gemini-2.5-pro"
   test_designer: "qwen3"
+  #test_designer: "deepseek-coder-v2"
   #assistant: "gemini-2.0-flash"
   assistant: "gemini-2.5-pro"
   #assistant: "qwen3"

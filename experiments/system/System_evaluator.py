@@ -129,6 +129,26 @@ async def main(config, models, server):
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
+            entry_point = row.entry_point
+            test = row.test
+
+            original_function_code = results_df.loc[
+                results_df['task_id'] == task_id,
+                'original_function'
+            ].item()
+
+            result, execution_time_generated = await execute_function(original_function_code, test, entry_point,
+                                                                      executor, CancellationToken())
+            if "AssertionError" in result.output:
+                original_function_correct = False
+            else:
+                original_function_correct = True
+
+            results_df.loc[results_df['task_id'] == task_id, 'original_function_correct'] = original_function_correct
+
+            results_df.to_parquet(file_name, index=False)  # 'index=False' per non salvare l'indice di pandas come colonna
+
+
             continue
 
         entry_point = row.entry_point
@@ -169,6 +189,37 @@ async def main(config, models, server):
         print_yellow(task_id)
         # Start the test
         response = await runtime.send_message(TestSystemMessage(tokens = tokens, time = time, prompt=prompt), AgentId("assistant", "default"))
+
+        ######################## TESTING IF ORIGINAL FUNCTION IS CORRECT ######################################
+
+        result, execution_time_generated = await execute_function(response.original_func, test, entry_point,
+                                                                  executor, CancellationToken())
+        if "AssertionError" in result.output:
+            original_function_correct = False
+        else:
+            original_function_correct = True
+
+        ######################## TESTING IF GENERATED TESTS ARE CORRECT ######################################
+        function_name_code = extract_function_name(canonical_code)
+        function_name_test = extract_function_name(response.signature)
+        if function_name_code != function_name_test:
+            new_canonical_code = canonical_code.replace(function_name_code, function_name_test)
+        else:
+            new_canonical_code = canonical_code
+        result, execution_time_generated = await execute_tests(new_canonical_code, response.tests_str, executor,
+                                                               CancellationToken())
+        if "AssertionError" in result.output or "Error" in result.output:
+            print_blue(str(result.output))
+            test_correct = False
+            coverage = 0
+        else:
+            test_correct = True
+            match = re.search(r'(\d+)\s*%', result.output)
+            if match:
+                coverage = int(match.group(1))
+            else:
+                coverage = 0
+
 
         if response.generated:
             CC_original = compute_CC(response.original_func)
@@ -224,36 +275,6 @@ async def main(config, models, server):
 
             CC_final = compute_CC(response.final_func)
             CoG_final = compute_CoG(response.final_func)
-
-        ######################## TESTING IF ORIGINAL FUNCTION IS CORRECT ######################################
-
-            result, execution_time_generated = await execute_function(response.original_func, test, entry_point,
-                                                                      executor, CancellationToken())
-            if "AssertionError" in result.output:
-                original_function_correct = False
-            else:
-                original_function_correct = True
-
-        ######################## TESTING IF GENERATED TESTS ARE CORRECT ######################################
-            function_name_code = extract_function_name(canonical_code)
-            function_name_test = extract_function_name(response.signature)
-            if function_name_code != function_name_test:
-                new_canonical_code = canonical_code.replace(function_name_code, function_name_test)
-            else:
-                new_canonical_code = canonical_code
-            result, execution_time_generated = await execute_tests(new_canonical_code, response.tests_str, executor,
-                                                                   CancellationToken())
-            if "AssertionError" in result.output or "Error" in result.output:
-                print_blue(str(result.output))
-                test_correct = False
-                coverage = 0
-            else:
-                test_correct = True
-                match = re.search(r'(\d+)\s*%', result.output)
-                if match:
-                    coverage = int(match.group(1))
-                else:
-                    coverage = 0
 
         time = response.time
         tokens = response.tokens
