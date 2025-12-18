@@ -28,7 +28,7 @@ class Coder(RoutedAgent):
                     "3. Use the function signature provided."
                     "3. Make sure your code is correct and complete."
                     "4. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT"
-                    "<I</NSTRUCTIONS>"
+                    "</INSTRUCTIONS>"
         )]
         self._model_client = model_client
         self._llm = llm

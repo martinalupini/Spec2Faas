@@ -28,7 +28,7 @@ class Coder_RAG(RoutedAgent):
                     "4. Make sure your code is correct and complete."
                     "5. If you find useful pseudocode in memory, use it."
                     "6. RETURN ONLY THE CODE OF THE FUNCTION IN THE SPECIFIED FORMAT"
-                    "<I</NSTRUCTIONS>"
+                    "</INSTRUCTIONS>"
         )]
         self._model_client = model_client
         self._llm = llm
