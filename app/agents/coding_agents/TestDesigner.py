@@ -55,7 +55,7 @@ class TestDesigner(RoutedAgent):
 
         # Sending a message to TestExecutor
         return_message = await self._runtime.send_message(
-            CodeMessage(message.specification, message.function_signature, "", response.content, self.id.type),
+            ExecuteMessage(message.specification, "", response.content, self.id.type),
             AgentId("test_executor", "default"))
         return return_message
 

@@ -13,17 +13,24 @@ class Message:
 """
 From Entry Point to Coder
 From Entry Point to Test Designer
-From Coder to Test Executor
-From Test Designer to Test Executor 
 """
 @dataclass
 class CodeMessage:
     specification: str
     function_signature: str
+    memory_context: str = ""
+
+
+"""
+From Coder to Test Executor
+From Test Designer to Test Executor 
+"""
+@dataclass
+class ExecuteMessage:
+    specification: str
     code: str
     tests: str
     sender: str
-    memory_context: str = ""
 
 
 """
@@ -44,6 +51,9 @@ class DebugMessage:
     error_message: str
 
 
+"""
+As return type of FaaS Deployer message handler
+"""
 @dataclass
 class FaasMessage:
     content: str

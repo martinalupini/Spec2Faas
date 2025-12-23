@@ -58,7 +58,7 @@ class Coder_RAG(RoutedAgent):
 
         # Return message to the entry_point
         return_message = await self._runtime.send_message(
-            CodeMessage(message.specification, message.function_signature, response.content, "", self.id.type),
+            ExecuteMessage(message.specification, response.content, "", self.id.type),
             AgentId("test_executor", "default"))
         return return_message
 

@@ -65,7 +65,7 @@ class EntryPoint_RAG(RoutedAgent):
             self._server.send_chunk(memory_content + "\n\n Asking to generate code and test for the function " + response.content, "entry_point")
 
         # After generating the signature the EntryPoint send a message both to the Coder and the TestDesigner
-        await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type, rag_context), AgentId("coder", "default"))
-        return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, "", "", self.id.type, rag_context), AgentId("test_designer", "default"))
+        await self._runtime.send_message(CodeMessage(message.content, response.content, rag_context), AgentId("coder", "default"))
+        return_message = await self._runtime.send_message(CodeMessage(message.content, response.content, rag_context), AgentId("test_designer", "default"))
 
         return return_message

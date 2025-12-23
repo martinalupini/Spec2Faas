@@ -33,7 +33,7 @@ class TestExecutor(RoutedAgent):
         print_green(f"Hi I'm the test executor and I use {self._llm}.")
 
     @message_handler
-    async def handle_execute_code_message(self, message: CodeMessage, ctx: MessageContext) -> Message:
+    async def handle_execute_code_message(self, message: ExecuteMessage, ctx: MessageContext) -> Message:
         print_green(f"{self.id.type} received message from {message.sender}")
 
         # Updating data strucures

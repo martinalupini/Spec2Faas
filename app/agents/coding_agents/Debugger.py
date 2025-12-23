@@ -26,7 +26,7 @@ class Debugger(RoutedAgent):
                     "</OUTPUT FORMAT>"
         )]
         self._model_client = model_client
-        # Adding a memory so that the debugger as an history of what happend
+        # Adding a memory so that the debugger as a history of what happened
         self._debug_chat: List[LLMMessage] = self._system_messages
         self._counter = 0
         self._llm = llm
