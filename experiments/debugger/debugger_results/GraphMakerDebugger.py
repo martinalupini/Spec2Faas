@@ -181,3 +181,4 @@ def make_debugging_gain_plot():
 
 
 make_debugging_gain_plot()
+#make_vertical_bar_plot_2()
