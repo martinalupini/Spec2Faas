@@ -173,6 +173,56 @@ def make_pass1_horizontal_bar_plot(csv_path='../results.csv'):
     plt.show()
 
 
+def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
+    df_csv = pd.read_csv(csv_path)
+
+    avoid_models = [
+        'deepseek-coder-v2_no_prompt',
+        'qwen2.5-coder_no_prompt',
+        'gemini-2.0-flash_no_prompt',
+        'gemini-2.5-pro_no_prompt',
+        'qwen2.5-coder:32b_no_prompt',
+        'canonical'
+    ]
+
+    df_plot = df_csv[~df_csv['model'].isin(avoid_models)].copy()
+
+    unique_models = df_plot['model'].unique().tolist()
+    colors = plt.cm.viridis(np.linspace(0, 1, len(unique_models)))
+    color_map = {model: color for model, color in zip(unique_models, colors)}
+
+    df_plot = df_plot.sort_values(by='pass@1', ascending=True)
+
+    models = df_plot['model'].tolist()
+    values = df_plot['pass@1'].tolist()
+
+    plot_colors = [color_map[m] for m in models]
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    bars = ax.barh(models, values, color=plot_colors, height=0.6)
+
+    for spine in ax.spines.values():
+        spine.set_visible(False)
+
+    ax.set_yticklabels(models)
+
+    ax.set_title('Metric Comparison: pass@1', fontsize=16, weight='bold', pad=20)
+    ax.set_xlabel('pass@1', fontsize=12)
+    ax.tick_params(axis='y', labelsize=10)
+
+    ax.xaxis.grid(True, linestyle='--', alpha=0.6)
+
+    max_val = max(values) if values else 1
+    for bar in bars:
+        xval = bar.get_width()
+        ax.text(xval + (max_val * 0.01), bar.get_y() + bar.get_height() / 2.0,
+                f'{xval:.2f}', ha='left', va='center', fontsize=10, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('../pass1_comparison_horizontal.png', dpi=300)
+    plt.show()
+
 def make_performance_plots(csv_path='../results.csv'):
     df_csv = pd.read_csv(csv_path)
 
@@ -189,7 +239,7 @@ def make_performance_plots(csv_path='../results.csv'):
 
     df_plot = df_csv[~df_csv['model'].isin(avoid_models)].copy()
 
-    metrics = ['avg_execution_time (s)', 'avg_tokens']
+    metrics = ['avg_generation_time (s)', 'avg_tokens']
     titles = ['Response Time (s)', 'Token Usage']
 
     models = df_plot['model'].tolist()
@@ -200,7 +250,7 @@ def make_performance_plots(csv_path='../results.csv'):
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric, title in zip(axes, metrics, titles):
-        is_canonical = False if metric == 'avg_tokens' else True
+        is_canonical = False
 
         df_sorted = df_plot.sort_values(by=metric, ascending=True)
         current_models = df_sorted['model'].tolist()
@@ -406,7 +456,7 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     rects2 = ax.barh(y - height / 2, no_prompt_values, height, label='No Prompt', color='#d62728')
 
     ax.set_yticks(y)
-
+    ax.set_yticklabels(sorted_models)
 
     ax.set_xlabel('pass@1 Score')
     ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=14,
@@ -436,8 +486,8 @@ def plot_prompt_comparison(csv_path='../results.csv'):
 #make_horizontal_bar_plot()
 #make_vertical_bar_plot()
 #make_radar_plot()
-#make_pass1_horizontal_bar_plot()
+#make_pass1_horizontal_bar_plot_2()
 #make_performance_plots()
-#make_complexity_plots()
-plot_prompt_comparison()
+make_complexity_plots()
+#plot_prompt_comparison()
 

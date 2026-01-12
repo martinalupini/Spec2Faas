@@ -34,9 +34,9 @@ def write_csv():
     avg_tokens = df['tokens'].mean()
     avg_execution_time_generation = df['execution_time'].mean()
     avg_execution_time_canonical = df['execution_time_canonical'].mean()
-    avg_cc_generation = df['CC_generation'].mean()
+    avg_cc_generation = df[df['passed'] == True]['CC_generation'].mean()
     avg_cc_canonical = df['CC_canonical'].mean()
-    avg_cog_generation = df['CoG_generation'].mean()
+    avg_cog_generation = df[df['passed'] == True]['CoG_generation'].mean()
     avg_cog_canonical = df['CoG_canonical'].mean()
 
     print(f"pass@1: {pass_at_1:.4f}")
@@ -46,10 +46,10 @@ def write_csv():
     print(f"Generated function: {avg_execution_time_generation:.4f}")
     print(f"Canonical function: {avg_execution_time_canonical:.4f}")
     print("\n--- Average Cyclomatic Complexity (CC) ---")
-    print(f"Generated function: {avg_cc_generation:.4f}")
+    print(f"Generated function: {avg_cc_generation}")
     print(f"Canonical function: {avg_cc_canonical:.4f}")
     print("\n--- Average Cognitive Complexity (CoG) ---")
-    print(f"Generated function: {avg_cog_generation:.4f}")
+    print(f"Generated function: {avg_cog_generation:}")
     print(f"Canonical function: {avg_cog_canonical:.4f}")
 
     results_data = {
