@@ -361,13 +361,13 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, 1.1)
 
-    plt.title('Comparing Performances', size=26, y=1.1)
+    plt.title('Comparing Performances for Coder Agent', size=20, y=1.1)
 
     plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=14)
 
     plt.tight_layout(pad=1.5)
 
-    plt.savefig('../radar_comparison_final.png', dpi=300)
+    plt.savefig('../radar_comparison_coder.png', dpi=300)
     plt.show()
 
 
@@ -485,9 +485,9 @@ def plot_prompt_comparison(csv_path='../results.csv'):
 
 #make_horizontal_bar_plot()
 #make_vertical_bar_plot()
-#make_radar_plot()
+make_radar_plot()
 #make_pass1_horizontal_bar_plot_2()
 #make_performance_plots()
-make_complexity_plots()
+#make_complexity_plots()
 #plot_prompt_comparison()
 
