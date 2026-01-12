@@ -389,7 +389,6 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     models_with_both = df_csv.groupby('base_model').filter(lambda x: len(x) >= 2)['base_model'].unique()
     df_plot = df_csv[df_csv['base_model'].isin(models_with_both)].copy()
 
-    # Creiamo un dataframe di supporto per l'ordinamento basato sulla versione "with prompt"
     order_df = df_plot[~df_plot['is_no_prompt']].sort_values(by='pass@1', ascending=True)
     sorted_models = order_df['base_model'].tolist()
 
@@ -398,7 +397,6 @@ def plot_prompt_comparison(csv_path='../results.csv'):
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    # Estrazione valori seguendo l'ordine dei modelli ordinati per pass@1 (with prompt)
     prompt_values = [df_plot[(df_plot['base_model'] == m) & (~df_plot['is_no_prompt'])]['pass@1'].values[0] for m in
                      sorted_models]
     no_prompt_values = [df_plot[(df_plot['base_model'] == m) & (df_plot['is_no_prompt'])]['pass@1'].values[0] for m in
