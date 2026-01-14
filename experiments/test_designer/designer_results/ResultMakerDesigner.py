@@ -30,15 +30,15 @@ def write_csv():
     avg_generation_time = df['generation_time'].mean()
     avg_tokens = df['tokens'].mean()
     avg_execution_time_generation = df['execution_time'].mean()
-    avg_coverage = df['coverage'].mean()
+    avg_coverage = df[df['passed'] == True]['coverage'].mean()
 
 
-    print(f"Passed: {passed:.4f}")
-    print(f"Num passed: {num_passed:.4f}")
+    print(f"Passed: {passed}")
+    print(f"Num passed: {num_passed}")
     print(f"\nAverage Generation Time: {avg_generation_time:.4f}")
     print(f"\nAverage Tokens: {avg_tokens:.4f}")
     print(f"Average Execution Time: {avg_execution_time_generation:.4f}")
-    print(f"\nAverage Coverage: {avg_coverage:.4f}")
+    print(f"\nAverage Coverage: {avg_coverage}")
 
     results_data = {
         'model': [designer],

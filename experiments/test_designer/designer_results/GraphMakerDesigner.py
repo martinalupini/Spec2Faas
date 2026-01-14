@@ -54,59 +54,56 @@ def make_vertical_bar_plot():
     plt.show()
 
 
-import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
-import math
+def make_metric_plot(metric, display_name=None):
+    if display_name is None:
+        display_name = metric
 
-
-def make_metric_plot(metric):
     try:
         df_csv = pd.read_csv('../results.csv')
     except FileNotFoundError:
-        print("Errore: Il file '../results.csv' non è stato trovato.")
+        print("Error: The file '../results.csv' was not found.")
         return
-
-    models = df_csv['model'].tolist()
 
     if metric not in df_csv.columns:
-        print(f"Errore: La metrica '{metric}' non è presente nelle colonne del file CSV.")
-        print(f"Metriche disponibili: {df_csv.columns.tolist()}")
+        print(f"Error: The metric '{metric}' is not present in the CSV columns.")
+        print(f"Available metrics: {df_csv.columns.tolist()}")
         return
 
+    all_models = df_csv['model'].unique()
+    colors_list = plt.cm.viridis(np.linspace(0, 1, len(all_models)))
+    color_map = {model: color for model, color in zip(all_models, colors_list)}
+
+    df_sorted = df_csv.sort_values(by=metric, ascending=True)
+
+    models_sorted = df_sorted['model'].tolist()
+    values_sorted = df_sorted[metric].values
+
+    plot_colors = [color_map[m] for m in models_sorted]
 
     fig, ax = plt.subplots(figsize=(10, 6))
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
-    color_map = {model: color for model, color in zip(models, colors)}
-
-    df_value = df_csv.copy()
-    models_plot = models
-    valori = df_value[metric].values
-
-    plot_colors = [color_map[model] for model in models_plot]
-
-    bars = ax.bar(models_plot, valori, color=plot_colors, width=0.6)
+    bars = ax.barh(models_sorted, values_sorted, color=plot_colors, height=0.6)
 
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    ax.set_title(f'Confronto Modelli per: {metric}', fontsize=16, weight='bold')
-    ax.set_ylabel(metric, fontsize=12)
-    ax.set_xticks(range(len(models_plot)))
-    ax.set_xticklabels(models_plot, rotation=45, ha='right', fontsize=10)
-    ax.yaxis.grid(True, linestyle='--', alpha=0.6)
+    ax.set_title(f'Model Comparison: {display_name}', fontsize=16, weight='bold')
+    ax.set_xlabel(display_name, fontsize=12)
+    ax.set_yticks(range(len(models_sorted)))
+    ax.set_yticklabels(models_sorted, fontsize=10)
+    ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
     for bar in bars:
-        yval = bar.get_height()
-        ax.text(bar.get_x() + bar.get_width() / 2.0, yval * 1.01, f'{yval:.2f}',
-                ha='center', va='bottom', fontsize=10, weight='bold')
+        width = bar.get_width()
+        ax.text(width + (width * 0.01), bar.get_y() + bar.get_height() / 2,
+                f'{width:.2f}', ha='left', va='center', fontsize=10, weight='bold')
 
     plt.tight_layout()
-    plt.savefig('../comparison_' + metric + '.png', dpi=300)
 
+    save_name = display_name.lower().replace(' ', '_')
+    plt.savefig(f'../comparison_{save_name}_designer.png', dpi=300)
     plt.show()
 
 
 #make_vertical_bar_plot()
-make_metric_plot('passed')
+make_metric_plot('avg_coverage (%)', 'average test coverage (%)')

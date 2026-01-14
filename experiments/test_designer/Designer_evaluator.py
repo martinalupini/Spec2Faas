@@ -23,10 +23,10 @@ needs to download the package 'coverage' to calculate the coverage.
 """
 async def execute_function(function: str, test:str, executor, ctx):
     # Installing dependencies in container
-    dependencies = "```sh\npip install numpy\npip install coverage```"
+    dependencies = "```sh\npip install numpy```"
     code_block = extract_markdown_code_blocks(dependencies)
 
-    code = "import coverage\n\ncov = coverage.Coverage()\n\ncov.start()\n\n" + function + test +"\n\ncov.stop()\n\ncov.report()"
+    code = function + test
     invocation_code = CodeBlock(code=code, language='python')
     code_block.append(invocation_code)
 
@@ -73,6 +73,7 @@ async def main(llm, client, system_prompt):
         test = row.test
         canonical_solution = row.canonical_solution
         canonical_code = prompt + canonical_solution
+        coverage = 0
 
         # Function already generated in a previous experiment
         if task_id in results_df['task_id'].values:
@@ -87,18 +88,12 @@ async def main(llm, client, system_prompt):
         if test_code:
             test_code_string = test_code[0].code
             result, execution_time_generated = await execute_function(canonical_code, test_code_string, executor, response.ctx)
-            if "AssertionError" in result.output:
+            if "Error" in result.output:
                 passed = False
-                coverage = 0
+
             else:
                 passed = True
-                # I need to extract the coverage value from the output string
-                match = re.search(r'(\d+)\s*%', result.output)
-                if match:
-                    coverage = int(match.group(1))
-                else:
-                    # Cover the cases where the output is nor an AssertionError neither a coverage report
-                    coverage = 0
+
         else:
             # In the case no code can be extracted from the TestDesigner response we consider it a failure
             passed = False
