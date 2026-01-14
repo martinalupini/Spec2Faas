@@ -304,10 +304,10 @@ def make_radar_plot():
     name_metrics = [
         'pass@1',
         'avgerage\ngeneration\ntime (s)',
-        'avgerage\ntokens',
+        'avgerage\ntokens usage',
         'avgerage\nexecution\ntime (s)',
-        'avgerage\nCC generation',
-        'avgerage\nCoG generation'
+        'avgerage\nciclomatic complexity',
+        'avgerage\ncognitive complexity'
     ]
 
     df_filtered = df_csv[['model'] + metrics]
