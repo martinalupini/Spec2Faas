@@ -105,5 +105,48 @@ def make_metric_plot(metric, display_name=None):
     plt.show()
 
 
+def make_performance_plots(csv_path='../results.csv'):
+    df_csv = pd.read_csv(csv_path)
+
+
+    metrics = ['avg_test_generation_time (s)', 'avg_tokens']
+    titles = ['Response Time (s)', 'Token Usage']
+
+    models = df_csv['model'].tolist()
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 7))
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
+    color_map = {model: color for model, color in zip(models, colors)}
+
+    for ax, metric, title in zip(axes, metrics, titles):
+        is_canonical = False
+
+        df_sorted = df_csv.sort_values(by=metric, ascending=True)
+        current_models = df_sorted['model'].tolist()
+        valori = df_sorted[metric].tolist()
+        plot_colors = [color_map[m] for m in current_models]
+
+        bars = ax.barh(current_models, valori, color=plot_colors, height=0.6)
+
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        ax.set_title(title, fontsize=14, weight='bold')
+        ax.set_xlabel(metric, fontsize=12)
+        ax.tick_params(axis='y', labelsize=10)
+        ax.xaxis.grid(True, linestyle='--', alpha=0.6)
+
+        for bar in bars:
+            xval = bar.get_width()
+            ax.text(xval + (max(valori) * 0.01), bar.get_y() + bar.get_height() / 2.0,
+                    f'{xval:.2f}', ha='left', va='center', fontsize=9, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('../performance_comparison_designer.png', dpi=300)
+    plt.show()
+
+
 #make_vertical_bar_plot()
-make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+#make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+make_performance_plots()
