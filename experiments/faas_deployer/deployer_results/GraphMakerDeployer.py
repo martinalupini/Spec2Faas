@@ -53,4 +53,44 @@ def make_vertical_bar_plot():
     plt.show()
 
 
-make_vertical_bar_plot()
+def make_horizontal_bar_plots():
+    df_csv = pd.read_csv('../results.csv')
+
+    all_possible_models = sorted(list(set(df_csv['model'].tolist() + ['qwen2.5-coder:32b'])))
+
+    colors = plt.cm.viridis(np.linspace(0, 1, len(all_possible_models)))
+    color_map = {model: color for model, color in zip(all_possible_models, colors)}
+
+    #metrics = ['number_functions_correctly_deployed', 'number_functions_correctly_executed']
+    metrics = ['avg_deployment_time (s)', 'avg_tokens']
+
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(15, 6))
+
+    for ax, metric in zip(axes, metrics):
+        df_sorted = df_csv[['model', metric]].sort_values(by=metric, ascending=True)
+
+        models_plot = df_sorted['model'].tolist()
+        values = df_sorted[metric].tolist()
+        plot_colors = [color_map[m] for m in models_plot]
+
+        bars = ax.barh(models_plot, values, color=plot_colors, height=0.6)
+
+        ax.set_title(metric.replace('_', ' ').title(), fontsize=14, weight='bold')
+        ax.xaxis.grid(True, linestyle='--', alpha=0.6)
+        ax.set_xlabel(metric.replace('_', ' ').title())
+
+        for spine in ['top', 'right']:
+            ax.spines[spine].set_visible(False)
+
+        for bar in bars:
+            width = bar.get_width()
+            ax.text(width + (max(values) * 0.01), bar.get_y() + bar.get_height() / 2,
+                    f'{width}', va='center', fontsize=10, weight='bold')
+
+    plt.tight_layout()
+    plt.savefig('../comparison_horizontal_deployer_performance.png', dpi=300)
+    plt.show()
+
+
+#make_vertical_bar_plot()
+make_horizontal_bar_plots()
