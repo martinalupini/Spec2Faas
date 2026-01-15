@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import math
 from app.Utils import *
+from matplotlib.gridspec import GridSpec
 
 llm = get_config_data("../../config_test.yaml")
 debugger = llm['debugger']
@@ -180,25 +181,39 @@ def make_debugging_gain_plot():
     plt.show()
 
 
-
-def plot_coder_comparison(csv_path='../results.csv', coders_list=['gemini-2.5-pro', 'gemini-2.0-flash', 'deepseek-coder-v2']):
-
+def plot_coder_comparison(csv_path='../results.csv',
+                          coders_list=['gemini-2.5-pro', 'gemini-2.0-flash', 'deepseek-coder-v2']):
     df_csv = pd.read_csv(csv_path)
 
-    num_coders = len(coders_list)
-    fig, axes = plt.subplots(1, num_coders, figsize=(22, 6), sharex=True)
+    # --- 1. Calcolo Scala X Comune ---
+    df_csv['debugging_gain'] = (
+            df_csv['number_passed_after_debugging'] -
+            df_csv['number_passed_after_generation']
+    )
+    # Prendiamo il max gain solo tra i coders che stiamo plottando
+    relevant_data = df_csv[df_csv['coder'].isin(coders_list)]
+    max_gain = relevant_data['debugging_gain'].max()
+    x_limit = max_gain + (max_gain * 0.1)  # 10% di margine per le label
 
-    if num_coders == 1:
-        axes = [axes]
+    # --- 2. Configurazione Layout (Griglia 2x4) ---
+    fig = plt.figure(figsize=(18, 12))
+    gs = GridSpec(2, 4, figure=fig)
 
-    debuggers_in_csv = set(df_csv[df_csv['debugger'] != "no debugger"]['debugger'].unique())
+    # Definiamo le posizioni:
+    # Riga 1: ax1 (col 0-1), ax2 (col 2-3)
+    # Riga 2: ax3 (col 1-2) -> Questo lo centra perfettamente ed è grande uguale
+    ax1 = fig.add_subplot(gs[0, 0:2])
+    ax2 = fig.add_subplot(gs[0, 2:4])
+    ax3 = fig.add_subplot(gs[1, 1:3])
 
+    axes = [ax1, ax2, ax3]
 
-    all_potential_debuggers = sorted(list(debuggers_in_csv | {"qwen2.5-coder"}))
+    # --- 3. Mappa Colori Coerente ---
+    debuggers_in_csv = sorted(df_csv[df_csv['debugger'] != "no debugger"]['debugger'].unique())
+    colors = plt.cm.viridis(np.linspace(0, 1, len(debuggers_in_csv)))
+    color_map = {model: color for model, color in zip(debuggers_in_csv, colors)}
 
-    colors = plt.cm.viridis(np.linspace(0, 1, len(all_potential_debuggers)))
-    color_map = {model: color for model, color in zip(all_potential_debuggers, colors)}
-
+    # --- 4. Loop di Disegno ---
     for i, coder_name in enumerate(coders_list):
         ax = axes[i]
 
@@ -210,48 +225,39 @@ def plot_coder_comparison(csv_path='../results.csv', coders_list=['gemini-2.5-pr
             ax.set_title(f"Coder: {coder_name}")
             continue
 
-        df_plot['debugging_gain'] = (
-                df_plot['number_passed_after_debugging'] -
-                df_plot['number_passed_after_generation']
-        )
-
         df_plot = df_plot.sort_values(by='debugging_gain', ascending=True)
-
-        #df_plot = df_plot.sort_values('debugger', ascending=False)
 
         debuggers_y = df_plot['debugger'].tolist()
         gains_x = df_plot['debugging_gain'].tolist()
-        bar_colors = [color_map[dbg] for dbg in debuggers_y]
+        bar_colors = [color_map.get(dbg, 'gray') for dbg in debuggers_y]
 
         bars = ax.barh(debuggers_y, gains_x, color=bar_colors, height=0.6)
 
+        # Applichiamo scala X comune
+        ax.set_xlim(0, x_limit)
+
+        # Estetica e Pulizia
         for spine in ax.spines.values():
             spine.set_visible(False)
 
         ax.set_title(f'Coder: {coder_name}', fontsize=16, weight='bold', pad=15)
-
-        if i == 0:
-            ax.set_ylabel('Debugger Model', fontsize=12, weight='semibold')
-        else:
-
-            ax.tick_params(axis='y', length=0)
-
         ax.set_xlabel('Functions Corrected', fontsize=11)
-        ax.xaxis.grid(True, linestyle='--', alpha=0.5)
+        ax.xaxis.grid(True, linestyle='--', alpha=0.4)
 
+        # Label con i valori numerici
         for bar in bars:
             width = bar.get_width()
-            ax.text(width + 0.3, bar.get_y() + bar.get_height() / 2,
+            ax.text(width + (x_limit * 0.01), bar.get_y() + bar.get_height() / 2,
                     f'{int(width)}', ha='left', va='center',
                     weight='bold', fontsize=11)
 
-    plt.tight_layout()
-    plt.subplots_adjust(top=0.85, wspace=0.3)
+    # hspace gestisce la distanza verticale tra le righe
+    plt.tight_layout(pad=4.0)
+    plt.subplots_adjust(hspace=0.4)
 
     output_name = "../comparison_gain.png"
     plt.savefig(output_name, dpi=300, bbox_inches='tight')
     plt.show()
-
 
 
 
