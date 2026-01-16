@@ -94,6 +94,28 @@ async def main(config):
     await executor.stop()
 
 
+async def total_tokens(config):
+    attempt = config['experiment_number']
+    file_name = f"system_results/experiment_{attempt}/results.parquet"
+
+    df = pd.read_parquet(file_name)
+
+    token_cols = [
+        'token_assistant', 'token_entry_point', 'token_coder',
+        'token_designer', 'token_executor', 'token_debugger', 'token_deployer'
+    ]
+
+    time_cols = [
+        'time_assistant', 'time_entry_point', 'time_coder',
+        'time_designer', 'time_executor', 'time_debugger', 'time_deployer'
+    ]
+
+    df['total_tokens'] = df[token_cols].sum(axis=1)
+    df['total_time'] = df[time_cols].sum(axis=1)
+
+    df.to_parquet(file_name, index=False)
+
+
 
 
 
@@ -105,6 +127,6 @@ if __name__ == "__main__":
 
 
     try:
-        asyncio.run(main(config))
+        asyncio.run(total_tokens(config))
     finally:
         logging.shutdown()

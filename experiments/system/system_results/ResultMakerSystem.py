@@ -39,6 +39,8 @@ def write_csv():
     num_correctly_executed = df['correctly_executed'].sum()
     num_debugged = df['debugged'].sum()
     func_correct = df['final_function_correct'].sum()
+    avg_tokens = df['total_tokens'].mean()
+    avg_time = df['total_time'].mean()
 
     num_not_generated = 164 - num_generated
     num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
@@ -55,6 +57,8 @@ def write_csv():
     print(f"\n#Functions Debugged: {num_debugged}")
     print(f"\n#Functions Deployed: {num_deployed}")
     print(f"\n#Functions Correctly Executed {num_correctly_executed}")
+    print(f"\nAverage Total Tokens: {avg_tokens}")
+    print(f"\nAverage Total Time: {avg_time}")
 
 
     results_data = {
@@ -71,30 +75,22 @@ def write_csv():
         'num_generated_not_debugged_not_deployed': num_generated_not_debugged_not_deployed,
         'num_generated_debugged_not_deployed': num_generated_debugged_not_deployed,
         'num_debugged_not_generated': num_debugged_not_generated,
-        'original_correct_final_correct': df[df['original_function_correct'] & df['final_function_correct']].shape[0],
-        'original_func_correct' : df['original_function_correct'].sum(),
-        'executed_and_final_correct': df[df['correctly_executed'] & df['final_function_correct']].shape[0],
-        'executed_and_final_not_correct': df[df['correctly_executed'] & ~df['final_function_correct']].shape[0],
-        'executed_and_original_correct': df[df['correctly_executed'] & df['original_function_correct']].shape[0],
-        'original_correct_and_deployed': df[df['original_function_correct'] & df['deployed']].shape[0],
-        'original_correct_and_not_deployed': df[df['original_function_correct'] & ~df['deployed']].shape[0],
-        'final_func_correct': func_correct,
-        'original_correct_final_not_correct': df[df['original_function_correct'] & ~df['final_function_correct']].shape[0],
-        'original_correct_final_correct_debugged': df[df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0],
-        'original_correct_final_correct_not_debugged': df[df['original_function_correct'] & df['final_function_correct'] & ~df['debugged']].shape[0],
-        'original_not_correct_final_correct_debugged': df[~df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0],
-        'original_not_correct_debugged': df[~df['original_function_correct'] & df['debugged']].shape[0],
-        'original_not_correct_not_debugged': df[~df['original_function_correct'] & ~df['debugged']].shape[0],
-        'original_not_correct_final_not_correct_debugged': df[~df['original_function_correct'] & ~df['final_function_correct'] & df['debugged']].shape[0],
-        'original_not_correct_final_not_correct_not_debugged': df[~df['original_function_correct'] & ~df['final_function_correct'] & ~df['debugged']].shape[0],
-        'original_correct_not_flagged_as_generated': df[df['original_function_correct'] & ~df['generated']].shape[0],
-        'final_not_correct_deployed': df[df['deployed'] & ~df['final_function_correct']].shape[0],
-        'final_not_correct_not_deployed': df[~df['deployed'] & ~df['final_function_correct']].shape[0],
-        'broken_by_debug_correct_test': df[df['original_function_correct'] & ~df['final_function_correct'] & df['test_correct']].shape[0],
-        'broken_by_debug_not_correct_test': df[df['original_function_correct'] & ~df['final_function_correct'] & ~df['test_correct']].shape[0],
-        'final_correct_deployed': df[df['deployed'] & df['final_function_correct']].shape[0],
-        'final_correct_not_deployed': df[~df['deployed'] & df['final_function_correct']].shape[0]
-
+        'avg_total_tokens': avg_tokens,
+        'avg_total_time': avg_time,
+        'avg_tokens_assistant': df['token_assistant'].mean(),
+        'avg_tokens_entry_point': df['token_entry_point'].mean(),
+        'avg_tokens_coder': df['token_coder'].mean(),
+        'avg_tokens_designer': df['token_designer'].mean(),
+        'avg_tokens_executor': df['token_executor'].mean(),
+        'avg_tokens_debugger': df['token_debugger'].mean(),
+        'avg_tokens_deployer': df['token_deployer'].mean(),
+        'avg_time_assistant': df['time_assistant'].mean(),
+        'avg_time_entry_point': df['time_entry_point'].mean(),
+        'avg_time_coder': df['time_coder'].mean(),
+        'avg_time_designer': df['time_designer'].mean(),
+        'avg_time_deployer': df['time_deployer'].mean(),
+        'avg_time_executor': df['time_executor'].mean(),
+        'avg_time_debugger': df['time_debugger'].mean(),
     }
 
     # Non so perchè in questo file serviva index altrimenti ho errore
@@ -174,7 +170,7 @@ def write_csv_sankey():
 
 
 
-#write_csv()
-write_csv_sankey()
+write_csv()
+#write_csv_sankey()
 
 
