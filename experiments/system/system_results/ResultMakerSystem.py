@@ -116,6 +116,65 @@ def write_csv():
         print(f"\nAn error occurred while saving the file: {e}")
 
 
-write_csv()
+def write_csv_sankey():
+    file_path = "../results_sankey.csv"
+    results_data = {
+        'experiment': experiment,
+        'deployed': df['deployed'].sum(),
+        'correctly_executed': df['correctly_executed'].sum(),
+        'deployed_not_executed': df[~df['correctly_executed'] & df['deployed']].shape[0],
+        'executed_final_correct': df[df['correctly_executed'] & df['final_function_correct']].shape[0],
+        'executed_final_not_correct': df[df['correctly_executed'] & ~df['final_function_correct']].shape[0],
+        'executed_final_correct_debugged': df[df['correctly_executed'] & df['final_function_correct'] & df['debugged']].shape[0],
+        'executed_final_correct_not_debugged': df[df['correctly_executed'] & df['final_function_correct'] & ~df['debugged']].shape[0],
+        'executed_final_correct_debugged_original_correct': df[df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & df['original_function_correct']].shape[0],
+        'executed_final_correct_debugged_original_not_correct': df[df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & ~df['original_function_correct']].shape[0],
+        'executed_final_correct_not_debugged_original_correct': df[df['correctly_executed'] & df['final_function_correct'] & ~df['debugged'] & df['original_function_correct']].shape[0],
+        'executed_final_correct_not_debugged_original_not_correct': df[df['correctly_executed'] & df['final_function_correct'] & ~df['debugged'] & ~df['original_function_correct']].shape[0],
+        'executed_final_not_correct_debugged': df[df['correctly_executed'] & ~df['final_function_correct'] & df['debugged']].shape[0],
+        'executed_final_not_correct_not_debugged': df[df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged']].shape[0],
+        'executed_final_not_correct_debugged_original_correct': df[df['correctly_executed'] & ~df['final_function_correct'] & df['debugged'] & df['original_function_correct']].shape[0],
+        'executed_final_not_correct_debugged_original_not_correct': df[df['correctly_executed'] & ~df['final_function_correct'] & df['debugged'] & ~df['original_function_correct']].shape[0],
+        'executed_final_not_correct_not_debugged_original_correct': df[df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged'] & df['original_function_correct']].shape[0],
+        'executed_final_not_correct_not_debugged_original_not_correct': df[df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged'] & ~df['original_function_correct']].shape[0],
+        'not_executed_final_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct']].shape[0],
+        'not_executed_final_not_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct']].shape[0],
+        'not_executed_final_correct_debugged': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged']].shape[0],
+        'not_ executed_final_correct_not_debugged': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged']].shape[0],
+        'not_executed_final_correct_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & df['original_function_correct']].shape[0],
+        'not_executed_final_correct_debugged_original_not_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & ~df['original_function_correct']].shape[0],
+        'not_executed_final_correct_not_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged'] & df['original_function_correct']].shape[0],
+        'not_executed_final_correct_not_debugged_original_not_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged'] & ~df['original_function_correct']].shape[0],
+        'not_executed_final_not_correct_debugged':df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & df['debugged']].shape[0],
+        'not_executed_final_not_correct_not_debugged':df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged']].shape[0],
+        'not_executed_final_not_correct_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & df['debugged'] & df['original_function_correct']].shape[0],
+        'not_executed_final_not_correct_debugged_original_not_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & df['debugged'] & ~df['original_function_correct']].shape[0],
+        'not_executed_final_not_correct_not_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged'] & df['original_function_correct']].shape[0],
+        'not_executed_final_not_correct_not_debugged_original_not_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct'] & ~df['debugged'] & ~df['original_function_correct']].shape[0],
+
+    }
+
+    # Non so perchè in questo file serviva index altrimenti ho errore
+    results_df = pd.DataFrame(results_data, index=[0])
+
+    file_exists = os.path.exists(file_path)
+
+    try:
+        # Usa mode='a' (append) per aggiungere dati alla fine del file.
+        # L'intestazione viene scritta solo se il file non esiste (header=not file_exists).
+        results_df.to_csv(file_path, mode='a', header=not file_exists, index=False)
+
+        if file_exists:
+            print(f"\nAppended a new row to '{file_path}'")
+        else:
+            print(f"\nCreated a new file and saved results to '{file_path}'")
+
+    except Exception as e:
+        print(f"\nAn error occurred while saving the file: {e}")
+
+
+
+#write_csv()
+write_csv_sankey()
 
 

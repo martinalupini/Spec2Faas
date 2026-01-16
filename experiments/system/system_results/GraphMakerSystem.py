@@ -135,234 +135,6 @@ def create_detailed_sankey_diagram(experiment):
 
 
 
-def create_sankey_from_dataframe(experiment):
-    dir_name = f"experiment_{experiment}/"
-    os.makedirs(dir_name, exist_ok=True)
-
-    try:
-        df = pd.read_parquet(dir_name + "results.parquet")
-    except FileNotFoundError:
-        print(f"File non trovato per l'esperimento {experiment}")
-        return
-
-    if df.empty:
-        print(f"No data for experiment {experiment}")
-        return
-
-    node_labels = [
-        "generated functions",  # 0
-        "original correct",  # 1
-        "original not correct",  # 2
-        "debugged",  # 3
-        "not debugged",  # 4
-        "final function correct",  # 5
-        "final function not correct",  # 6
-        "deployed",  # 7
-        "not deployed",  # 8
-        "correctly executed",  # 9
-        "not correctly executed",  # 10
-        "not generated functions",  # 11
-        "total functions",  # 12
-    ]
-
-    COLS = {
-        'GENERATED': 'generated',
-        'ORIGINAL_CORRECT': 'original_function_correct',
-        'DEBUGGED': 'debugged',
-        'FINAL_CORRECT': 'final_function_correct',
-        'DEPLOYED': 'deployed',
-        'EXECUTED': 'correctly_executed'
-    }
-
-    TOTAL_FUNCTIONS = 164
-
-    df_gen = df[df[COLS['GENERATED']] == True]
-    df_not_gen = df[df[COLS['GENERATED']] == False]
-
-    flow_0_total_gen = df_gen.shape[0]  # 12 -> 0
-    flow_0_total_not_gen = df_not_gen.shape[0]  # 12 -> 11
-
-
-    flow_A = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 0 -> 1
-    flow_B = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 0 -> 2
-
-    flow_A_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 11 -> 1
-    flow_B_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 11 -> 2
-
-    df_OC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == True)]
-    flow_C = df_OC_D.shape[0]  # 1 -> 3
-    df_OC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == False)]
-    flow_D = df_OC_ND.shape[0]  # 1 -> 4
-
-    df_ONC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == True)]
-    flow_E = df_ONC_D.shape[0]  # 2 -> 3
-    df_ONC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == False)]
-    flow_F = df_ONC_ND.shape[0]  # 2 -> 4
-
-
-    flow_G = df_gen[df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 5
-    flow_H = df_gen[df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 6
-    flow_I = df_gen[~df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 4 -> 5
-    flow_J = df_gen[~df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 4 -> 6
-    flow_K = df_gen[df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]].shape[0]  # 5 -> 7
-    flow_L = df_gen[df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]].shape[0]  # 5 -> 8
-    flow_M = df_gen[~df_gen[COLS['FINAL_CORRECT']] & df_gen[COLS['DEPLOYED']]].shape[0]  # 6 -> 7
-    flow_N = df_gen[~df_gen[COLS['FINAL_CORRECT']] & ~df_gen[COLS['DEPLOYED']]].shape[0]  # 6 -> 8
-    flow_O = df_gen[df_gen[COLS['DEPLOYED']] & df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 9
-    flow_P = df_gen[df_gen[COLS['DEPLOYED']] & ~df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 10
-
-    link_values = [
-        flow_0_total_gen, flow_0_total_not_gen,
-        flow_A, flow_B,  # 0 -> 1, 0 -> 2
-        flow_A_NG, flow_B_NG,  # 11 -> 1, 11 -> 2
-        flow_C, flow_D,  # 1 -> 3, 1 -> 4
-        flow_E, flow_F,  # 2 -> 3, 2 -> 4
-        flow_G, flow_H,  # 3 -> 5, 3 -> 6
-        flow_I, flow_J,  # 4 -> 5, 4 -> 6
-        flow_K, flow_L,  # 5 -> 7, 5 -> 8
-        flow_M, flow_N,  # 6 -> 7, 6 -> 8
-        flow_O, flow_P  # 7 -> 9, 7 -> 10
-    ]
-
-    source_nodes = [
-        12, 12,  # total functions
-        0, 0,  # generated functions
-        11, 11,  # not generated functions
-        1, 1,  # original correct
-        2, 2,  # original not correct
-        3, 3,  # debugged
-        4, 4,  # not debugged
-        5, 5,  # final function correct
-        6, 6,  # final function not correct
-        7, 7  # deployed
-    ]
-    target_nodes = [
-        0, 11,  # generated functions, not generated functions
-        1, 2,  # original correct, original not correct
-        1, 2,  # original correct, original not correct
-        3, 4,  # debugged, not debugged
-        3, 4,  # debugged, not debugged
-        5, 6,  # final function correct, final function not correct
-        5, 6,  # final function correct, final function not correct
-        7, 8,  # deployed, not deployed
-        7, 8,  # deployed, not deployed
-        9, 10  # correctly executed, not correctly executed
-    ]
-
-    filtered_sources, filtered_targets, filtered_values = [], [], []
-    for s, t, v in zip(source_nodes, target_nodes, link_values):
-        if v > 0:
-            filtered_sources.append(s)
-            filtered_targets.append(t)
-            filtered_values.append(v)
-
-    node_totals = [0] * len(node_labels)
-    node_totals[12] = TOTAL_FUNCTIONS
-    node_totals[0] = flow_0_total_gen
-    node_totals[11] = flow_0_total_not_gen
-
-
-    for src, tgt, val in zip(filtered_sources, filtered_targets, filtered_values):
-        if 1 <= tgt <= 10:
-            node_totals[tgt] += val
-
-    updated_labels = []
-    for i, label in enumerate(node_labels):
-        if node_totals[i] > 0 or i == 12:
-            updated_labels.append(f"{label} ({node_totals[i]})")
-        else:
-            updated_labels.append(label)
-
-    colors = [
-        "grey",  # 0 generated functions
-        "blue",  # 1 original correct
-        "red",  # 2 original not correct
-        "darkgreen",  # 3 debugged
-        "orange",  # 4 not debugged
-        "purple",  # 5 final function correct
-        "brown",  # 6 final function not correct
-        "magenta",  # 7 deployed
-        "darkgrey",  # 8 not deployed
-        "lightgreen",  # 9 correctly executed
-        "crimson",  # 10 not correctly executed
-        "cyan",  # 11 not generated functions
-        "black",  # 12 total functions
-    ]
-
-    node_y = [
-        0.30,  # 0 generated functions
-        0.45,  # 1 original correct
-        0.99,  # 2 original not correct
-        0.07,  # 3 debugged
-        0.6,  # 4 not debugged
-        0.4,  # 5 final function correct
-        0.95,  # 6 final function not correct
-        0.45,  # 7 deployed
-        0.70,  # 8 not deployed
-        0.99,  # 9 correctly executed
-        0.3,  # 10 not correctly executed
-        0.90,  # 11 not generated functions
-        0.50,  # 12 total functions
-    ]
-
-    node_x = [
-        0.10,  # 0 generated functions
-        0.30,  # 1 original correct
-        0.30,  # 2 original not correct
-        0.45,  # 3 debugged
-        0.45,  # 4 not debugged
-        0.6,  # 5 final function correct
-        0.6,  # 6 final function not correct
-        0.80,  # 7 deployed
-        0.80,  # 8 not deployed
-        0.99,  # 9 correctly executed
-        0.90,  # 10 not correctly executed
-        0.10,  # 11 not generated functions
-        0.01,  # 12 total functions
-    ]
-
-    link_colors = []
-    alpha = 0.4
-    for src_index in filtered_sources:
-        color_name = colors[src_index]
-        r, g, b, _ = mcolors.to_rgba(color_name)
-        color_string = f'rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, {alpha})'
-        link_colors.append(color_string)
-
-    nodes_config = dict(
-        pad=15,
-        thickness=20,
-        line=dict(color="black", width=0.5),
-        label=updated_labels,
-        color=colors,
-        x=node_x,
-        y=node_y,
-        align="left"
-    )
-
-    links_config = dict(
-        source=filtered_sources,
-        target=filtered_targets,
-        value=filtered_values,
-        color=link_colors
-    )
-
-    fig = go.Figure(data=[go.Sankey(node=nodes_config, link=links_config, arrangement='freeform')])
-    fig.update_layout(
-        font=dict(
-            size=28,
-            color="black",
-            weight="bold"
-        ))
-
-    fig.show()
-
-    try:
-        output_path = os.path.join(dir_name, 'detailed_sankey_flow_correct.png')
-        fig.write_image(output_path, width=3000, height=800, scale=2)
-        print(f"Diagram saved in {output_path}")
-    except Exception as e:
-        print(f"Errore in saving the diagram: {e}")
 
 
 def analyze_and_visualize_results():
@@ -462,7 +234,116 @@ def analyze_and_visualize_comparison():
     plt.savefig('../comparison_configs.png')
     plt.show()
 
+def create_full_sankey():
+
+    df = pd.read_csv("../results_sankey.csv")
+
+    labels = [
+        "Deployed",  # 0
+        "Executed",  # 1
+        "Not Executed",  # 2
+        "Executed: Final Correct",  # 3
+        "Executed: Final Not Correct",  # 4
+        "Not Executed: Final Correct",  # 5
+        "Not Executed: Final Not Correct",  # 6
+        "Exec FC: Debugged",  # 7
+        "Exec FC: Not Debugged",  # 8
+        "Exec FNC: Debugged",  # 9
+        "Exec FNC: Not Debugged",  # 10
+        "Not Exec FC: Debugged",  # 11
+        "Not Exec FC: Not Debugged",  # 12
+        "Not Exec FNC: Debugged",  # 13
+        "Not Exec FNC: Not Debugged",  # 14
+        "Exec FC D: Orig Correct",  # 15
+        "Exec FC D: Orig Not Correct",  # 16
+        "Exec FC ND: Orig Correct",  # 17
+        "Exec FC ND: Orig Not Correct",  # 18
+        "Exec FNC D: Orig Correct",  # 19
+        "Exec FNC D: Orig Not Correct",  # 20
+        "Exec FNC ND: Orig Correct",  # 21
+        "Exec FNC ND: Orig Not Correct",  # 22
+        "Not Exec FC D: Orig Correct",  # 23
+        "Not Exec FC D: Orig Not Correct",  # 24
+        "Not Exec FC ND: Orig Correct",  # 25
+        "Not Exec FC ND: Orig Not Correct",  # 26
+        "Not Exec FNC D: Orig Correct",  # 27
+        "Not Exec FNC D: Orig Not Correct",  # 28
+        "Not Exec FNC ND: Orig Correct",  # 29
+        "Not Exec FNC ND: Orig Not Correct"  # 30
+    ]
+
+
+    links = [
+        (0, 1, df['correctly_executed']),
+        (0, 2, df['deployed_not_executed']),
+
+        (1, 3, df['executed_final_correct']),
+        (1, 4, df['executed_final_not_correct']),
+
+        (2, 5, df['not_executed_final_correct']),
+        (2, 6, df['not_executed_final_not_correct']),
+
+        (3, 7, df['executed_final_correct_debugged']),
+        (3, 8, df['executed_final_correct_not_debugged']),
+        (4, 9, df['executed_final_not_correct_debugged']),
+        (4, 10, df['executed_final_not_correct_not_debugged']),
+        (5, 11, df['not_executed_final_correct_debugged']),
+        (5, 12, df['not_ executed_final_correct_not_debugged']),
+        (6, 13, df['not_executed_final_not_correct_debugged']),
+        (6, 14, df['not_executed_final_not_correct_not_debugged']),
+
+        (7, 15, df['executed_final_correct_debugged_original_correct']),
+        (7, 16, df['executed_final_correct_debugged_original_not_correct']),
+        (8, 17, df['executed_final_correct_not_debugged_original_correct']),
+        (8, 18, df['executed_final_correct_not_debugged_original_not_correct']),
+        (9, 19, df['executed_final_not_correct_debugged_original_correct']),
+        (9, 20, df['executed_final_not_correct_debugged_original_not_correct']),
+        (10, 21, df['executed_final_not_correct_not_debugged_original_correct']),
+        (10, 22, df['executed_final_not_correct_not_debugged_original_not_correct']),
+        (11, 23, df['not_executed_final_correct_debugged_original_correct']),
+        (11, 24, df['not_executed_final_correct_debugged_original_not_correct']),
+        (12, 25, df['not_executed_final_correct_not_debugged_original_correct']),
+        (12, 26, df['not_executed_final_correct_not_debugged_original_not_correct']),
+        (13, 27, df['not_executed_final_not_correct_debugged_original_correct']),
+        (13, 28, df['not_executed_final_not_correct_debugged_original_not_correct']),
+        (14, 29, df['not_executed_final_not_correct_not_debugged_original_correct']),
+        (14, 30, df['not_executed_final_not_correct_not_debugged_original_not_correct']),
+    ]
+
+    sources, targets, values = zip(*links)
+
+    node_colors = ["grey"] * 1 + ["blue", "red"] * 1 + ["green", "orange"] * 2 + ["lightblue", "magenta"] * 4 + [
+        "darkgreen", "darkred"] * 8
+
+    link_colors = []
+    for s_idx in sources:
+        r, g, b, _ = mcolors.to_rgba(node_colors[s_idx])
+        link_colors.append(f'rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, 0.4)')
+
+    fig = go.Figure(data=[go.Sankey(
+        node=dict(
+            pad=10, thickness=20,
+            line=dict(color="black", width=0.5),
+            label=[f"<b>{l}</b>" for l in labels],
+            color=node_colors
+        ),
+        link=dict(source=sources, target=targets, value=values, color=link_colors)
+    )])
+
+    fig.update_layout(
+        title_text=f"Sankey Flow Diagram - Experiment: {df['experiment']}",
+        font=dict(size=10, color="black"),
+        width=2000, height=1000
+    )
+
+    fig.show()
+
+    dir_name = f"experiment_{experiment}/"
+    output_path = os.path.join(dir_name, 'correct_functions_sankey.png')
+    fig.write_image(output_path, width=3000, height=800, scale=2)
+
 #create_detailed_sankey_diagram(experiment)
 #create_sankey_from_dataframe(experiment)
 #analyze_and_visualize_results()
-analyze_and_visualize_comparison()
+#analyze_and_visualize_comparison()
+create_full_sankey()
