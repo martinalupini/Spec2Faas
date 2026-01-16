@@ -2,7 +2,6 @@ import pandas as pd
 import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
-
 from app.Utils import *
 
 config = get_config_data_full("../../config_test.yaml")
@@ -10,7 +9,7 @@ experiment = config["experiment_number"]
 
 """
 def make_plot():
-    df_csv = pd.read_csv('../results_old.csv')
+    df_csv = pd.read_csv('../results.csv')
 
     models = df_csv['model'].tolist()
     metrics = df_csv.columns.drop(['model']).tolist()
@@ -56,55 +55,11 @@ def make_plot():
     plt.show()
     """
 
-def sankey_flow_diagram():
-    df_csv = pd.read_csv('../results.csv')
-    # Selecting only the current experiment
-    df_csv = df_csv[df_csv['experiment_number'] == experiment].copy()
-
-    for row in df_csv.itertuples(index=False):
-
-        num_generated = row.num_generated
-        num_deployed = row.num_deployed
-        num_debugged = row.num_debugged
-        num_correctly_executed = row.num_correctly_executed
-        dir = "experiment_" + str(row.experiment_number) + "/"
-
-        debugging_loss = num_generated - num_debugged
-        deployment_loss = num_debugged - num_deployed
-        execution_loss = num_deployed - num_correctly_executed
-
-        # Define the Sankey diagram nodes and links
-        fig = go.Figure(data=[go.Sankey(
-            node=dict(
-                pad=15,
-                thickness=20,
-                line=dict(color="black", width=0.5),
-                label=["Generated", "Debugged", "Deployed", "Correctly Executed", "Failed Debug", "Failed Deployment",
-                       "Failed Execution"],
-                color=["blue", "blue", "blue", "green", "red", "red", "red"]
-            ),
-            link=dict(
-                source=[0, 0, 1, 1, 2, 2],  # Indices of the source nodes
-                target=[1, 4, 2, 5, 3, 6],  # Indices of the target nodes
-                value=[num_debugged, debugging_loss, num_deployed, deployment_loss, num_correctly_executed, execution_loss]
-                # Values of the flows
-            ))])
-
-        fig.update_layout(title_text="Sankey Diagram of the Execution Flow", font_size=12)
-        plt.savefig( dir + 'comparison.png', dpi=300)
-        fig.show()
-
-
-
 
 
 def create_detailed_sankey_diagram(experiment):
-    """
-    Creates a detailed Sankey diagram for a specific experiment,
-    including the flow values in the node labels.
-    """
+
     try:
-        # Assumes '../results.csv' is accessible relative to the script's location
         df_csv = pd.read_csv('../results.csv')
     except FileNotFoundError:
         print("Error File not found: Please ensure '../results.csv' exists.")
@@ -116,20 +71,13 @@ def create_detailed_sankey_diagram(experiment):
         print(f"No data for experiment {experiment}")
         return
 
-    # Assuming the 'results.csv' has columns that match the flow values used:
-    # 'num_debugged', 'num_generated_and_debugged', 'num_generated_debugged_deployed',
-    # 'num_generated_debugged_not_deployed', 'num_generated_not_debugged_deployed',
-    # 'num_generated_not_debugged_not_deployed', 'num_deployed', 'num_correctly_executed'
-    # and total items is 164.
-
     for row in df_experiment.itertuples(index=False):
         dir_name = f"experiment_{row.experiment_number}/"
         os.makedirs(dir_name, exist_ok=True)
 
         execution_loss = row.num_deployed - row.num_correctly_executed
-        total_items = 164 # Based on the link value 164 - row.num_debugged
+        total_items = 164
 
-        # Define the initial node labels and indices
         initial_labels = [
             "Total",  # 0
             "Debugged",  # 1
@@ -142,8 +90,6 @@ def create_detailed_sankey_diagram(experiment):
             "Execution Failed" # 8
         ]
 
-        # --- Define Links and Values ---
-        # The values here are critical as they define the flow *between* nodes.
         link_values = [
             row.num_debugged, # 0 -> 1 (Total -> Debugged)
             total_items - row.num_debugged, # 0 -> 4 (Total -> Not Debugged)
@@ -161,32 +107,23 @@ def create_detailed_sankey_diagram(experiment):
         source_nodes = [0, 0, 1, 1, 2, 2, 3, 4, 4, 5, 5]
         target_nodes = [1, 4, 2, 3, 5, 6, 6, 5, 6, 7, 8]
 
-        # --- Calculate Node Totals (Sum of incoming flows) ---
         node_totals = [0] * len(initial_labels)
         node_totals[0] = total_items # Total node has the fixed total value
 
         for src, tgt, val in zip(source_nodes, target_nodes, link_values):
-            # For all nodes *except* the initial "Total" node (index 0),
-            # the total value is the sum of its incoming links.
+
             if tgt != 0:
-                 # Check if the flow value is valid
                 if val >= 0:
                     node_totals[tgt] += val
                 else:
-                    # Handle cases where calculated values might be negative due to data inconsistencies
-                    # or the original logic for the 3 -> 6 link (see NOTE above).
                     print(f"Warning: Negative flow value detected for link {initial_labels[src]} -> {initial_labels[tgt]}. Assuming 0 for calculation.")
 
 
-        # --- Update Node Labels with Calculated Totals ---
         updated_labels = []
         for i, label in enumerate(initial_labels):
             updated_labels.append(f"{label} ({node_totals[i]})")
 
 
-        # --- Rebuild Nodes and Links Dictionaries ---
-
-        # Nodes (now with updated labels)
         nodes = dict(
             pad=100,
             thickness=18,
@@ -224,7 +161,6 @@ def create_detailed_sankey_diagram(experiment):
             color=link_colors
         )
 
-        # --- Create and Display Figure ---
         fig = go.Figure(data=[go.Sankey(node=nodes, link=links, arrangement='freeform')])
 
         fig.update_layout(
@@ -237,27 +173,20 @@ def create_detailed_sankey_diagram(experiment):
 
         fig.show()
 
-        # --- Save Figure ---
         try:
             output_path = os.path.join(dir_name, 'detailed_sankey_flow.png')
             fig.write_image(output_path, width=2000, height=800, scale=2)
             print(f"Diagram saved in {output_path}")
         except Exception as e:
-            print(f"Errore in saving the diagram: {e}")
+            print(f"Error in saving the diagram: {e}")
 
 
-import pandas as pd
-import plotly.graph_objects as go
-import matplotlib.colors as mcolors
-import os
 
 
 def create_sankey_from_dataframe(experiment):
     dir_name = f"experiment_{experiment}/"
     os.makedirs(dir_name, exist_ok=True)
 
-    # Assumiamo che df sia definito come nel codice originale
-    # e che pd e os siano importati
     try:
         df = pd.read_parquet(dir_name + "results.parquet")
     except FileNotFoundError:
@@ -268,7 +197,6 @@ def create_sankey_from_dataframe(experiment):
         print(f"No data for experiment {experiment}")
         return
 
-    # Aggiunto il nodo 12 "total functions"
     node_labels = [
         "generated functions",  # 0
         "original correct",  # 1
@@ -282,7 +210,7 @@ def create_sankey_from_dataframe(experiment):
         "correctly executed",  # 9
         "not correctly executed",  # 10
         "not generated functions",  # 11
-        "total functions",  # 12 - NUOVO NODO INIZIALE
+        "total functions",  # 12
     ]
 
     COLS = {
@@ -294,8 +222,7 @@ def create_sankey_from_dataframe(experiment):
         'EXECUTED': 'correctly_executed'
     }
 
-    # Calcolo dei totali di partenza
-    TOTAL_FUNCTIONS = 164  # Valore fornito dall'utente
+    TOTAL_FUNCTIONS = 164
 
     df_gen = df[df[COLS['GENERATED']] == True]
     df_not_gen = df[df[COLS['GENERATED']] == False]
@@ -303,30 +230,24 @@ def create_sankey_from_dataframe(experiment):
     flow_0_total_gen = df_gen.shape[0]  # 12 -> 0
     flow_0_total_not_gen = df_not_gen.shape[0]  # 12 -> 11
 
-    # Calcoli dei flussi tra i nodi esistenti (come definiti in precedenza)
 
-    # Flussi da generated functions (0)
     flow_A = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 0 -> 1
     flow_B = df_gen[df_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 0 -> 2
 
-    # Flussi da not generated functions (11)
     flow_A_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == True].shape[0]  # 11 -> 1
     flow_B_NG = df_not_gen[df_not_gen[COLS['ORIGINAL_CORRECT']] == False].shape[0]  # 11 -> 2
 
-    # Flussi da original correct (1) - solo da df_gen (come da logica precedente)
     df_OC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == True)]
     flow_C = df_OC_D.shape[0]  # 1 -> 3
     df_OC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == True) & (df_gen[COLS['DEBUGGED']] == False)]
     flow_D = df_OC_ND.shape[0]  # 1 -> 4
 
-    # Flussi da original not correct (2) - solo da df_gen (come da logica precedente)
     df_ONC_D = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == True)]
     flow_E = df_ONC_D.shape[0]  # 2 -> 3
     df_ONC_ND = df_gen[(df_gen[COLS['ORIGINAL_CORRECT']] == False) & (df_gen[COLS['DEBUGGED']] == False)]
     flow_F = df_ONC_ND.shape[0]  # 2 -> 4
 
-    # Flussi successivi (3 -> 5,6; 4 -> 5,6; 5 -> 7,8; 6 -> 7,8; 7 -> 9,10)
-    # Rimanengono invariati e basati su df_gen.
+
     flow_G = df_gen[df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 5
     flow_H = df_gen[df_gen[COLS['DEBUGGED']] & ~df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 3 -> 6
     flow_I = df_gen[~df_gen[COLS['DEBUGGED']] & df_gen[COLS['FINAL_CORRECT']]].shape[0]  # 4 -> 5
@@ -338,9 +259,8 @@ def create_sankey_from_dataframe(experiment):
     flow_O = df_gen[df_gen[COLS['DEPLOYED']] & df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 9
     flow_P = df_gen[df_gen[COLS['DEPLOYED']] & ~df_gen[COLS['EXECUTED']]].shape[0]  # 7 -> 10
 
-    # Aggiornamento delle liste di flussi, sorgenti e destinazioni
     link_values = [
-        flow_0_total_gen, flow_0_total_not_gen,  # 12 -> 0, 12 -> 11 - NUOVI FLUSSI
+        flow_0_total_gen, flow_0_total_not_gen,
         flow_A, flow_B,  # 0 -> 1, 0 -> 2
         flow_A_NG, flow_B_NG,  # 11 -> 1, 11 -> 2
         flow_C, flow_D,  # 1 -> 3, 1 -> 4
@@ -353,7 +273,7 @@ def create_sankey_from_dataframe(experiment):
     ]
 
     source_nodes = [
-        12, 12,  # total functions - NUOVE SORGENTI
+        12, 12,  # total functions
         0, 0,  # generated functions
         11, 11,  # not generated functions
         1, 1,  # original correct
@@ -365,7 +285,7 @@ def create_sankey_from_dataframe(experiment):
         7, 7  # deployed
     ]
     target_nodes = [
-        0, 11,  # generated functions, not generated functions - NUOVI TARGET
+        0, 11,  # generated functions, not generated functions
         1, 2,  # original correct, original not correct
         1, 2,  # original correct, original not correct
         3, 4,  # debugged, not debugged
@@ -384,27 +304,23 @@ def create_sankey_from_dataframe(experiment):
             filtered_targets.append(t)
             filtered_values.append(v)
 
-    # Calcolo dei totali dei nodi
     node_totals = [0] * len(node_labels)
-    # Impostiamo i nodi di partenza dal conteggio totale/dataframe
     node_totals[12] = TOTAL_FUNCTIONS
     node_totals[0] = flow_0_total_gen
     node_totals[11] = flow_0_total_not_gen
 
-    # Calcoliamo i totali dei nodi intermedi e finali dalla somma dei flussi in ingresso
-    # Si sommano solo i flussi in ingresso per i nodi da 1 a 10
+
     for src, tgt, val in zip(filtered_sources, filtered_targets, filtered_values):
         if 1 <= tgt <= 10:
             node_totals[tgt] += val
 
     updated_labels = []
     for i, label in enumerate(node_labels):
-        if node_totals[i] > 0 or i == 12:  # Includi il nodo iniziale anche se il totale fosse 0
+        if node_totals[i] > 0 or i == 12:
             updated_labels.append(f"{label} ({node_totals[i]})")
         else:
             updated_labels.append(label)
 
-    # Aggiornamento colori (aggiunto il nodo 12)
     colors = [
         "grey",  # 0 generated functions
         "blue",  # 1 original correct
@@ -418,10 +334,9 @@ def create_sankey_from_dataframe(experiment):
         "lightgreen",  # 9 correctly executed
         "crimson",  # 10 not correctly executed
         "cyan",  # 11 not generated functions
-        "black",  # 12 total functions - NUOVO COLORE
+        "black",  # 12 total functions
     ]
 
-    # Aggiornamento posizioni (aggiunto il nodo 12)
     node_y = [
         0.30,  # 0 generated functions
         0.45,  # 1 original correct
@@ -435,7 +350,7 @@ def create_sankey_from_dataframe(experiment):
         0.99,  # 9 correctly executed
         0.3,  # 10 not correctly executed
         0.90,  # 11 not generated functions
-        0.50,  # 12 total functions - NUOVA POSIZIONE
+        0.50,  # 12 total functions
     ]
 
     node_x = [
@@ -451,7 +366,7 @@ def create_sankey_from_dataframe(experiment):
         0.99,  # 9 correctly executed
         0.90,  # 10 not correctly executed
         0.10,  # 11 not generated functions
-        0.01,  # 12 total functions - NUOVA POSIZIONE
+        0.01,  # 12 total functions
     ]
 
     link_colors = []
@@ -497,5 +412,45 @@ def create_sankey_from_dataframe(experiment):
     except Exception as e:
         print(f"Errore in saving the diagram: {e}")
 
+
+def analyze_and_visualize_results():
+    try:
+        df = pd.read_csv("../results.csv")
+    except FileNotFoundError:
+        return "Error: File not found."
+
+    last_row = df.iloc[-1]
+    deployed = last_row['num_deployed']
+    executed = last_row['num_correctly_executed']
+
+    labels = ['Deployed', 'Executed']
+    values = [deployed, executed]
+    colors = ['#3498db', '#2ecc71']
+    x_pos = [-0.1,0.5]
+
+    fig, ax = plt.subplots(figsize=(8, 6))
+
+    bars = ax.bar(x_pos, values, color=colors, width=0.3, zorder=3)
+
+    ax.set_title('Comparison: Deployed vs Executed Functions', weight='bold', fontsize=14, pad=25)
+    ax.set_ylabel('Number of Functions', weight='bold')
+
+    ax.set_xticks(x_pos)
+    ax.set_xticklabels(labels, fontweight='bold')
+
+    ax.set_xlim(-0.5, 0.9)
+
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
+
+    for i, v in enumerate(values):
+        ax.text(x_pos[i], v + 1, str(v), ha='center', fontweight='bold')
+
+    plt.savefig('../final_results_system.png')
+    plt.show()
+
 #create_detailed_sankey_diagram(experiment)
-create_sankey_from_dataframe(experiment)
+#create_sankey_from_dataframe(experiment)
+analyze_and_visualize_results()

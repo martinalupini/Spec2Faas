@@ -174,7 +174,7 @@ async def main(config, models, server):
 
         result, execution_time_generated = await execute_function(response.original_func, test, entry_point,
                                                                   executor, CancellationToken())
-        if "AssertionError" in result.output:
+        if "Error" in result.output:
             original_function_correct = False
         else:
             original_function_correct = True
@@ -188,7 +188,7 @@ async def main(config, models, server):
             new_canonical_code = canonical_code
         result, execution_time_generated = await execute_tests(new_canonical_code, response.tests_str, executor,
                                                                CancellationToken())
-        if "AssertionError" in result.output or "Error" in result.output:
+        if "Error" in result.output:
             print_blue(str(result.output))
             test_correct = False
             coverage = 0
@@ -248,7 +248,7 @@ async def main(config, models, server):
         ######################## TESTING IF FINAL FUNCTION IS CORRECT ######################################
             result, execution_time_generated = await execute_function(response.final_func, test, entry_point,
                                                                       executor, CancellationToken())
-            if "AssertionError" in result.output:
+            if "Error" in result.output:
                 final_function_correct = False
             else:
                 final_function_correct = True

@@ -38,8 +38,7 @@ def write_csv():
     num_deployed = df['deployed'].sum()
     num_correctly_executed = df['correctly_executed'].sum()
     num_debugged = df['debugged'].sum()
-    func_correct = df['final_function_correct'].mean()
-    print(func_correct)
+    func_correct = df['final_function_correct'].sum()
 
     num_not_generated = 164 - num_generated
     num_generated_and_debugged = df[df['generated'] & df['debugged']].shape[0]
@@ -72,6 +71,30 @@ def write_csv():
         'num_generated_not_debugged_not_deployed': num_generated_not_debugged_not_deployed,
         'num_generated_debugged_not_deployed': num_generated_debugged_not_deployed,
         'num_debugged_not_generated': num_debugged_not_generated,
+        'original_correct_final_correct': df[df['original_function_correct'] & df['final_function_correct']].shape[0],
+        'original_func_correct' : df['original_function_correct'].sum(),
+        'executed_and_final_correct': df[df['correctly_executed'] & df['final_function_correct']].shape[0],
+        'executed_and_final_not_correct': df[df['correctly_executed'] & ~df['final_function_correct']].shape[0],
+        'executed_and_original_correct': df[df['correctly_executed'] & df['original_function_correct']].shape[0],
+        'original_correct_and_deployed': df[df['original_function_correct'] & df['deployed']].shape[0],
+        'original_correct_and_not_deployed': df[df['original_function_correct'] & ~df['deployed']].shape[0],
+        'final_func_correct': func_correct,
+        'original_correct_final_not_correct': df[df['original_function_correct'] & ~df['final_function_correct']].shape[0],
+        'original_correct_final_correct_debugged': df[df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0],
+        'original_correct_final_correct_not_debugged': df[df['original_function_correct'] & df['final_function_correct'] & ~df['debugged']].shape[0],
+        'original_not_correct_final_correct_debugged': df[~df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0],
+        'original_not_correct_debugged': df[~df['original_function_correct'] & df['debugged']].shape[0],
+        'original_not_correct_not_debugged': df[~df['original_function_correct'] & ~df['debugged']].shape[0],
+        'original_not_correct_final_not_correct_debugged': df[~df['original_function_correct'] & ~df['final_function_correct'] & df['debugged']].shape[0],
+        'original_not_correct_final_not_correct_not_debugged': df[~df['original_function_correct'] & ~df['final_function_correct'] & ~df['debugged']].shape[0],
+        'original_correct_not_flagged_as_generated': df[df['original_function_correct'] & ~df['generated']].shape[0],
+        'final_not_correct_deployed': df[df['deployed'] & ~df['final_function_correct']].shape[0],
+        'final_not_correct_not_deployed': df[~df['deployed'] & ~df['final_function_correct']].shape[0],
+        'broken_by_debug_correct_test': df[df['original_function_correct'] & ~df['final_function_correct'] & df['test_correct']].shape[0],
+        'broken_by_debug_not_correct_test': df[df['original_function_correct'] & ~df['final_function_correct'] & ~df['test_correct']].shape[0],
+        'final_correct_deployed': df[df['deployed'] & df['final_function_correct']].shape[0],
+        'final_correct_not_deployed': df[~df['deployed'] & df['final_function_correct']].shape[0]
+
     }
 
     # Non so perchè in questo file serviva index altrimenti ho errore
@@ -93,22 +116,6 @@ def write_csv():
         print(f"\nAn error occurred while saving the file: {e}")
 
 
-#write_csv()
+write_csv()
 
-print(f"Correctly executed after deployment and final function correct: {df[df['correctly_executed'] & df['final_function_correct']].shape[0]}")
-print(f"Correctly executed after deployment and original function correct: {df[df['correctly_executed'] & df['original_function_correct']].shape[0]}")
-print(f"Original function correct: {df['original_function_correct'].sum()}")
-print(f"Original correct and  deployed: {df[df['original_function_correct'] & df['deployed']].shape[0]}")
-print(f"Original correct and not deployed: {df[df['original_function_correct'] & ~df['deployed']].shape[0]}")
-print(f"Final function correct: {df['final_function_correct'].sum()}")
-print(f"Original correct and final not correct: {df[df['original_function_correct'] & ~df['final_function_correct']].shape[0]}")
-print(f"Original and final function correct but original has been debugged: {df[df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0]}")
-print(f"Original and final function correct and original has not been debugged: {df[df['original_function_correct'] & df['final_function_correct'] & ~df['debugged']].shape[0]}")
-print(f"Original not correct and final function correct but original has been debugged: {df[~df['original_function_correct'] & df['final_function_correct'] & df['debugged']].shape[0]}")
-print(f"Original not correct and has not been debugged: {df[~df['original_function_correct'] & ~df['debugged']].shape[0]}")
-print(f"Original not correct and has been debugged: {df[~df['original_function_correct'] & df['debugged']].shape[0]}")
-print(f"Original not correct and final not correct: {df[~df['original_function_correct'] & ~df['final_function_correct']].shape[0]}")
-#print(df[df['original_function_correct'] & ~df['generated']].shape[0]) #=0
-print(f"Final not correct and deployed: {df[df['deployed'] & ~df['final_function_correct']].shape[0]}")
-print(f"Final not correct and not deployed: {df[~df['deployed'] & ~df['final_function_correct']].shape[0]}")
 
