@@ -3,58 +3,10 @@ import plotly.graph_objects as go
 import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 from app.Utils import *
+import numpy as np
 
 config = get_config_data_full("../../config_test.yaml")
 experiment = config["experiment_number"]
-
-"""
-def make_plot():
-    df_csv = pd.read_csv('../results.csv')
-
-    models = df_csv['model'].tolist()
-    metrics = df_csv.columns.drop(['model']).tolist()
-
-    n_metrics = len(metrics)
-    cols = min(n_metrics, 3)
-    rows = math.ceil(n_metrics / cols)
-
-    fig, axes = plt.subplots(nrows=rows, ncols=cols, figsize=(6 * cols, 5 * rows))
-    axes = np.array(axes).reshape(-1)
-
-    for ax in axes.flatten()[len(metrics):]:
-        ax.set_visible(False)
-
-    fig.suptitle('', fontsize=24, weight='bold')
-
-    colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
-    color_map = {model: color for model, color in zip(models, colors)}
-
-    for ax, metric in zip(axes.flatten(), metrics):
-
-        df_value = df_csv.copy()
-        models_plot = models
-        valori = df_value[metric]
-
-        plot_colors = [color_map[model] for model in models_plot]
-
-        bars = ax.bar(models_plot, valori, color=plot_colors)
-
-        ax.set_title(metric, fontsize=12, weight='bold')
-        ax.set_ylabel(metric, fontsize=10)
-        ax.tick_params(axis='x', rotation=45, labelsize=8)
-        ax.yaxis.grid(True, linestyle='--', alpha=0.6)
-
-        for bar in bars:
-            yval = bar.get_height()
-            ax.text(bar.get_x() + bar.get_width()/2.0, yval * 1.01, f'{yval:.2f}', ha='center', va='bottom', fontsize=8)
-
-    plt.subplots_adjust(left=0.05, right=0.98, top=0.92, bottom=0.15, hspace=0.5, wspace=0.25)
-
-    plt.savefig('../comparison.png', dpi=300)
-
-    plt.show()
-    """
-
 
 
 def create_detailed_sankey_diagram(experiment):
@@ -451,6 +403,66 @@ def analyze_and_visualize_results():
     plt.savefig('../final_results_system.png')
     plt.show()
 
+
+def analyze_and_visualize_comparison():
+    try:
+        df = pd.read_csv("../results.csv")
+    except FileNotFoundError:
+        return "Error: File not found."
+
+    # Estrazione dati
+    exp0 = df[df['experiment_number'] == 0].iloc[0]
+    exp2 = df[df['experiment_number'] == 2].iloc[0]
+
+    labels = ['Deployed', 'Correctly Executed']
+    sub_optimal_vals = [exp0['num_deployed'], exp0['num_correctly_executed']]
+    optimal_vals = [exp2['num_deployed'], exp2['num_correctly_executed']]
+
+    x = np.arange(len(labels))
+    width = 0.3  # Colonne sottili
+
+    fig, ax = plt.subplots(figsize=(10, 7))
+
+    # Creazione barre
+    rects1 = ax.bar(x - width / 2, sub_optimal_vals, width, label='Sub-optimal configuration', color='#3498db',
+                    zorder=3)
+    rects2 = ax.bar(x + width / 2, optimal_vals, width, label='Optimal configuration', color='#2ecc71', zorder=3)
+
+    # Titolo e Label
+    ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45)
+    ax.set_ylabel('Number of Functions', weight='bold')
+
+    ax.set_xticks(x)
+    ax.set_xticklabels(labels, fontweight='bold')
+
+    # Estetica assi
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+
+    # Griglia orizzontale
+    ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
+
+    # Legenda in basso
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False, prop={'weight': 'bold'})
+
+    # Numeri sopra le colonne
+    def autolabel(rects):
+        for rect in rects:
+            height = rect.get_height()
+            ax.annotate(f'{int(height)}',
+                        xy=(rect.get_x() + rect.get_width() / 2, height),
+                        xytext=(0, 5),
+                        textcoords="offset points",
+                        ha='center', va='bottom', fontweight='bold')
+
+    autolabel(rects1)
+    autolabel(rects2)
+
+    plt.tight_layout()
+    plt.savefig('../comparison_configs.png')
+    plt.show()
+
 #create_detailed_sankey_diagram(experiment)
 #create_sankey_from_dataframe(experiment)
-analyze_and_visualize_results()
+#analyze_and_visualize_results()
+analyze_and_visualize_comparison()
