@@ -309,9 +309,9 @@ def create_full_sankey():
 
     experiment_id = row['experiment']
     fig.update_layout(
-        title_text=f"Sankey Flow Diagram - Experiment: {experiment_id}",
-        font=dict(size=12, color="black"),
-        width=2000, height=1000
+        #title_text=f"Sankey Flow Diagram - Experiment: {experiment_id}",
+        font=dict(size=22, color="black"),
+        width=2800, height=1400
     )
 
     fig.show()
