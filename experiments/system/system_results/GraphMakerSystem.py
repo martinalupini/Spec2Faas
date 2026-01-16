@@ -182,7 +182,6 @@ def analyze_and_visualize_comparison():
     except FileNotFoundError:
         return "Error: File not found."
 
-    # Estrazione dati
     exp0 = df[df['experiment_number'] == 0].iloc[0]
     exp2 = df[df['experiment_number'] == 2].iloc[0]
 
@@ -191,33 +190,27 @@ def analyze_and_visualize_comparison():
     optimal_vals = [exp2['num_deployed'], exp2['num_correctly_executed']]
 
     x = np.arange(len(labels))
-    width = 0.3  # Colonne sottili
+    width = 0.3
 
     fig, ax = plt.subplots(figsize=(10, 7))
 
-    # Creazione barre
     rects1 = ax.bar(x - width / 2, sub_optimal_vals, width, label='Sub-optimal configuration', color='#3498db',
                     zorder=3)
     rects2 = ax.bar(x + width / 2, optimal_vals, width, label='Optimal configuration', color='#2ecc71', zorder=3)
 
-    # Titolo e Label
     ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45)
     ax.set_ylabel('Number of Functions', weight='bold')
 
     ax.set_xticks(x)
     ax.set_xticklabels(labels, fontweight='bold')
 
-    # Estetica assi
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
-    # Griglia orizzontale
     ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
 
-    # Legenda in basso
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False, prop={'weight': 'bold'})
 
-    # Numeri sopra le colonne
     def autolabel(rects):
         for rect in rects:
             height = rect.get_height()
@@ -235,85 +228,69 @@ def analyze_and_visualize_comparison():
     plt.show()
 
 def create_full_sankey():
+    try:
+        df = pd.read_csv("../results_sankey.csv")
+    except FileNotFoundError:
+        print("Error: File '../results_sankey.csv' not found.")
+        return
 
-    df = pd.read_csv("../results_sankey.csv")
+    row = df.iloc[0]
 
     labels = [
-        "Deployed",  # 0
-        "Executed",  # 1
-        "Not Executed",  # 2
-        "Executed: Final Correct",  # 3
-        "Executed: Final Not Correct",  # 4
-        "Not Executed: Final Correct",  # 5
-        "Not Executed: Final Not Correct",  # 6
-        "Exec FC: Debugged",  # 7
-        "Exec FC: Not Debugged",  # 8
-        "Exec FNC: Debugged",  # 9
-        "Exec FNC: Not Debugged",  # 10
-        "Not Exec FC: Debugged",  # 11
-        "Not Exec FC: Not Debugged",  # 12
-        "Not Exec FNC: Debugged",  # 13
-        "Not Exec FNC: Not Debugged",  # 14
-        "Exec FC D: Orig Correct",  # 15
-        "Exec FC D: Orig Not Correct",  # 16
-        "Exec FC ND: Orig Correct",  # 17
-        "Exec FC ND: Orig Not Correct",  # 18
-        "Exec FNC D: Orig Correct",  # 19
-        "Exec FNC D: Orig Not Correct",  # 20
-        "Exec FNC ND: Orig Correct",  # 21
-        "Exec FNC ND: Orig Not Correct",  # 22
-        "Not Exec FC D: Orig Correct",  # 23
-        "Not Exec FC D: Orig Not Correct",  # 24
-        "Not Exec FC ND: Orig Correct",  # 25
-        "Not Exec FC ND: Orig Not Correct",  # 26
-        "Not Exec FNC D: Orig Correct",  # 27
-        "Not Exec FNC D: Orig Not Correct",  # 28
-        "Not Exec FNC ND: Orig Correct",  # 29
-        "Not Exec FNC ND: Orig Not Correct"  # 30
+        "Deployed", "Executed", "Not Executed", "Final Function Correct",
+        "Final Function Not Correct", "Final Function Correct", "Final Function Not Correct",
+        "Debugged", "Not Debugged", "Debugged", "Not Debugged",
+        "Debugged", "Not Debugged", "Debugged", "Not Debugged",
+        "Original Function Correct", "Original Function Not Correct", "Original Function Correct", "Original Function Not Correct",
+        "Original Function Correct", "Original Function Not Correct", "Original Function Correct", "Original Function Not Correct",
+        "Original Function Correct", "Original Function Not Correct", "Original Function Correct", "Original Function Not Correct",
+        "Original Function Correct", "Original Function Not Correct", "Original Function Correct", "Original Function Not Correct"
     ]
 
-
-    links = [
-        (0, 1, df['correctly_executed']),
-        (0, 2, df['deployed_not_executed']),
-
-        (1, 3, df['executed_final_correct']),
-        (1, 4, df['executed_final_not_correct']),
-
-        (2, 5, df['not_executed_final_correct']),
-        (2, 6, df['not_executed_final_not_correct']),
-
-        (3, 7, df['executed_final_correct_debugged']),
-        (3, 8, df['executed_final_correct_not_debugged']),
-        (4, 9, df['executed_final_not_correct_debugged']),
-        (4, 10, df['executed_final_not_correct_not_debugged']),
-        (5, 11, df['not_executed_final_correct_debugged']),
-        (5, 12, df['not_ executed_final_correct_not_debugged']),
-        (6, 13, df['not_executed_final_not_correct_debugged']),
-        (6, 14, df['not_executed_final_not_correct_not_debugged']),
-
-        (7, 15, df['executed_final_correct_debugged_original_correct']),
-        (7, 16, df['executed_final_correct_debugged_original_not_correct']),
-        (8, 17, df['executed_final_correct_not_debugged_original_correct']),
-        (8, 18, df['executed_final_correct_not_debugged_original_not_correct']),
-        (9, 19, df['executed_final_not_correct_debugged_original_correct']),
-        (9, 20, df['executed_final_not_correct_debugged_original_not_correct']),
-        (10, 21, df['executed_final_not_correct_not_debugged_original_correct']),
-        (10, 22, df['executed_final_not_correct_not_debugged_original_not_correct']),
-        (11, 23, df['not_executed_final_correct_debugged_original_correct']),
-        (11, 24, df['not_executed_final_correct_debugged_original_not_correct']),
-        (12, 25, df['not_executed_final_correct_not_debugged_original_correct']),
-        (12, 26, df['not_executed_final_correct_not_debugged_original_not_correct']),
-        (13, 27, df['not_executed_final_not_correct_debugged_original_correct']),
-        (13, 28, df['not_executed_final_not_correct_debugged_original_not_correct']),
-        (14, 29, df['not_executed_final_not_correct_not_debugged_original_correct']),
-        (14, 30, df['not_executed_final_not_correct_not_debugged_original_not_correct']),
+    links_data = [
+        (0, 1, row['correctly_executed']),
+        (0, 2, row['deployed_not_executed']),
+        (1, 3, row['executed_final_correct']),
+        (1, 4, row['executed_final_not_correct']),
+        (2, 5, row['not_executed_final_correct']),
+        (2, 6, row['not_executed_final_not_correct']),
+        (3, 7, row['executed_final_correct_debugged']),
+        (3, 8, row['executed_final_correct_not_debugged']),
+        (4, 9, row['executed_final_not_correct_debugged']),
+        (4, 10, row['executed_final_not_correct_not_debugged']),
+        (5, 11, row['not_executed_final_correct_debugged']),
+        (5, 12, row['not_executed_final_correct_not_debugged']),
+        (6, 13, row['not_executed_final_not_correct_debugged']),
+        (6, 14, row['not_executed_final_not_correct_not_debugged']),
+        (7, 15, row['executed_final_correct_debugged_original_correct']),
+        (7, 16, row['executed_final_correct_debugged_original_not_correct']),
+        (8, 17, row['executed_final_correct_not_debugged_original_correct']),
+        (8, 18, row['executed_final_correct_not_debugged_original_not_correct']),
+        (9, 19, row['executed_final_not_correct_debugged_original_correct']),
+        (9, 20, row['executed_final_not_correct_debugged_original_not_correct']),
+        (10, 21, row['executed_final_not_correct_not_debugged_original_correct']),
+        (10, 22, row['executed_final_not_correct_not_debugged_original_not_correct']),
+        (11, 23, row['not_executed_final_correct_debugged_original_correct']),
+        (11, 24, row['not_executed_final_correct_debugged_original_not_correct']),
+        (12, 25, row['not_executed_final_correct_not_debugged_original_correct']),
+        (12, 26, row['not_executed_final_correct_not_debugged_original_not_correct']),
+        (13, 27, row['not_executed_final_not_correct_debugged_original_correct']),
+        (13, 28, row['not_executed_final_not_correct_debugged_original_not_correct']),
+        (14, 29, row['not_executed_final_not_correct_not_debugged_original_correct']),
+        (14, 30, row['not_executed_final_not_correct_not_debugged_original_not_correct']),
     ]
 
-    sources, targets, values = zip(*links)
+    sources, targets, values = zip(*links_data)
 
-    node_colors = ["grey"] * 1 + ["blue", "red"] * 1 + ["green", "orange"] * 2 + ["lightblue", "magenta"] * 4 + [
-        "darkgreen", "darkred"] * 8
+    node_totals = [0] * len(labels)
+    for src, tgt, val in links_data:
+        if src == 0:
+            node_totals[0] += val
+        node_totals[tgt] += val
+
+    updated_labels = [f"<b>{l} ({int(node_totals[i])})</b>" for i, l in enumerate(labels)]
+
+    node_colors = ["grey"] * 1 + ["blue", "red"] * 1 + ["green", "orange"] * 2 + ["lightblue", "magenta"] * 4 + ["darkgreen", "darkred"] * 8
 
     link_colors = []
     for s_idx in sources:
@@ -322,25 +299,28 @@ def create_full_sankey():
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
-            pad=10, thickness=20,
+            pad=15, thickness=20,
             line=dict(color="black", width=0.5),
-            label=[f"<b>{l}</b>" for l in labels],
+            label=updated_labels,
             color=node_colors
         ),
         link=dict(source=sources, target=targets, value=values, color=link_colors)
     )])
 
+    experiment_id = row['experiment']
     fig.update_layout(
-        title_text=f"Sankey Flow Diagram - Experiment: {df['experiment']}",
-        font=dict(size=10, color="black"),
+        title_text=f"Sankey Flow Diagram - Experiment: {experiment_id}",
+        font=dict(size=12, color="black"),
         width=2000, height=1000
     )
 
     fig.show()
 
-    dir_name = f"experiment_{experiment}/"
+    dir_name = f"experiment_{experiment_id}/"
+    os.makedirs(dir_name, exist_ok=True)
     output_path = os.path.join(dir_name, 'correct_functions_sankey.png')
-    fig.write_image(output_path, width=3000, height=800, scale=2)
+    fig.write_image(output_path, width=3000, height=1200, scale=2)
+    print(f"Diagram saved in {output_path}")
 
 #create_detailed_sankey_diagram(experiment)
 #create_sankey_from_dataframe(experiment)

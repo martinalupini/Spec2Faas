@@ -140,7 +140,7 @@ def write_csv_sankey():
         'not_executed_final_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct']].shape[0],
         'not_executed_final_not_correct': df[df['deployed'] & ~df['correctly_executed'] & ~df['final_function_correct']].shape[0],
         'not_executed_final_correct_debugged': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged']].shape[0],
-        'not_ executed_final_correct_not_debugged': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged']].shape[0],
+        'not_executed_final_correct_not_debugged': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged']].shape[0],
         'not_executed_final_correct_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & df['original_function_correct']].shape[0],
         'not_executed_final_correct_debugged_original_not_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & df['debugged'] & ~df['original_function_correct']].shape[0],
         'not_executed_final_correct_not_debugged_original_correct': df[df['deployed'] & ~df['correctly_executed'] & df['final_function_correct'] & ~df['debugged'] & df['original_function_correct']].shape[0],
