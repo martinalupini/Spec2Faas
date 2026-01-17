@@ -101,7 +101,7 @@ def make_radar_plot():
 
     plt.tight_layout(pad=1.5)
 
-    plt.savefig('radar_comparison.png', dpi=300)
+    plt.savefig('radar_comparison_all.png', dpi=300)
     #plt.show()
 
 make_radar_plot()
