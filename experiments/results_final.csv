@@ -11,12 +11,12 @@ gemini-2.0-flash,debugging,153.7
 qwen2.5-coder:32b,debugging, 146.3
 deepseek-coder-v2,debugging,140.7
 qwen2.5-coder,debugging,0
-qwen2.5-coder:32b,test generation,70
-deepseek-coder-v2,test generation,50
-gemini-2.5-pro,test generation,105
-qwen2.5-coder,test generation,76
-gemini-2.0-flash,test generation,77
-qwen3,test generation,129
+qwen2.5-coder:32b,test generation,66
+deepseek-coder-v2,test generation,38
+gemini-2.5-pro,test generation,98
+qwen2.5-coder,test generation,72
+gemini-2.0-flash,test generation,72
+qwen3,test generation,121
 gemini-2.0-flash,deployment,159
 qwen3,deployment,157
 gemini-2.5-pro,deployment,164
