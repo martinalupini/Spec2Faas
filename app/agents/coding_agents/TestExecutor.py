@@ -212,7 +212,7 @@ class TestExecutor(RoutedAgent):
                         end_time_debug = time.perf_counter()
 
                         # Updating time and tokens of debugger as the sum of each debugging attempt
-                        tokens_debugger += end_time_debug - start_time_debug
+                        tokens_debugger += debug_message.tokens
                         time_debugger += end_time_debug - start_time_debug
 
                         # If the Debugger returns an empty string the debugging process was interrupted for an exception
