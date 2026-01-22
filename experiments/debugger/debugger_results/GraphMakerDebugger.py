@@ -322,5 +322,5 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
 #make_debugging_gain_plot()
 #make_vertical_bar_plot_2()
-plot_coder_comparison()
-#plot_debugger_performance()
+#plot_coder_comparison()
+plot_debugger_performance()
