@@ -198,18 +198,18 @@ def analyze_and_visualize_comparison():
                     zorder=3)
     rects2 = ax.bar(x + width / 2, optimal_vals, width, label='Optimal configuration', color='#2ecc71', zorder=3)
 
-    ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45)
-    ax.set_ylabel('Number of Functions', weight='bold')
+    ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45, fontsize=22)
+    ax.set_ylabel('Number of Functions', fontsize=20)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontweight='bold')
+    ax.set_xticklabels(labels, fontsize=20)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
     ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False, prop={'weight': 'bold'})
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False, prop={'weight': 'bold', 'size': 16})
 
     def autolabel(rects):
         for rect in rects:
@@ -218,7 +218,7 @@ def analyze_and_visualize_comparison():
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 5),
                         textcoords="offset points",
-                        ha='center', va='bottom', fontweight='bold')
+                        ha='center', va='bottom', fontweight='bold', fontsize=16)
 
     autolabel(rects1)
     autolabel(rects2)
@@ -325,5 +325,5 @@ def create_full_sankey():
 #create_detailed_sankey_diagram(experiment)
 #create_sankey_from_dataframe(experiment)
 #analyze_and_visualize_results()
-#analyze_and_visualize_comparison()
-create_full_sankey()
+analyze_and_visualize_comparison()
+#create_full_sankey()

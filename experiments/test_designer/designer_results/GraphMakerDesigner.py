@@ -80,23 +80,23 @@ def make_metric_plot(metric, display_name=None):
 
     plot_colors = [color_map[m] for m in models_sorted]
 
-    fig, ax = plt.subplots(figsize=(10, 6))
+    fig, ax = plt.subplots(figsize=(12, 8))
 
     bars = ax.barh(models_sorted, values_sorted, color=plot_colors, height=0.6)
 
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    ax.set_title(f'Model Comparison: {display_name}', fontsize=16, weight='bold')
-    ax.set_xlabel(display_name, fontsize=12)
+    ax.set_title(f'Model Comparison: {display_name}', fontsize=22, weight='bold')
+    ax.set_xlabel(display_name, fontsize=20)
     ax.set_yticks(range(len(models_sorted)))
-    ax.set_yticklabels(models_sorted, fontsize=10)
+    ax.set_yticklabels(models_sorted, fontsize=20)
     ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
     for bar in bars:
         width = bar.get_width()
         ax.text(width + (width * 0.01), bar.get_y() + bar.get_height() / 2,
-                f'{width:.2f}', ha='left', va='center', fontsize=10, weight='bold')
+                f'{width:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     plt.tight_layout()
 
@@ -132,15 +132,15 @@ def make_performance_plots(csv_path='../results.csv'):
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-        ax.set_title(title, fontsize=14, weight='bold')
-        ax.set_xlabel(metric, fontsize=12)
-        ax.tick_params(axis='y', labelsize=10)
+        ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(metric, fontsize=20)
+        ax.tick_params(axis='y', labelsize=20)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
         for bar in bars:
             xval = bar.get_width()
             ax.text(xval + (max(valori) * 0.01), bar.get_y() + bar.get_height() / 2.0,
-                    f'{xval:.2f}', ha='left', va='center', fontsize=9, weight='bold')
+                    f'{xval:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     plt.tight_layout()
     plt.savefig('../performance_comparison_designer.png', dpi=300)
@@ -148,5 +148,6 @@ def make_performance_plots(csv_path='../results.csv'):
 
 
 #make_vertical_bar_plot()
-#make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
-make_performance_plots()
+#make_metric_plot('passed', 'pass@1')
+make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+#make_performance_plots()

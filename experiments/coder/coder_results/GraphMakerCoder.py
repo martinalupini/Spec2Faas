@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import math
 
 
-# TODO: Correct the names at the end
 def make_vertical_bar_plot():
     df_csv = pd.read_csv('../results.csv')
 
@@ -158,7 +157,7 @@ def make_pass1_horizontal_bar_plot(csv_path='../results.csv'):
         spine.set_visible(False)
 
     ax.set_title('Metric Comparison: pass@1', fontsize=16, weight='bold', pad=20)
-    ax.set_xlabel('pass@1', fontsize=12)
+    ax.set_xlabel('pass@1', fontsize=20)
     ax.tick_params(axis='y', labelsize=10)
 
     ax.xaxis.grid(True, linestyle='--', alpha=0.6)
@@ -166,7 +165,7 @@ def make_pass1_horizontal_bar_plot(csv_path='../results.csv'):
     for bar in bars:
         xval = bar.get_width()
         ax.text(xval + (max(values) * 0.01), bar.get_y() + bar.get_height() / 2.0,
-                f'{xval:.2f}', ha='left', va='center', fontsize=10, weight='bold')
+                f'{xval:.2f}', ha='left', va='center', fontsize=18, weight='bold')
 
     plt.tight_layout()
     plt.savefig('../pass1_comparison_horizontal.png', dpi=300)
@@ -207,9 +206,9 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
 
     ax.set_yticklabels(models)
 
-    ax.set_title('Metric Comparison: pass@1', fontsize=16, weight='bold', pad=20)
-    ax.set_xlabel('pass@1', fontsize=12)
-    ax.tick_params(axis='y', labelsize=10)
+    ax.set_title('Metric Comparison: pass@1', fontsize=22, weight='bold', pad=20)
+    ax.set_xlabel('pass@1', fontsize=22)
+    ax.tick_params(axis='y', labelsize=20)
 
     ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
@@ -217,7 +216,7 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
     for bar in bars:
         xval = bar.get_width()
         ax.text(xval + (max_val * 0.01), bar.get_y() + bar.get_height() / 2.0,
-                f'{xval:.2f}', ha='left', va='center', fontsize=10, weight='bold')
+                f'{xval:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     plt.tight_layout()
     plt.savefig('../pass1_comparison_horizontal.png', dpi=300)
@@ -268,15 +267,15 @@ def make_performance_plots(csv_path='../results.csv'):
                        label=f'Canonical: {canonical_value:.2f}s')
             ax.legend(loc='lower right', frameon=True)
 
-        ax.set_title(title, fontsize=14, weight='bold')
-        ax.set_xlabel(metric, fontsize=12)
-        ax.tick_params(axis='y', labelsize=10)
+        ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(metric, fontsize=22)
+        ax.tick_params(axis='y', labelsize=20)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
         for bar in bars:
             xval = bar.get_width()
             ax.text(xval + (max(valori) * 0.01), bar.get_y() + bar.get_height() / 2.0,
-                    f'{xval:.2f}', ha='left', va='center', fontsize=9, weight='bold')
+                    f'{xval:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     plt.tight_layout()
     plt.savefig('../performance_comparison.png', dpi=300)
@@ -335,7 +334,7 @@ def make_radar_plot():
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
     angles += angles[:1]
 
-    fig, ax = plt.subplots(figsize=(14, 14), subplot_kw=dict(polar=True))
+    fig, ax = plt.subplots(figsize=(16, 16), subplot_kw=dict(polar=True))
 
     colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
     color_map = {model: color for model, color in zip(models, colors)}
@@ -350,7 +349,7 @@ def make_radar_plot():
 
 
     ax.set_xticks(angles[:-1])
-    ax.set_xticklabels(name_metrics, size=14)
+    ax.set_xticklabels(name_metrics, size=20)
     ax.tick_params(axis='x', pad=30)
 
     yticks = np.arange(new_min, new_max + 0.1, 0.1)
@@ -361,9 +360,9 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, 1.1)
 
-    plt.title('Comparing Performances for Coder Agent', size=20, y=1.1)
+    plt.title('Comparing Performances for Coder Agent', size=22, y=1.1, weight='bold')
 
-    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=14)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=18)
 
     plt.tight_layout(pad=1.5)
 
@@ -390,7 +389,7 @@ def make_complexity_plots(csv_path='../results.csv'):
     titles = ['Cyclomatic Complexity (CC)', 'Cognitive Complexity (CoGC)']
 
     models = df_plot['model'].tolist()
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(16, 8))
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(25, 10))
 
     colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
     color_map = {model: color for model, color in zip(models, colors)}
@@ -412,16 +411,16 @@ def make_complexity_plots(csv_path='../results.csv'):
                        label=f'Canonical: {canonical_value:.2f}')
             ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.1), fancybox=True, shadow=True)
 
-        ax.set_title(title, fontsize=14, weight='bold')
-        ax.set_xlabel(metric, fontsize=12)
-        ax.tick_params(axis='y', labelsize=10)
+        ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(metric, fontsize=22)
+        ax.tick_params(axis='y', labelsize=20)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
 
         max_val = max(valori) if valori else 1
         for bar in bars:
             xval = bar.get_width()
             ax.text(xval + (max_val * 0.01), bar.get_y() + bar.get_height() / 2.0,
-                    f'{xval:.2f}', ha='left', va='center', fontsize=9, weight='bold')
+                    f'{xval:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     plt.subplots_adjust(bottom=0.2, wspace=0.4)
     plt.savefig('../complexity_comparison.png', dpi=300, bbox_inches='tight')
@@ -445,7 +444,7 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     y = np.arange(len(sorted_models))
     height = 0.35
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(14, 8))
 
     prompt_values = [df_plot[(df_plot['base_model'] == m) & (~df_plot['is_no_prompt'])]['pass@1'].values[0] for m in
                      sorted_models]
@@ -456,12 +455,12 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     rects2 = ax.barh(y - height / 2, no_prompt_values, height, label='No Prompt', color='#d62728')
 
     ax.set_yticks(y)
-    ax.set_yticklabels(sorted_models)
+    ax.set_yticklabels(sorted_models, fontsize=20)
 
-    ax.set_xlabel('pass@1 Score')
-    ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=14,
+    ax.set_xlabel('pass@1 Score', fontsize=20)
+    ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=22,
                  weight='bold')
-    ax.legend(loc='lower right')
+    ax.legend(loc='lower right', fontsize=16)
 
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -472,7 +471,7 @@ def plot_prompt_comparison(csv_path='../results.csv'):
         for rect in rects:
             width = rect.get_width()
             ax.text(width + 0.005, rect.get_y() + rect.get_height() / 2,
-                    f'{width:.2f}', ha='left', va='center', fontsize=9, weight='bold')
+                    f'{width:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
     autolabel(rects1)
     autolabel(rects2)
@@ -483,11 +482,9 @@ def plot_prompt_comparison(csv_path='../results.csv'):
 
 
 
-#make_horizontal_bar_plot()
-#make_vertical_bar_plot()
-make_radar_plot()
+#make_radar_plot()
 #make_pass1_horizontal_bar_plot_2()
 #make_performance_plots()
-#make_complexity_plots()
+make_complexity_plots()
 #plot_prompt_comparison()
 

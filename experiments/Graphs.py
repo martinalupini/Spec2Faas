@@ -87,7 +87,7 @@ def make_radar_plot():
                 weight='bold',
                 horizontalalignment=ha,
                 verticalalignment=va)
-    yticks = np.arange(0, max_value, 16)
+    yticks = np.arange(0, max_value, 25)
     ax.set_yticks(yticks)
 
     ax.set_yticklabels([f'{tick:.0f}' for tick in yticks], color="grey", size=10)
@@ -97,7 +97,7 @@ def make_radar_plot():
 
     # plt.title('Comparison among models', size=26, y=1.1)
 
-    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=14)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=16)
 
     plt.tight_layout(pad=1.5)
 

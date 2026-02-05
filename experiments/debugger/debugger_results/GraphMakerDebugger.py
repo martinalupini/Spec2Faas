@@ -185,35 +185,28 @@ def plot_coder_comparison(csv_path='../results.csv',
                           coders_list=['gemini-2.5-pro', 'gemini-2.0-flash', 'deepseek-coder-v2']):
     df_csv = pd.read_csv(csv_path)
 
-    # --- 1. Calcolo Scala X Comune ---
     df_csv['debugging_gain'] = (
             df_csv['number_passed_after_debugging'] -
             df_csv['number_passed_after_generation']
     )
-    # Prendiamo il max gain solo tra i coders che stiamo plottando
+
     relevant_data = df_csv[df_csv['coder'].isin(coders_list)]
     max_gain = relevant_data['debugging_gain'].max()
-    x_limit = max_gain + (max_gain * 0.1)  # 10% di margine per le label
+    x_limit = max_gain + (max_gain * 0.1)
 
-    # --- 2. Configurazione Layout (Griglia 2x4) ---
     fig = plt.figure(figsize=(18, 12))
     gs = GridSpec(2, 4, figure=fig)
 
-    # Definiamo le posizioni:
-    # Riga 1: ax1 (col 0-1), ax2 (col 2-3)
-    # Riga 2: ax3 (col 1-2) -> Questo lo centra perfettamente ed è grande uguale
     ax1 = fig.add_subplot(gs[0, 0:2])
     ax2 = fig.add_subplot(gs[0, 2:4])
     ax3 = fig.add_subplot(gs[1, 1:3])
 
     axes = [ax1, ax2, ax3]
 
-    # --- 3. Mappa Colori Coerente ---
     debuggers_in_csv = sorted(df_csv[df_csv['debugger'] != "no debugger"]['debugger'].unique())
     colors = plt.cm.viridis(np.linspace(0, 1, len(debuggers_in_csv)))
     color_map = {model: color for model, color in zip(debuggers_in_csv, colors)}
 
-    # --- 4. Loop di Disegno ---
     for i, coder_name in enumerate(coders_list):
         ax = axes[i]
 
@@ -233,25 +226,22 @@ def plot_coder_comparison(csv_path='../results.csv',
 
         bars = ax.barh(debuggers_y, gains_x, color=bar_colors, height=0.6)
 
-        # Applichiamo scala X comune
         ax.set_xlim(0, x_limit)
 
-        # Estetica e Pulizia
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-        ax.set_title(f'Coder: {coder_name}', fontsize=16, weight='bold', pad=15)
-        ax.set_xlabel('Functions Corrected', fontsize=11)
+        ax.set_title(f'Coder: {coder_name}', fontsize=22, weight='bold', pad=15)
+        ax.set_xlabel('Functions Corrected', fontsize=18)
+        ax.tick_params(axis='y', labelsize=18)
         ax.xaxis.grid(True, linestyle='--', alpha=0.4)
 
-        # Label con i valori numerici
         for bar in bars:
             width = bar.get_width()
             ax.text(width + (x_limit * 0.01), bar.get_y() + bar.get_height() / 2,
                     f'{int(width)}', ha='left', va='center',
-                    weight='bold', fontsize=11)
+                    weight='bold', fontsize=16)
 
-    # hspace gestisce la distanza verticale tra le righe
     plt.tight_layout(pad=4.0)
     plt.subplots_adjust(hspace=0.4)
 
@@ -292,9 +282,9 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
     p2 = ax.bar(coders, debugging_gain, bar_width, bottom=initial_passed,
                 label='Debugging Gain', color=color_gain, zorder=3, alpha=0.9)
 
-    ax.bar_label(p1, label_type='center', color='#2c3e50', weight='bold', fontsize=10)
+    ax.bar_label(p1, label_type='center', color='#2c3e50', weight='bold', fontsize=16)
 
-    ax.bar_label(p2, label_type='edge', padding=3, weight='bold', fontsize=11, color='#2c3e50')
+    ax.bar_label(p2, label_type='edge', padding=3, weight='bold', fontsize=16, color='#2c3e50')
 
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -304,14 +294,14 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
     current_ylim = ax.get_ylim()
     ax.set_ylim(0, current_ylim[1] * 1.15)
 
-    ax.set_title(f'Performance Analysis Debugger: {debugger_name}', fontsize=18, weight='bold', pad=25)
-    ax.set_ylabel('Number of Functions Corrected', fontsize=13, labelpad=10)
-    ax.set_xlabel('Coder Agent', fontsize=13)
+    ax.set_title(f'Performance Analysis Debugger: {debugger_name}', fontsize=22, weight='bold', pad=25)
+    ax.set_ylabel('Number of Functions Corrected', fontsize=20, labelpad=10)
+    ax.set_xlabel('Coder Agent', fontsize=20)
 
-    ax.tick_params(axis='x', rotation=0, labelsize=11)
+    ax.tick_params(axis='x', rotation=0, labelsize=18)
 
     ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-              ncol=2, frameon=False, fontsize=12)
+              ncol=2, frameon=False, fontsize=16)
 
     plt.tight_layout()
 
@@ -322,5 +312,5 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
 #make_debugging_gain_plot()
 #make_vertical_bar_plot_2()
-#plot_coder_comparison()
-plot_debugger_performance()
+plot_coder_comparison()
+#plot_debugger_performance()
