@@ -83,8 +83,7 @@ def make_radar_plot():
         ax.text(angle,
                 r_label_position,
                 label,
-                size=14,
-                weight='bold',
+                size=20,
                 horizontalalignment=ha,
                 verticalalignment=va)
     yticks = np.arange(0, max_value, 25)
@@ -95,9 +94,9 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, max_value)
 
-    # plt.title('Comparison among models', size=26, y=1.1)
+    plt.title('Performance of models in different tasks', size=22, y=1.1, weight='bold')
 
-    plt.legend(loc='upper right', bbox_to_anchor=(1.2, 1.05), fontsize=16)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.05), fontsize=16)
 
     plt.tight_layout(pad=1.5)
 
