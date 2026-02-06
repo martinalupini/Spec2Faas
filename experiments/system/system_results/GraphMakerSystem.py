@@ -323,25 +323,51 @@ def create_full_sankey():
     print(f"Diagram saved in {output_path}")
 
 
-
 def pie_chart():
     df = pd.read_csv('../results.csv')
-
     ultima_riga = df.iloc[-1]
-
     colonne_tempi = [c for c in df.columns if c.startswith('avg_time_')]
 
     valori = ultima_riga[colonne_tempi]
     etichette = [c.replace('avg_time_', '').replace('_', ' ').title() for c in colonne_tempi]
 
     dati_filtrati = [(v, l) for v, l in zip(valori, etichette) if v > 0]
-    valori_finali, etichette_finali = zip(*dati_filtrati)
+    dati_ordinati = sorted(dati_filtrati, key=lambda x: x[0], reverse=True)
+    valori_finali, etichette_finali = zip(*dati_ordinati)
 
-    plt.pie(valori_finali, labels=etichette_finali, autopct='%1.1f%%', startangle=140)
-    plt.title('Response time distribution per phase')
-    plt.axis('equal')
+    colors = ['#66b3ff', '#ff9999', '#99ff99', '#ffcc99', '#c2c2f0', '#ffb3e6', '#c4e17f']
 
-    plt.savefig('../pie_chart.png')
+    explode = [0.05] * len(valori_finali)
+
+    fig, ax = plt.subplots(figsize=(12, 8))
+
+    patches, texts, autotexts = ax.pie(
+        valori_finali,
+        autopct=lambda p: '{:.1f}%'.format(p) if p > 2 else '',
+        startangle=140,
+        colors=colors,
+        explode=explode,
+        pctdistance=0.80,
+        wedgeprops={'edgecolor': 'white', 'linewidth': 1}
+    )
+
+    plt.setp(autotexts, size=12, weight="bold")
+
+    plt.title('Response Time Distribution per Phase', fontsize=22, fontweight='bold', pad=20)
+
+    legend_labels = [f'{l} ({v:.1f}s)' for l, v in zip(etichette_finali, valori_finali)]
+    ax.legend(
+        patches,
+        legend_labels,
+        title="Agents (Response Time)",
+        loc="center left",
+        bbox_to_anchor=(0.93, 0, 0.5, 1),
+        fontsize=16,
+        title_fontsize=20
+    )
+
+    plt.tight_layout()
+    plt.savefig('../pie_chart.png', dpi=300)
     plt.close()
 
 #create_detailed_sankey_diagram(experiment)
