@@ -322,8 +322,31 @@ def create_full_sankey():
     fig.write_image(output_path, width=3000, height=1200, scale=2)
     print(f"Diagram saved in {output_path}")
 
+
+
+def pie_chart():
+    df = pd.read_csv('../results.csv')
+
+    ultima_riga = df.iloc[-1]
+
+    colonne_tempi = [c for c in df.columns if c.startswith('avg_time_')]
+
+    valori = ultima_riga[colonne_tempi]
+    etichette = [c.replace('avg_time_', '').replace('_', ' ').title() for c in colonne_tempi]
+
+    dati_filtrati = [(v, l) for v, l in zip(valori, etichette) if v > 0]
+    valori_finali, etichette_finali = zip(*dati_filtrati)
+
+    plt.pie(valori_finali, labels=etichette_finali, autopct='%1.1f%%', startangle=140)
+    plt.title('Response time distribution per phase')
+    plt.axis('equal')
+
+    plt.savefig('../pie_chart.png')
+    plt.close()
+
 #create_detailed_sankey_diagram(experiment)
 #create_sankey_from_dataframe(experiment)
 #analyze_and_visualize_results()
-analyze_and_visualize_comparison()
+#analyze_and_visualize_comparison()
 #create_full_sankey()
+pie_chart()
