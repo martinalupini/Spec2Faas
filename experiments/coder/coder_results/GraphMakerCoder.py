@@ -389,7 +389,7 @@ def make_complexity_plots(csv_path='../results.csv'):
     titles = ['Cyclomatic Complexity (CC)', 'Cognitive Complexity (CoGC)']
 
     models = df_plot['model'].tolist()
-    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(25, 10))
+    fig, axes = plt.subplots(nrows=1, ncols=2, figsize=(20, 10))
 
     colors = plt.cm.viridis(np.linspace(0, 1, len(models)))
     color_map = {model: color for model, color in zip(models, colors)}
@@ -422,7 +422,12 @@ def make_complexity_plots(csv_path='../results.csv'):
             ax.text(xval + (max_val * 0.01), bar.get_y() + bar.get_height() / 2.0,
                     f'{xval:.2f}', ha='left', va='center', fontsize=16, weight='bold')
 
-    plt.subplots_adjust(bottom=0.2, wspace=0.4)
+    plt.subplots_adjust(
+        left=0.15,
+        right=0.98,
+        wspace=0.6,
+        bottom=0.2
+    )
     plt.savefig('../complexity_comparison.png', dpi=300, bbox_inches='tight')
     plt.show()
 
