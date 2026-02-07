@@ -2,6 +2,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 import math
+import seaborn as sns
 
 
 def make_vertical_bar_plot():
@@ -486,10 +487,58 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     plt.show()
 
 
+def statistical_analysis():
+    # Caricamento del dataset
+    df = pd.read_csv('../results_deepseek.csv')
+
+    # Definizione delle metriche
+    metrics = [
+        'pass@1',
+        'avg_tokens',
+        'avg_generation_time (s)',
+        'avg_cc_generation',
+        'avg_cog_generation'
+    ]
+
+    # Riducendo l'altezza totale (da 15 a 8), i singoli riquadri diventano più "bassi"
+    fig, axes = plt.subplots(nrows=len(metrics), ncols=1, figsize=(12, 8))
+
+    # Palette con colori diversi per ogni box
+    colors = sns.color_palette("Set2", len(metrics))
+
+    for i, (metric, color) in enumerate(zip(metrics, colors)):
+        # Creazione del box plot
+        sns.boxplot(x=df[metric], ax=axes[i], color=color, width=0.5)
+
+        # Etichetta asse Y: posizionata a sinistra con ampio margine per evitare sovrapposizioni
+        axes[i].set_ylabel(metric, fontsize=20, fontweight='bold',
+                           rotation=0, labelpad=30, ha='right', va='center')
+
+        # Etichetta asse X (mostrata solo sull'ultimo grafico per pulizia)
+        axes[i].set_xlabel('')
+        if i == len(metrics) - 1:
+            axes[i].set_xlabel('Value', fontsize=20)
+
+        # Rimuove i numeri sull'asse Y
+        axes[i].set_yticks([])
+
+        # Aggiunge una griglia leggera
+        axes[i].xaxis.grid(True, linestyle='--', alpha=0.5)
+
+    # Aumenta lo spazio tra i riquadri per evitare sovrapposizioni tra titoli e assi
+    plt.tight_layout(pad=3.0)
+
+    # Salvataggio del file
+    plt.savefig('../statistical_analysis.png')
+    plt.show()
+
+
+
 
 #make_radar_plot()
 #make_pass1_horizontal_bar_plot_2()
 #make_performance_plots()
-make_complexity_plots()
+#make_complexity_plots()
 #plot_prompt_comparison()
+statistical_analysis()
 

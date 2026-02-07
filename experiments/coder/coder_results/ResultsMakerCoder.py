@@ -27,7 +27,7 @@ except Exception as e:
     print(f"Si è verificato un errore durante la lettura del file: {e}")
 
 
-def write_csv():
+def write_csv(statistics=False):
     pass_at_1 = df['passed'].mean()
     num_generated = df['passed'].sum()
     avg_generation_time = df['generation_time'].mean()
@@ -65,12 +65,17 @@ def write_csv():
 
     results_df = pd.DataFrame(results_data)
 
-    file_exists = os.path.exists(csv_file)
+    if statistics:
+        file_path_csv = '../results_deepseek.csv'
+    else:
+        file_path_csv = csv_file
+
+    file_exists = os.path.exists(file_path_csv)
 
     try:
         # Usa mode='a' (append) per aggiungere dati alla fine del file.
         # L'intestazione viene scritta solo se il file non esiste (header=not file_exists).
-        results_df.to_csv(csv_file, mode='a', header=not file_exists, index=False)
+        results_df.to_csv(file_path_csv, mode='a', header=not file_exists, index=False)
 
         if file_exists:
             print(f"\nAppended a new row to '{csv_file}'")
@@ -82,4 +87,4 @@ def write_csv():
 
 
 
-write_csv()
+write_csv(True)
