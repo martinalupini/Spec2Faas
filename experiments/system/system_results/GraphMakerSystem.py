@@ -371,114 +371,9 @@ def pie_chart():
     plt.close()
 
 
-def create_reversed_sankey():
-    try:
-        df = pd.read_csv("../results_sankey.csv")
-    except FileNotFoundError:
-        print("Error: File '../results_sankey.csv' not found.")
-        return
-
-    row = df.iloc[0]
-
-    # Le etichette rimangono le stesse, cambierà l'ordine visivo nel grafico
-    labels = [
-        "Deployed", "Executed", "Not Executed", "Final Function Correct",
-        "Final Function Not Correct", "Final Function Correct", "Final Function Not Correct",
-        "Debugged", "Not Debugged", "Debugged", "Not Debugged",
-        "Debugged", "Not Debugged", "Debugged", "Not Debugged",
-        "Original Function Correct", "Original Function Not Correct", "Original Function Correct",
-        "Original Function Not Correct",
-        "Original Function Correct", "Original Function Not Correct", "Original Function Correct",
-        "Original Function Not Correct",
-        "Original Function Correct", "Original Function Not Correct", "Original Function Correct",
-        "Original Function Not Correct",
-        "Original Function Correct", "Original Function Not Correct", "Original Function Correct",
-        "Original Function Not Correct"
-    ]
-
-    # Invertiamo Source e Target: il Target originale diventa Source e viceversa
-    links_data = [
-        (1, 0, row['correctly_executed']),
-        (2, 0, row['deployed_not_executed']),
-        (3, 1, row['executed_final_correct']),
-        (4, 1, row['executed_final_not_correct']),
-        (5, 2, row['not_executed_final_correct']),
-        (6, 2, row['not_executed_final_not_correct']),
-        (7, 3, row['executed_final_correct_debugged']),
-        (8, 3, row['executed_final_correct_not_debugged']),
-        (9, 4, row['executed_final_not_correct_debugged']),
-        (10, 4, row['executed_final_not_correct_not_debugged']),
-        (11, 5, row['not_executed_final_correct_debugged']),
-        (12, 5, row['not_executed_final_correct_not_debugged']),
-        (13, 6, row['not_executed_final_not_correct_debugged']),
-        (14, 6, row['not_executed_final_not_correct_not_debugged']),
-        (15, 7, row['executed_final_correct_debugged_original_correct']),
-        (16, 7, row['executed_final_correct_debugged_original_not_correct']),
-        (17, 8, row['executed_final_correct_not_debugged_original_correct']),
-        (18, 8, row['executed_final_correct_not_debugged_original_not_correct']),
-        (19, 9, row['executed_final_not_correct_debugged_original_correct']),
-        (20, 9, row['executed_final_not_correct_debugged_original_not_correct']),
-        (21, 10, row['executed_final_not_correct_not_debugged_original_correct']),
-        (22, 10, row['executed_final_not_correct_not_debugged_original_not_correct']),
-        (23, 11, row['not_executed_final_correct_debugged_original_correct']),
-        (24, 11, row['not_executed_final_correct_debugged_original_not_correct']),
-        (25, 12, row['not_executed_final_correct_not_debugged_original_correct']),
-        (26, 12, row['not_executed_final_correct_not_debugged_original_not_correct']),
-        (27, 13, row['not_executed_final_not_correct_debugged_original_correct']),
-        (28, 13, row['not_executed_final_not_correct_debugged_original_not_correct']),
-        (29, 14, row['not_executed_final_not_correct_not_debugged_original_correct']),
-        (30, 14, row['not_executed_final_not_correct_not_debugged_original_not_correct']),
-    ]
-
-    sources, targets, values = zip(*links_data)
-
-    # Calcolo totali nodi per le etichette
-    node_totals = [0] * len(labels)
-    for src, tgt, val in links_data:
-        node_totals[src] += val
-
-    # Il nodo finale (Deployed, indice 0) è la somma di ciò che riceve
-    node_totals[0] = sum(val for src, tgt, val in links_data if tgt == 0)
-
-    updated_labels = [f"<b>{l} ({int(node_totals[i])})</b>" for i, l in enumerate(labels)]
-
-    # Colori dei nodi
-    node_colors = ["grey"] * 1 + ["blue", "red"] * 1 + ["green", "orange"] * 2 + ["lightblue", "magenta"] * 4 + [
-        "darkgreen", "darkred"] * 8
-
-    # Colori dei link basati sulla nuova sorgente (che era il vecchio target)
-    link_colors = []
-    for s_idx in sources:
-        r, g, b, _ = mcolors.to_rgba(node_colors[s_idx])
-        link_colors.append(f'rgba({int(r * 255)}, {int(g * 255)}, {int(b * 255)}, 0.4)')
-
-    fig = go.Figure(data=[go.Sankey(
-        node=dict(
-            pad=15, thickness=20,
-            line=dict(color="black", width=0.5),
-            label=updated_labels,
-            color=node_colors
-        ),
-        link=dict(source=sources, target=targets, value=values, color=link_colors)
-    )])
-
-    experiment_id = row['experiment']
-    fig.update_layout(
-        font=dict(size=25, color="black"),
-        width=2800, height=1400
-    )
-
-    fig.show()
-
-    dir_name = f"experiment_{experiment_id}/"
-    os.makedirs(dir_name, exist_ok=True)
-    output_path = os.path.join(dir_name, 'reversed_functions_sankey.png')
-    fig.write_image(output_path, width=3000, height=1200, scale=2)
-    print(f"Diagram saved in {output_path}")
-
-
 def create_aggregated_reversed_sankey():
     try:
+        # Assicurati che i path siano corretti per il tuo ambiente
         df = pd.read_csv("../results_sankey.csv")
     except FileNotFoundError:
         print("Error: File '../results_sankey.csv' not found.")
@@ -486,15 +381,14 @@ def create_aggregated_reversed_sankey():
 
     row = df.iloc[0]
 
-    # Definiamo i nuovi nodi aggregati (17 nodi in totale)
+    # 1. Definiamo i nodi (16 nodi in totale, rimosso l'ultimo "Deployed")
     labels = [
-        "Original Function Correct", "Original Function Not Correct",  # 0, 1 (Sorgenti)
+        "Original Function Correct", "Original Function Not Correct",  # 0, 1
         "Debugged", "Not Debugged", "Debugged", "Not Debugged",  # 2, 3, 4, 5
         "Debugged", "Not Debugged", "Debugged", "Not Debugged",  # 6, 7, 8, 9
         "Final Function Correct", "Final Function Not Correct",  # 10, 11
         "Final Function Correct", "Final Function Not Correct",  # 12, 13
-        "Executed", "Not Executed",  # 14, 15
-        "Deployed"  # 16 (Target finale)
+        "Deployed and Executed", "Deployed but Not Executed"  # 14, 15 (Target finale)
     ]
 
     links_data = [
@@ -503,17 +397,14 @@ def create_aggregated_reversed_sankey():
         (1, 2, row['executed_final_correct_debugged_original_not_correct']),
         (0, 3, row['executed_final_correct_not_debugged_original_correct']),
         (1, 3, row['executed_final_correct_not_debugged_original_not_correct']),
-
         (0, 4, row['executed_final_not_correct_debugged_original_correct']),
         (1, 4, row['executed_final_not_correct_debugged_original_not_correct']),
         (0, 5, row['executed_final_not_correct_not_debugged_original_correct']),
         (1, 5, row['executed_final_not_correct_not_debugged_original_not_correct']),
-
         (0, 6, row['not_executed_final_correct_debugged_original_correct']),
         (1, 6, row['not_executed_final_correct_debugged_original_not_correct']),
         (0, 7, row['not_executed_final_correct_not_debugged_original_correct']),
         (1, 7, row['not_executed_final_correct_not_debugged_original_not_correct']),
-
         (0, 8, row['not_executed_final_not_correct_debugged_original_correct']),
         (1, 8, row['not_executed_final_not_correct_debugged_original_not_correct']),
         (0, 9, row['not_executed_final_not_correct_not_debugged_original_correct']),
@@ -524,45 +415,38 @@ def create_aggregated_reversed_sankey():
         (3, 10, row['executed_final_correct_not_debugged']),
         (4, 11, row['executed_final_not_correct_debugged']),
         (5, 11, row['executed_final_not_correct_not_debugged']),
-
         (6, 12, row['not_executed_final_correct_debugged']),
         (7, 12, row['not_executed_final_correct_not_debugged']),
         (8, 13, row['not_executed_final_not_correct_debugged']),
         (9, 13, row['not_executed_final_not_correct_not_debugged']),
 
-        # Dallo stato Final Function a Executed/Not Executed
+        # Dallo stato Final Function ai nuovi target finali
         (10, 14, row['executed_final_correct']),
         (11, 14, row['executed_final_not_correct']),
         (12, 15, row['not_executed_final_correct']),
-        (13, 15, row['not_executed_final_not_correct']),
+        (13, 15, row['not_executed_final_not_correct'])
 
-        # Da Executed/Not Executed a Deployed
-        (14, 16, row['correctly_executed']),
-        (15, 16, row['deployed_not_executed'])
+        # RIMOSSO: il collegamento verso il nodo 16 (Deployed)
     ]
 
     sources, targets, values = zip(*links_data)
 
-    # Calcolo dei totali per le etichette
+    # 2. Ricalcolo dei totali per le etichette
     node_totals = [0] * len(labels)
-    # Per le sorgenti, sommiamo i valori uscenti
     node_totals[0] = sum(v for s, t, v in links_data if s == 0)
     node_totals[1] = sum(v for s, t, v in links_data if s == 1)
-    # Per gli altri nodi, sommiamo i valori entranti
     for s, t, v in links_data:
         if t > 1:
             node_totals[t] += v
 
     updated_labels = [f"<b>{l} ({int(node_totals[i])})</b>" for i, l in enumerate(labels)]
 
-    # Definizione colori (invertiti come il flusso)
-    # Sorgenti (0,1) -> Debug (2-9) -> Final (10-13) -> Exec (14-15) -> Final (16)
+    # 3. Definizione colori (aggiornati per 16 nodi totali)
     node_colors = (
             ["darkgreen", "darkred"] +  # Original Level
             ["lightblue", "magenta"] * 4 +  # Debug Level
             ["green", "orange", "green", "orange"] +  # Final Level
-            ["blue", "red"] +  # Execution Level
-            ["grey"]  # Deployed
+            ["blue", "red"]  # Execution Level (Target finali)
     )
 
     link_colors = []
@@ -602,5 +486,4 @@ def create_aggregated_reversed_sankey():
 #analyze_and_visualize_comparison()
 #create_full_sankey()
 #pie_chart()
-#create_reversed_sankey()
 create_aggregated_reversed_sankey()

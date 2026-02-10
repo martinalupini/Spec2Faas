@@ -1,0 +1,8 @@
+Metric,Standard_Deviation
+pass@1,0.01488341408761474
+number_func_generated,2.4408799103688215
+avg_generation_time (s),0.03095258937675154
+avg_tokens,2.508836881981645
+avg_execution_time (s),0.2693850901560755
+avg_cc_generation,0.12493656602645734
+avg_cog_generation,0.14493953545315783

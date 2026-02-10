@@ -86,5 +86,18 @@ def write_csv(statistics=False):
         print(f"\nAn error occurred while saving the file: {e}")
 
 
+def calculate_and_save_metrics_std():
+    df = pd.read_csv("../results_deepseek.csv")
 
-write_csv(True)
+    numeric_df = df.select_dtypes(include=['number'])
+
+    std_series = numeric_df.std()
+
+    std_df = std_series.reset_index()
+    std_df.columns = ['Metric', 'Standard_Deviation']
+
+    std_df.to_csv("../metrics_standard_deviation.csv", index=False)
+
+
+#write_csv(True)
+calculate_and_save_metrics_std()
