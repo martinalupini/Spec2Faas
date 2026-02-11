@@ -92,11 +92,18 @@ def calculate_and_save_metrics_std():
     numeric_df = df.select_dtypes(include=['number'])
 
     std_series = numeric_df.std()
+    mean_series = numeric_df.mean()
 
-    std_df = std_series.reset_index()
-    std_df.columns = ['Metric', 'Standard_Deviation']
+    cv_series = (std_series / mean_series) * 100
 
-    std_df.to_csv("../metrics_standard_deviation.csv", index=False)
+    metrics_df = pd.DataFrame({
+        'Metric': std_series.index,
+        'Mean': mean_series.values,
+        'Standard_Deviation': std_series.values,
+        'Coefficient_of_Variation_%': cv_series.values
+    })
+
+    metrics_df.to_csv("../metrics_standard_deviation.csv", index=False)
 
 
 #write_csv(True)
