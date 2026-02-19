@@ -40,7 +40,7 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
 
     ax.set_yticklabels(models)
 
-    ax.set_title('Metric Comparison: pass@1', fontsize=22, weight='bold', pad=20)
+    ax.set_title('Model Comparison: pass@1', fontsize=22, weight='bold', pad=20)
     ax.set_xlabel('pass@1', fontsize=22, labelpad=20, weight='bold')
     ax.tick_params(axis='y', labelsize=22)
     ax.tick_params(axis='x', labelsize=18)
@@ -396,9 +396,9 @@ def statistical_analysis():
 
 
 #make_radar_plot()  #radar
-#make_pass1_horizontal_bar_plot_2() #pass@1
+make_pass1_horizontal_bar_plot_2() #pass@1
 #make_performance_plots()   #time and token
 #make_complexity_plots()   #cc e cog
-plot_prompt_comparison()  #with without prompt
+#plot_prompt_comparison()  #with without prompt
 #statistical_analysis()
 
