@@ -169,10 +169,9 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
-    #color_base = '#34495e'  # Blu scuro (Generazione)
+
     color_base = '#a6cee3'
-    color_gain = '#27ae60'  # Verde (Gain)
-    #color_gain = '#a6cee3'
+    color_gain = '#27ae60'
 
     bar_width = 0.65
 

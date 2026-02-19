@@ -202,7 +202,6 @@ def make_radar_plot():
         )
         ax.fill(angles, values, color=color, alpha=0.2)
 
-    # Bigger axis labels + more padding to avoid overlaps
     ax.set_xticks(angles[:-1])
     ax.set_xticklabels(name_metrics, fontsize=26, fontweight='bold')
     ax.tick_params(axis='x', pad=50)
@@ -218,7 +217,6 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, 1.1)
 
-    # Bigger title
     plt.title(
         'Comparing Performances for Coder Agent',
         fontsize=30,
@@ -226,15 +224,11 @@ def make_radar_plot():
         y=1.11
     )
 
-    # Legend moved further outside so it won't overlap
     plt.legend(
         loc='upper right',
         bbox_to_anchor=(1.3, 1.1),
         fontsize=26
     )
-
-    # IMPORTANT: avoid tight_layout because it compresses everything and can cause overlaps
-    # plt.tight_layout(pad=1.5)
 
     plt.savefig('../radar_comparison_coder.png', dpi=300, bbox_inches='tight')
     plt.show()

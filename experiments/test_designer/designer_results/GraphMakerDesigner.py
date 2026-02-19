@@ -70,7 +70,6 @@ def make_performance_plots(csv_path='../results.csv'):
     color_map = {model: color for model, color in zip(models, colors)}
 
     for ax, metric, title in zip(axes, metrics, titles):
-        is_canonical = False
 
         df_sorted = df_csv.sort_values(by=metric, ascending=True)
         current_models = df_sorted['model'].tolist()
