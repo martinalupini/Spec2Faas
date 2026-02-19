@@ -117,7 +117,7 @@ def create_detailed_sankey_diagram(experiment):
 
         fig.update_layout(
             font=dict(
-                size=28,
+                size=30,
                 color="black",
                 weight="bold"
             )
@@ -132,48 +132,6 @@ def create_detailed_sankey_diagram(experiment):
         except Exception as e:
             print(f"Error in saving the diagram: {e}")
 
-
-
-
-
-
-def analyze_and_visualize_results():
-    try:
-        df = pd.read_csv("../results.csv")
-    except FileNotFoundError:
-        return "Error: File not found."
-
-    last_row = df.iloc[-1]
-    deployed = last_row['num_deployed']
-    executed = last_row['num_correctly_executed']
-
-    labels = ['Deployed', 'Executed']
-    values = [deployed, executed]
-    colors = ['#3498db', '#2ecc71']
-    x_pos = [-0.1,0.5]
-
-    fig, ax = plt.subplots(figsize=(8, 6))
-
-    bars = ax.bar(x_pos, values, color=colors, width=0.3, zorder=3)
-
-    ax.set_title('Comparison: Deployed vs Executed Functions', weight='bold', fontsize=14, pad=25)
-    ax.set_ylabel('Number of Functions', weight='bold')
-
-    ax.set_xticks(x_pos)
-    ax.set_xticklabels(labels, fontweight='bold')
-
-    ax.set_xlim(-0.5, 0.9)
-
-    ax.spines['top'].set_visible(False)
-    ax.spines['right'].set_visible(False)
-
-    ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
-
-    for i, v in enumerate(values):
-        ax.text(x_pos[i], v + 1, str(v), ha='center', fontweight='bold')
-
-    plt.savefig('../final_results_system.png')
-    plt.show()
 
 
 def analyze_and_visualize_comparison():
@@ -199,17 +157,18 @@ def analyze_and_visualize_comparison():
     rects2 = ax.bar(x + width / 2, optimal_vals, width, label='Optimal configuration', color='#2ecc71', zorder=3)
 
     ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45, fontsize=22)
-    ax.set_ylabel('Number of Functions', fontsize=20)
+    ax.set_ylabel('Number of Functions', fontsize=22, weight='bold', labelpad=20)
 
     ax.set_xticks(x)
-    ax.set_xticklabels(labels, fontsize=20)
+    ax.set_xticklabels(labels, fontsize=22)
+    ax.tick_params(axis='y', labelsize=18)
 
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
 
     ax.grid(axis='y', linestyle='--', alpha=0.5, zorder=0)
 
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.12), ncol=2, frameon=False, prop={'weight': 'bold', 'size': 16})
+    ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.22), ncol=2, frameon=False, prop={'weight': 'bold', 'size': 18})
 
     def autolabel(rects):
         for rect in rects:
@@ -218,7 +177,7 @@ def analyze_and_visualize_comparison():
                         xy=(rect.get_x() + rect.get_width() / 2, height),
                         xytext=(0, 5),
                         textcoords="offset points",
-                        ha='center', va='bottom', fontweight='bold', fontsize=16)
+                        ha='center', va='bottom', fontweight='bold', fontsize=18)
 
     autolabel(rects1)
     autolabel(rects2)
@@ -351,7 +310,7 @@ def pie_chart():
         wedgeprops={'edgecolor': 'white', 'linewidth': 1}
     )
 
-    plt.setp(autotexts, size=12, weight="bold")
+    plt.setp(autotexts, size=18, weight="bold")
 
     plt.title('Response Time Distribution per Phase', fontsize=22, fontweight='bold', pad=20)
 
@@ -362,7 +321,7 @@ def pie_chart():
         title="Agents (Response Time)",
         loc="center left",
         bbox_to_anchor=(0.93, 0, 0.5, 1),
-        fontsize=16,
+        fontsize=18,
         title_fontsize=20
     )
 
@@ -370,10 +329,8 @@ def pie_chart():
     plt.savefig('../pie_chart.png', dpi=300)
     plt.close()
 
-
 def create_aggregated_reversed_sankey():
     try:
-        # Assicurati che i path siano corretti per il tuo ambiente
         df = pd.read_csv("../results_sankey.csv")
     except FileNotFoundError:
         print("Error: File '../results_sankey.csv' not found.")
@@ -381,7 +338,6 @@ def create_aggregated_reversed_sankey():
 
     row = df.iloc[0]
 
-    # 1. Definiamo i nodi (16 nodi in totale, rimosso l'ultimo "Deployed")
     labels = [
         "Original Function Correct", "Original Function Not Correct",  # 0, 1
         "Debugged", "Not Debugged", "Debugged", "Not Debugged",  # 2, 3, 4, 5
@@ -392,7 +348,6 @@ def create_aggregated_reversed_sankey():
     ]
 
     links_data = [
-        # Dalle sorgenti Originali ai nodi Debug/Not Debug
         (0, 2, row['executed_final_correct_debugged_original_correct']),
         (1, 2, row['executed_final_correct_debugged_original_not_correct']),
         (0, 3, row['executed_final_correct_not_debugged_original_correct']),
@@ -410,7 +365,6 @@ def create_aggregated_reversed_sankey():
         (0, 9, row['not_executed_final_not_correct_not_debugged_original_correct']),
         (1, 9, row['not_executed_final_not_correct_not_debugged_original_not_correct']),
 
-        # Dai nodi Debug/Not Debug allo stato della Final Function
         (2, 10, row['executed_final_correct_debugged']),
         (3, 10, row['executed_final_correct_not_debugged']),
         (4, 11, row['executed_final_not_correct_debugged']),
@@ -420,18 +374,15 @@ def create_aggregated_reversed_sankey():
         (8, 13, row['not_executed_final_not_correct_debugged']),
         (9, 13, row['not_executed_final_not_correct_not_debugged']),
 
-        # Dallo stato Final Function ai nuovi target finali
         (10, 14, row['executed_final_correct']),
         (11, 14, row['executed_final_not_correct']),
         (12, 15, row['not_executed_final_correct']),
         (13, 15, row['not_executed_final_not_correct'])
 
-        # RIMOSSO: il collegamento verso il nodo 16 (Deployed)
     ]
 
     sources, targets, values = zip(*links_data)
 
-    # 2. Ricalcolo dei totali per le etichette
     node_totals = [0] * len(labels)
     node_totals[0] = sum(v for s, t, v in links_data if s == 0)
     node_totals[1] = sum(v for s, t, v in links_data if s == 1)
@@ -441,7 +392,6 @@ def create_aggregated_reversed_sankey():
 
     updated_labels = [f"<b>{l} ({int(node_totals[i])})</b>" for i, l in enumerate(labels)]
 
-    # 3. Definizione colori (aggiornati per 16 nodi totali)
     node_colors = (
             ["darkgreen", "darkred"] +  # Original Level
             ["lightblue", "magenta"] * 4 +  # Debug Level
@@ -466,14 +416,13 @@ def create_aggregated_reversed_sankey():
 
     experiment_id = row['experiment']
     fig.update_layout(
-        font=dict(size=22, color="black"),
+        font=dict(size=35, color="black"),
         width=2800, height=1400,
         margin=dict(l=50, r=50, t=50, b=50)
     )
 
     fig.show()
 
-    # Salvataggio
     dir_name = f"experiment_{experiment_id}/"
     os.makedirs(dir_name, exist_ok=True)
     output_path = os.path.join(dir_name, 'aggregated_reversed_sankey.png')
@@ -481,9 +430,6 @@ def create_aggregated_reversed_sankey():
     print(f"Diagram saved in {output_path}")
 
 #create_detailed_sankey_diagram(experiment)
-#create_sankey_from_dataframe(experiment)
-#analyze_and_visualize_results()
 #analyze_and_visualize_comparison()
-#create_full_sankey()
-#pie_chart()
-create_aggregated_reversed_sankey()
+pie_chart()
+#create_aggregated_reversed_sankey()
