@@ -83,13 +83,14 @@ def make_radar_plot():
         ax.text(angle,
                 r_label_position,
                 label,
-                size=20,
+                size=22,
+                weight='bold',
                 horizontalalignment=ha,
                 verticalalignment=va)
     yticks = np.arange(0, max_value, 25)
     ax.set_yticks(yticks)
 
-    ax.set_yticklabels([f'{tick:.0f}' for tick in yticks], color="grey", size=10)
+    ax.set_yticklabels([f'{tick:.0f}' for tick in yticks], color="grey", size=18)
 
     ax.set_rlabel_position(30)
     ax.set_ylim(0, max_value)
@@ -98,7 +99,7 @@ def make_radar_plot():
 
     plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.05), fontsize=16)
 
-    plt.tight_layout(pad=1.5)
+    #plt.tight_layout(pad=1.5)
 
     plt.savefig('radar_comparison_all.png', dpi=300)
     #plt.show()

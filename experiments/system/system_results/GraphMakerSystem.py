@@ -416,7 +416,7 @@ def create_aggregated_reversed_sankey():
 
     experiment_id = row['experiment']
     fig.update_layout(
-        font=dict(size=35, color="black"),
+        font=dict(size=40, color="black"),
         width=2800, height=1400,
         margin=dict(l=50, r=50, t=50, b=50)
     )
@@ -431,5 +431,5 @@ def create_aggregated_reversed_sankey():
 
 #create_detailed_sankey_diagram(experiment)
 #analyze_and_visualize_comparison()
-pie_chart()
-#create_aggregated_reversed_sankey()
+#pie_chart()
+create_aggregated_reversed_sankey()
