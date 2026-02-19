@@ -77,6 +77,11 @@ class Assistant(RoutedAgent):
         # If the prompt contains a specification it starts the coding phase
         elif response.content.startswith("translation"):
             dialogue(response.content, self._role)
+
+            if os.getenv("UI") == "True":
+                self._server.send_chunk("Perfect! Starting code generation based on the provided specification.",
+                                        "assistant", "text")
+
             # The translation is complete so we can send a message to the EntryPoint
             return_message = await self._runtime.send_message(Message(response.content.removeprefix("translation:"), type="request"), AgentId("entry_point", "default"))
             # The coding team could not generate a correct function
