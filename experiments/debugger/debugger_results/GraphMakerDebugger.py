@@ -41,7 +41,7 @@ def make_debugging_gain_plot():
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    title_text = f'Debugging gain for coder {coder}'
+    #title_text = f'Debugging gain for coder {coder}'
     ax.set_title(title_text, fontsize=14, weight='bold')
     ax.set_ylabel('Number of corrected functions', fontsize=16)
     ax.tick_params(axis='x', rotation=45, labelsize=14)
@@ -194,7 +194,7 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
     ax.set_ylim(0, current_ylim[1] * 1.15)
 
     ax.set_title(f'Performance Analysis Debugger: {debugger_name}', fontsize=22, weight='bold', pad=25)
-    ax.set_ylabel('Number of Functions Corrected', fontsize=22, labelpad=10, weight='bold')
+    ax.set_ylabel('Number of Corrected Functions', fontsize=22, labelpad=10, weight='bold')
     ax.set_xlabel('Coder Agent', fontsize=22, weight='bold', labelpad=40)
 
     ax.tick_params(axis='x', rotation=0, labelsize=22)
@@ -206,11 +206,11 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
     plt.tight_layout()
 
-    output_path = f"../performance_debugger_{debugger_name.replace('.', '_')}.png"
-    plt.savefig(output_path, dpi=300)
+    output_path = f"../performance_debugger_{debugger_name.replace('.', '_')}.pdf"
+    plt.savefig(output_path, bbox_inches="tight")
     plt.show()
 
 
 #make_debugging_gain_plot()
 plot_coder_comparison()
-#plot_debugger_performance()
+plot_debugger_performance()
