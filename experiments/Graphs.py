@@ -95,13 +95,13 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, max_value)
 
-    plt.title('Performance of models in different tasks', size=22, y=1.1, weight='bold')
+    #plt.title('Performance of models in different tasks', size=22, y=1.1, weight='bold')
 
-    plt.legend(loc='upper right', bbox_to_anchor=(1.35, 1.05), fontsize=16)
+    plt.legend(loc='upper right', bbox_to_anchor=(1.45, 1.15), fontsize=20)
 
     #plt.tight_layout(pad=1.5)
 
-    plt.savefig('radar_comparison_all.png', dpi=300)
+    plt.savefig('radar_comparison_all.pdf', bbox_inches='tight')
     #plt.show()
 
 make_radar_plot()

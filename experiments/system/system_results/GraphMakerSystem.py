@@ -77,7 +77,7 @@ def create_detailed_sankey_diagram(experiment):
 
 
         nodes = dict(
-            pad=100,
+            pad=150,
             thickness=18,
             line=dict(color="black", width=0.5),
             label=updated_labels,
@@ -126,7 +126,7 @@ def create_detailed_sankey_diagram(experiment):
         fig.show()
 
         try:
-            output_path = os.path.join(dir_name, 'detailed_sankey_flow.png')
+            output_path = os.path.join(dir_name, 'detailed_sankey_flow.pdf')
             fig.write_image(output_path, width=2000, height=800, scale=2)
             print(f"Diagram saved in {output_path}")
         except Exception as e:
@@ -143,7 +143,7 @@ def analyze_and_visualize_comparison():
     exp0 = df[df['experiment_number'] == 0].iloc[0]
     exp2 = df[df['experiment_number'] == 2].iloc[0]
 
-    labels = ['Deployed', 'Correctly Executed']
+    labels = ['Deployed', 'Executed Correctly']
     sub_optimal_vals = [exp0['num_deployed'], exp0['num_correctly_executed']]
     optimal_vals = [exp2['num_deployed'], exp2['num_correctly_executed']]
 
@@ -183,7 +183,7 @@ def analyze_and_visualize_comparison():
     autolabel(rects2)
 
     plt.tight_layout()
-    plt.savefig('../comparison_configs.pdf')
+    plt.savefig('../comparison_configs.pdf', bbox_inches='tight')
     plt.show()
 
 def create_full_sankey():
@@ -258,7 +258,7 @@ def create_full_sankey():
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
-            pad=15, thickness=20,
+            pad=50, thickness=30,
             line=dict(color="black", width=0.5),
             label=updated_labels,
             color=node_colors
@@ -312,7 +312,7 @@ def pie_chart():
 
     plt.setp(autotexts, size=18, weight="bold")
 
-    plt.title('Response Time Distribution per Phase', fontsize=22, fontweight='bold', pad=20)
+    #plt.title('Response Time Distribution per Phase', fontsize=22, fontweight='bold', pad=20)
 
     legend_labels = [f'{l} ({v:.1f}s)' for l, v in zip(etichette_finali, valori_finali)]
     ax.legend(
@@ -326,7 +326,7 @@ def pie_chart():
     )
 
     plt.tight_layout()
-    plt.savefig('../pie_chart.png', dpi=300)
+    plt.savefig('../pie_chart.pdf', bbox_inches='tight')
     plt.close()
 
 def create_aggregated_reversed_sankey():
@@ -431,7 +431,7 @@ def create_aggregated_reversed_sankey():
     fig.write_image(output_path, width=1500, height=600)
     print(f"Diagram saved in {output_path}")
 
-#create_detailed_sankey_diagram(experiment)
-analyze_and_visualize_comparison()
+create_detailed_sankey_diagram(experiment)
+#analyze_and_visualize_comparison()
 #pie_chart()
 #create_aggregated_reversed_sankey()

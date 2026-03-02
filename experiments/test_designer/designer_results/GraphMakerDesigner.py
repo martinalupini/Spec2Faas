@@ -59,7 +59,7 @@ def make_performance_plots(csv_path='../results.csv'):
 
 
     metrics = ['avg_test_generation_time (s)', 'avg_tokens']
-    titles = ['Response Time (s)', 'Token Usage']
+    titles = ['Avg Response Time (s)', 'Avg Tokens']
 
     models = df_csv['model'].tolist()
 
@@ -98,5 +98,5 @@ def make_performance_plots(csv_path='../results.csv'):
 
 
 make_metric_plot('passed', 'pass@1')
-make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+make_metric_plot('avg_coverage (%)', 'Avg Test Coverage (%)')
 make_performance_plots()

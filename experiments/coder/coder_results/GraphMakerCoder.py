@@ -74,7 +74,7 @@ def make_performance_plots(csv_path='../results.csv'):
     df_plot = df_csv[~df_csv['model'].isin(avoid_models)].copy()
 
     metrics = ['avg_generation_time (s)', 'avg_tokens']
-    titles = ['Response Time (s)', 'Token Usage']
+    titles = ['Avg Response Time (s)', 'Avg Tokens']
 
     models = df_plot['model'].tolist()
 
@@ -144,11 +144,11 @@ def make_radar_plot():
 
     name_metrics = [
         'pass@1',
-        'average\ngeneration\ntime (s)',
-        'average\ntokens usage',
-        'average\nexecution\ntime (s)',
-        'average\ncyclomatic complexity',
-        'average\ncognitive complexity'
+        'Avg Generation\nTime (s)',
+        'Avg Tokens',
+        'Avg Execution\nTime (s)',
+        'Avg Cyclomatic\nComplexity',
+        'Avg Cognitive\nComplexity'
     ]
 
     df_filtered = df_csv[['model'] + metrics]
@@ -224,7 +224,7 @@ def make_radar_plot():
 
     plt.legend(
         loc='upper right',
-        bbox_to_anchor=(1.3, 1.1),
+        bbox_to_anchor=(1.4, 1.1),
         fontsize=26
     )
 
@@ -365,16 +365,24 @@ def statistical_analysis():
         'avg_cog_generation'
     ]
 
+    name_metrics = [
+        'pass@1',
+        'Avg Tokens',
+        'Avg Generation\nTime (s)',
+        'Avg Cyclomatic Complexity',
+        'Avg Cognitive Complexity'
+    ]
+
     fig, axes = plt.subplots(nrows=len(metrics), ncols=1, figsize=(12, 8))
 
     colors = sns.color_palette("Set2", len(metrics))
 
-    for i, (metric, color) in enumerate(zip(metrics, colors)):
+    for i, (metric, color, name) in enumerate(zip(metrics, colors, name_metrics)):
         sns.boxplot(x=df[metric], ax=axes[i], color=color, width=0.5)
 
         axes[i].tick_params(axis='x', labelsize=18)
 
-        axes[i].set_ylabel(metric, fontsize=22, fontweight='bold',
+        axes[i].set_ylabel(name, fontsize=22, fontweight='bold',
                            rotation=0, labelpad=30, ha='right', va='center')
 
         axes[i].set_xlabel('')
@@ -391,9 +399,9 @@ def statistical_analysis():
     plt.show()
 
 
-#make_radar_plot()  #radar
+make_radar_plot()  #radar
 #make_pass1_horizontal_bar_plot_2()  #pass@1
 #make_performance_plots()  #time and token
-make_complexity_plots()  #cc e cog
-plot_prompt_comparison()  #with without prompt
+#make_complexity_plots()  #cc e cog
+#plot_prompt_comparison()  #with without prompt
 #statistical_analysis()
