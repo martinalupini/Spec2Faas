@@ -3,7 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 
-def make_horizontal_bar_plots(metrics, fig_lenght, title, labels):
+def make_horizontal_bar_plots(metrics, fig_lenght, title, labels, float_app):
     df_csv = pd.read_csv('../results.csv')
 
     all_possible_models = sorted(list(set(df_csv['model'].tolist() + ['qwen2.5-coder:32b'])))
@@ -34,13 +34,17 @@ def make_horizontal_bar_plots(metrics, fig_lenght, title, labels):
 
         for bar in bars:
             width = bar.get_width()
+            if float_app:
+                label_value = f'{width:.2f}'
+            else:
+                label_value = f'{width}'
             ax.text(width + (max(values) * 0.01), bar.get_y() + bar.get_height() / 2,
-                    f'{width}', va='center', fontsize=18, weight='bold')
+                    label_value, va='center', fontsize=18, weight='bold')
 
     plt.tight_layout()
     plt.savefig(title, bbox_inches='tight')
     plt.show()
 
 
-make_horizontal_bar_plots(['number_functions_correctly_deployed', 'number_functions_correctly_executed'], 20, '../comparison_horizontal_deployer.pdf', ["Number Functions Correctly Deployed", "Number Functions Executed Correctly"])
-#make_horizontal_bar_plots(['avg_deployment_time (s)', 'avg_tokens'], 15, '../comparison_horizontal_deployer_performance.pdf')
+make_horizontal_bar_plots(['number_functions_correctly_deployed', 'number_functions_correctly_executed'], 20, '../comparison_horizontal_deployer.pdf', ["Number Functions Correctly Deployed", "Number Functions Executed Correctly"], float_app = False)
+make_horizontal_bar_plots(['avg_deployment_time (s)', 'avg_tokens'], 15, '../comparison_horizontal_deployer_performance.pdf', ["Avg Deployment Time (s)", "Avg Tokens"], float_app = True)

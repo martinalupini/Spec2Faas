@@ -42,7 +42,7 @@ def make_debugging_gain_plot():
         spine.set_visible(False)
 
     #title_text = f'Debugging gain for coder {coder}'
-    ax.set_title(title_text, fontsize=14, weight='bold')
+    #ax.set_title(title_text, fontsize=14, weight='bold')
     ax.set_ylabel('Number of corrected functions', fontsize=16)
     ax.tick_params(axis='x', rotation=45, labelsize=14)
     ax.yaxis.grid(True, linestyle='--', alpha=0.6)
