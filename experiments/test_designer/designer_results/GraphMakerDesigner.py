@@ -80,8 +80,8 @@ def make_performance_plots(csv_path='../results.csv'):
         for spine in ax.spines.values():
             spine.set_visible(False)
 
-        ax.set_title(title, fontsize=22, weight='bold')
-        ax.set_xlabel(metric, fontsize=22, weight='bold', labelpad=40)
+        #ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(title, fontsize=22, weight='bold', labelpad=40)
         ax.tick_params(axis='y', labelsize=22)
         ax.tick_params(axis='x', labelsize=18)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
@@ -92,11 +92,11 @@ def make_performance_plots(csv_path='../results.csv'):
                     f'{xval:.2f}', ha='left', va='center', fontsize=18, weight='bold')
 
     plt.tight_layout()
-    plt.savefig('../performance_comparison_designer.png', dpi=300)
+    plt.savefig('../performance_comparison_designer.pdf', bbox_inches='tight')
     plt.show()
 
 
 
 make_metric_plot('passed', 'pass@1')
-#make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
-#make_performance_plots()
+make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+make_performance_plots()
