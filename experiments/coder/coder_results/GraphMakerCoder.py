@@ -5,7 +5,6 @@ import math
 import seaborn as sns
 
 
-
 def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
     df_csv = pd.read_csv(csv_path)
 
@@ -57,6 +56,7 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
     plt.savefig('../pass1_comparison_horizontal.pdf', bbox_inches='tight')
     plt.show()
 
+
 def make_performance_plots(csv_path='../results.csv'):
     df_csv = pd.read_csv(csv_path)
 
@@ -102,8 +102,8 @@ def make_performance_plots(csv_path='../results.csv'):
                        label=f'Canonical: {canonical_value:.2f}s')
             ax.legend(loc='lower right', frameon=True)
 
-        ax.set_title(title, fontsize=22, weight='bold')
-        ax.set_xlabel(metric, fontsize=22, labelpad=20, weight='bold')
+        #ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(title, fontsize=22, labelpad=20, weight='bold')
         ax.tick_params(axis='y', labelsize=22)
         ax.tick_params(axis='x', labelsize=18)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
@@ -114,7 +114,7 @@ def make_performance_plots(csv_path='../results.csv'):
                     f'{xval:.2f}', ha='left', va='center', fontsize=18, weight='bold')
 
     plt.tight_layout()
-    plt.savefig('../performance_comparison.png', dpi=300)
+    plt.savefig('../performance_comparison.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -174,9 +174,11 @@ def make_radar_plot():
             continue
 
         if metric in lower_is_better:
-            df_normalized[metric] = new_min + ((max_val - df_normalized[metric]) / (max_val - min_val)) * (new_max - new_min)
+            df_normalized[metric] = new_min + ((max_val - df_normalized[metric]) / (max_val - min_val)) * (
+                        new_max - new_min)
         else:
-            df_normalized[metric] = new_min + ((df_normalized[metric] - min_val) / (max_val - min_val)) * (new_max - new_min)
+            df_normalized[metric] = new_min + ((df_normalized[metric] - min_val) / (max_val - min_val)) * (
+                        new_max - new_min)
 
     num_vars = len(metrics)
     angles = np.linspace(0, 2 * np.pi, num_vars, endpoint=False).tolist()
@@ -218,12 +220,7 @@ def make_radar_plot():
     ax.set_rlabel_position(30)
     ax.set_ylim(0, 1.1)
 
-    plt.title(
-        'Comparing Performances for Coder Agent',
-        fontsize=30,
-        weight='bold',
-        y=1.11
-    )
+    #plt.title('Comparing Performances for Coder Agent', fontsize=30, weight='bold', y=1.11)
 
     plt.legend(
         loc='upper right',
@@ -231,8 +228,9 @@ def make_radar_plot():
         fontsize=26
     )
 
-    plt.savefig('../radar_comparison_coder.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../radar_comparison_coder.pdf', bbox_inches='tight')
     plt.show()
+
 
 def make_complexity_plots(csv_path='../results.csv'):
     df_csv = pd.read_csv(csv_path)
@@ -273,10 +271,16 @@ def make_complexity_plots(csv_path='../results.csv'):
             canonical_value = canonical_df[metric].iloc[0]
             ax.axvline(x=canonical_value, color='red', linestyle='--', linewidth=2,
                        label=f'Canonical: {canonical_value:.2f}')
-            ax.legend(loc='upper center', bbox_to_anchor=(1.3, 0.5), fancybox=True, shadow=True, fontsize=20)
-
-        ax.set_title(title, fontsize=22, weight='bold')
-        ax.set_xlabel(metric, fontsize=22, weight='bold', labelpad=40)
+            ax.legend(
+                loc='upper center',
+                bbox_to_anchor=(0.5, -0.20),
+                ncol=1,
+                fancybox=True,
+                shadow=True,
+                fontsize=16
+            )
+        #ax.set_title(title, fontsize=22, weight='bold')
+        ax.set_xlabel(title, fontsize=22, weight='bold', labelpad=40)
         ax.tick_params(axis='y', labelsize=22)
         ax.tick_params(axis='x', labelsize=18)
         ax.xaxis.grid(True, linestyle='--', alpha=0.6)
@@ -293,7 +297,7 @@ def make_complexity_plots(csv_path='../results.csv'):
         wspace=0.6,
         bottom=0.2
     )
-    plt.savefig('../complexity_comparison.png', dpi=300, bbox_inches='tight')
+    plt.savefig('../complexity_comparison.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -327,9 +331,8 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     ax.set_yticks(y)
     ax.set_yticklabels(sorted_models, fontsize=22)
     ax.tick_params(axis='x', labelsize=18)
-    ax.set_xlabel('pass@1 Score', fontsize=22, weight='bold', labelpad=40)
-    ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=22,
-                 weight='bold')
+    ax.set_xlabel('pass@1 Score', fontsize=22, weight='bold', labelpad=35)
+    #ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=22,weight='bold')
     ax.legend(loc='lower right', fontsize=22, bbox_to_anchor=(1.02, 0.0))
 
     for spine in ax.spines.values():
@@ -347,7 +350,7 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     autolabel(rects2)
 
     plt.tight_layout()
-    plt.savefig('../prompt_comparison_pass1.png', dpi=300)
+    plt.savefig('../prompt_comparison_pass1.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -384,16 +387,13 @@ def statistical_analysis():
 
     plt.tight_layout(pad=3.0)
 
-    plt.savefig('../statistical_analysis.png')
+    plt.savefig('../statistical_analysis.pdf', bbox_inches='tight')
     plt.show()
 
 
-
-
 #make_radar_plot()  #radar
-make_pass1_horizontal_bar_plot_2() #pass@1
-#make_performance_plots()   #time and token
-#make_complexity_plots()   #cc e cog
-#plot_prompt_comparison()  #with without prompt
+#make_pass1_horizontal_bar_plot_2()  #pass@1
+#make_performance_plots()  #time and token
+make_complexity_plots()  #cc e cog
+plot_prompt_comparison()  #with without prompt
 #statistical_analysis()
-
