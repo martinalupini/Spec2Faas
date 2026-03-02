@@ -127,7 +127,7 @@ def plot_coder_comparison(
             spine.set_visible(False)
 
         ax.set_title(f"Coder: {coder_name}", fontsize=22, weight="bold", pad=20)
-        ax.set_xlabel("Functions Corrected", fontsize=22, weight="bold", labelpad=15)
+        ax.set_xlabel("Corrected Functions", fontsize=22, weight="bold", labelpad=15)
 
         ax.tick_params(axis="y", labelsize=22)
         ax.tick_params(axis="x", labelsize=18)
@@ -147,8 +147,8 @@ def plot_coder_comparison(
     plt.tight_layout(pad=5.0)
     plt.subplots_adjust(hspace=0.5)
 
-    output_name = "../comparison_gain.png"
-    plt.savefig(output_name, dpi=300, bbox_inches="tight")
+    output_name = "../comparison_gain.pdf"
+    plt.savefig(output_name, bbox_inches="tight")
     plt.show()
 
 def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2.5-pro'):
@@ -212,5 +212,5 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
 
 #make_debugging_gain_plot()
-#plot_coder_comparison()
-plot_debugger_performance()
+plot_coder_comparison()
+#plot_debugger_performance()

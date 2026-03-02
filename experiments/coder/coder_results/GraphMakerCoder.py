@@ -40,7 +40,7 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
 
     ax.set_yticklabels(models)
 
-    ax.set_title('Model Comparison: pass@1', fontsize=22, weight='bold', pad=20)
+    #ax.set_title('Model Comparison: pass@1', fontsize=22, weight='bold', pad=20)
     ax.set_xlabel('pass@1', fontsize=22, labelpad=20, weight='bold')
     ax.tick_params(axis='y', labelsize=22)
     ax.tick_params(axis='x', labelsize=18)
@@ -53,7 +53,8 @@ def make_pass1_horizontal_bar_plot_2(csv_path='../results.csv'):
                 f'{xval:.2f}', ha='left', va='center', fontsize=18, weight='bold')
 
     plt.tight_layout()
-    plt.savefig('../pass1_comparison_horizontal.png', dpi=300)
+    #plt.savefig('../pass1_comparison_horizontal.png', dpi=300)
+    plt.savefig('../pass1_comparison_horizontal.pdf', bbox_inches='tight')
     plt.show()
 
 def make_performance_plots(csv_path='../results.csv'):

@@ -156,7 +156,7 @@ def analyze_and_visualize_comparison():
                     zorder=3)
     rects2 = ax.bar(x + width / 2, optimal_vals, width, label='Optimal configuration', color='#2ecc71', zorder=3)
 
-    ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45, fontsize=22)
+    #ax.set_title('Comparison: Sub-optimal vs Optimal Configuration', weight='bold', pad=45, fontsize=22)
     ax.set_ylabel('Number of Functions', fontsize=22, weight='bold', labelpad=20)
 
     ax.set_xticks(x)
@@ -183,7 +183,7 @@ def analyze_and_visualize_comparison():
     autolabel(rects2)
 
     plt.tight_layout()
-    plt.savefig('../comparison_configs.png')
+    plt.savefig('../comparison_configs.pdf')
     plt.show()
 
 def create_full_sankey():
@@ -406,7 +406,7 @@ def create_aggregated_reversed_sankey():
 
     fig = go.Figure(data=[go.Sankey(
         node=dict(
-            pad=20, thickness=30,
+            pad=50, thickness=30,
             line=dict(color="black", width=0.5),
             label=updated_labels,
             color=node_colors
@@ -416,7 +416,7 @@ def create_aggregated_reversed_sankey():
 
     experiment_id = row['experiment']
     fig.update_layout(
-        font=dict(size=40, color="black"),
+        font=dict(size=15, color="black"),
         width=2800, height=1400,
         margin=dict(l=50, r=50, t=50, b=50)
     )
@@ -425,11 +425,13 @@ def create_aggregated_reversed_sankey():
 
     dir_name = f"experiment_{experiment_id}/"
     os.makedirs(dir_name, exist_ok=True)
-    output_path = os.path.join(dir_name, 'aggregated_reversed_sankey.png')
-    fig.write_image(output_path, width=3000, height=1200, scale=2)
+    #output_path = os.path.join(dir_name, 'aggregated_reversed_sankey.png')
+    #fig.write_image(output_path, width=3000, height=1200, scale=2)
+    output_path = os.path.join(dir_name, 'aggregated_reversed_sankey.pdf')
+    fig.write_image(output_path, width=1500, height=600)
     print(f"Diagram saved in {output_path}")
 
 #create_detailed_sankey_diagram(experiment)
-#analyze_and_visualize_comparison()
+analyze_and_visualize_comparison()
 #pie_chart()
-create_aggregated_reversed_sankey()
+#create_aggregated_reversed_sankey()

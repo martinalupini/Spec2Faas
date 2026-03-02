@@ -36,7 +36,6 @@ def make_metric_plot(metric, display_name=None):
     for spine in ax.spines.values():
         spine.set_visible(False)
 
-    ax.set_title(f'Model Comparison: {display_name}', fontsize=22, weight='bold')
     ax.set_xlabel(display_name, fontsize=22, weight='bold', labelpad=40)
     ax.set_yticks(range(len(models_sorted)))
     ax.tick_params(axis='x', labelsize=18)
@@ -51,7 +50,7 @@ def make_metric_plot(metric, display_name=None):
     plt.tight_layout()
 
     save_name = display_name.lower().replace(' ', '_')
-    plt.savefig(f'../comparison_{save_name}_designer.png', dpi=300)
+    plt.savefig(f'../comparison_{save_name}_designer.pdf', bbox_inches='tight')
     plt.show()
 
 
@@ -98,6 +97,6 @@ def make_performance_plots(csv_path='../results.csv'):
 
 
 
-#make_metric_plot('passed', 'pass@1')
-make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
+make_metric_plot('passed', 'pass@1')
+#make_metric_plot('avg_coverage (%)', 'average test coverage (%)')
 #make_performance_plots()
