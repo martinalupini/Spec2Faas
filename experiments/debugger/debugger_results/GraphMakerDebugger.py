@@ -181,9 +181,9 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
     p2 = ax.bar(coders, debugging_gain, bar_width, bottom=initial_passed,
                 label='Debugging Gain', color=color_gain, zorder=3, alpha=0.9)
 
-    ax.bar_label(p1, label_type='center', color='#2c3e50', weight='bold', fontsize=22)
-
-    ax.bar_label(p2, label_type='edge', padding=3, weight='bold', fontsize=22, color='#2c3e50')
+    #ax.bar_label(p1, label_type='center', color='#2c3e50', weight='bold', fontsize=22)
+    custom_labels = [f"+{int(v)}" for v in debugging_gain]
+    ax.bar_label(p2,labels = custom_labels, fmt='+%d', label_type='edge', padding=3, weight='bold', fontsize=22, color='#2c3e50')
 
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -193,7 +193,7 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
     current_ylim = ax.get_ylim()
     ax.set_ylim(0, current_ylim[1] * 1.15)
 
-    ax.set_title(f'Performance Analysis Debugger: {debugger_name}', fontsize=22, weight='bold', pad=25)
+    ax.set_title(f'Debugger: {debugger_name}', fontsize=22, weight='bold', pad=25)
     ax.set_ylabel('Number of Corrected Functions', fontsize=22, labelpad=10, weight='bold')
     ax.set_xlabel('Coder Agent', fontsize=22, weight='bold', labelpad=40)
 
@@ -212,5 +212,5 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
 
 #make_debugging_gain_plot()
-plot_coder_comparison()
+#plot_coder_comparison()
 plot_debugger_performance()

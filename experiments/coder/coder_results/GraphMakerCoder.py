@@ -305,35 +305,63 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     df_csv = pd.read_csv(csv_path)
 
     df_csv['is_no_prompt'] = df_csv['model'].str.contains('_no_prompt')
-    df_csv['base_model'] = df_csv['model'].str.replace('_no_prompt', '')
+    df_csv['base_model'] = df_csv['model'].str.replace('_no_prompt', '', regex=False)
 
     df_csv = df_csv[df_csv['base_model'] != 'canonical']
 
-    models_with_both = df_csv.groupby('base_model').filter(lambda x: len(x) >= 2)['base_model'].unique()
+    models_with_both = (
+        df_csv.groupby('base_model')
+        .filter(lambda x: len(x) >= 2)['base_model']
+        .unique()
+    )
+
     df_plot = df_csv[df_csv['base_model'].isin(models_with_both)].copy()
 
     order_df = df_plot[~df_plot['is_no_prompt']].sort_values(by='pass@1', ascending=True)
     sorted_models = order_df['base_model'].tolist()
 
+    prompt_values = [
+        df_plot[(df_plot['base_model'] == m) & (~df_plot['is_no_prompt'])]['pass@1'].values[0]
+        for m in sorted_models
+    ]
+
+    no_prompt_values = [
+        df_plot[(df_plot['base_model'] == m) & (df_plot['is_no_prompt'])]['pass@1'].values[0]
+        for m in sorted_models
+    ]
+
     y = np.arange(len(sorted_models))
-    height = 0.35
+    height = 0.3
 
-    fig, ax = plt.subplots(figsize=(16, 8))
+    fig_height = max(6, 0.6 * len(sorted_models))
+    fig, ax = plt.subplots(figsize=(10, fig_height))
 
-    prompt_values = [df_plot[(df_plot['base_model'] == m) & (~df_plot['is_no_prompt'])]['pass@1'].values[0] for m in
-                     sorted_models]
-    no_prompt_values = [df_plot[(df_plot['base_model'] == m) & (df_plot['is_no_prompt'])]['pass@1'].values[0] for m in
-                        sorted_models]
+    rects1 = ax.barh(
+        y + height / 2,
+        prompt_values,
+        height,
+        label='With Prompt',
+        color='#1f77b4'
+    )
 
-    rects1 = ax.barh(y + height / 2, prompt_values, height, label='With Prompt', color='#1f77b4')
-    rects2 = ax.barh(y - height / 2, no_prompt_values, height, label='No Prompt', color='#d62728')
+    rects2 = ax.barh(
+        y - height / 2,
+        no_prompt_values,
+        height,
+        label='No Prompt',
+        color='#d62728'
+    )
 
     ax.set_yticks(y)
-    ax.set_yticklabels(sorted_models, fontsize=22)
-    ax.tick_params(axis='x', labelsize=18)
-    ax.set_xlabel('pass@1 Score', fontsize=22, weight='bold', labelpad=35)
-    #ax.set_title('Pass@1 With Prompt (Blue) vs No Prompt (Red)', fontsize=22,weight='bold')
-    ax.legend(loc='lower right', fontsize=22, bbox_to_anchor=(1.02, 0.0))
+    ax.set_yticklabels(sorted_models, fontsize=18)
+    ax.tick_params(axis='x', labelsize=16)
+
+    ax.set_xlabel('pass@1', fontsize=20, weight='bold', labelpad=15)
+
+    max_val = max(prompt_values + no_prompt_values)
+    ax.set_xlim(0, max_val)
+
+    ax.legend(fontsize=18, bbox_to_anchor=(0.3, 0.95))
 
     for spine in ax.spines.values():
         spine.set_visible(False)
@@ -343,13 +371,21 @@ def plot_prompt_comparison(csv_path='../results.csv'):
     def autolabel(rects):
         for rect in rects:
             width = rect.get_width()
-            ax.text(width + 0.005, rect.get_y() + rect.get_height() / 2,
-                    f'{width:.2f}', ha='left', va='center', fontsize=18, weight='bold')
+            ax.text(
+                width + 0.005,
+                rect.get_y() + rect.get_height() / 2,
+                f'{width:.2f}',
+                ha='left',
+                va='center',
+                fontsize=14,
+                weight='bold'
+            )
 
     autolabel(rects1)
     autolabel(rects2)
 
     plt.tight_layout()
+
     plt.savefig('../prompt_comparison_pass1.pdf', bbox_inches='tight')
     plt.show()
 
@@ -399,9 +435,9 @@ def statistical_analysis():
     plt.show()
 
 
-make_radar_plot()  #radar
+#make_radar_plot()  #radar
 #make_pass1_horizontal_bar_plot_2()  #pass@1
 #make_performance_plots()  #time and token
 #make_complexity_plots()  #cc e cog
-#plot_prompt_comparison()  #with without prompt
+plot_prompt_comparison()  #with without prompt
 #statistical_analysis()

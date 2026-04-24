@@ -431,7 +431,7 @@ def create_aggregated_reversed_sankey():
     fig.write_image(output_path, width=1500, height=600)
     print(f"Diagram saved in {output_path}")
 
-create_detailed_sankey_diagram(experiment)
+#create_detailed_sankey_diagram(experiment)
 #analyze_and_visualize_comparison()
 #pie_chart()
-#create_aggregated_reversed_sankey()
+create_aggregated_reversed_sankey()
