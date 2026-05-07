@@ -293,6 +293,7 @@ def pie_chart():
     filtered_data = [(v, l) for v, l in zip(values, labels) if v > 0]
     ordered_data = sorted(filtered_data, key=lambda x: x[0], reverse=True)
     final_values, original_labels = zip(*ordered_data)
+
     mapping = {
         'Executor': 'Test Executor',
         'Designer': 'Test Designer',
@@ -300,12 +301,10 @@ def pie_chart():
     }
 
     final_labels = [mapping.get(nome, nome) for nome in original_labels]
-
     colors = ['#66b3ff', '#ff9999', '#99ff99', '#ffcc99', '#c2c2f0', '#ffb3e6', '#c4e17f']
-
     explode = [0.05] * len(final_values)
 
-    fig, ax = plt.subplots(figsize=(12, 8))
+    fig, ax = plt.subplots(figsize=(16, 10))
 
     patches, texts, autotexts = ax.pie(
         final_values,
@@ -313,26 +312,35 @@ def pie_chart():
         startangle=140,
         colors=colors,
         explode=explode,
-        pctdistance=0.80,
-        wedgeprops={'edgecolor': 'white', 'linewidth': 1}
+        pctdistance=0.75,
+        wedgeprops={'edgecolor': 'white', 'linewidth': 1.5}
     )
 
-    plt.setp(autotexts, size=18, weight="bold")
+    plt.setp(autotexts, size=22, weight="bold")
 
-    legend_labels = [f'{l} ({v:.1f}s)' for l, v in zip(final_labels, final_values)]
+    legend_labels = [f'{l}: {v:.1f}s' for l, v in zip(final_labels, final_values)]
+
     ax.legend(
         patches,
         legend_labels,
         title="Agents (Response Time)",
         loc="center left",
-        bbox_to_anchor=(0.93, 0, 0.5, 1),
-        fontsize=18,
-        title_fontsize=20
+        bbox_to_anchor=(0.95, 0.5),
+
+        fontsize=28,
+        title_fontsize=30,
+
+        labelspacing=0.5,
+        handletextpad=0.5,
+        borderpad=0.4,
+        frameon=False
     )
 
     plt.tight_layout()
     plt.savefig('../pie_chart.pdf', bbox_inches='tight')
     plt.close()
+
+
 
 def create_aggregated_reversed_sankey():
     try:
