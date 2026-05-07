@@ -284,24 +284,31 @@ def create_full_sankey():
 
 def pie_chart():
     df = pd.read_csv('../results.csv')
-    ultima_riga = df.iloc[-1]
-    colonne_tempi = [c for c in df.columns if c.startswith('avg_time_')]
+    last_row = df.iloc[-1]
+    time_columns = [c for c in df.columns if c.startswith('avg_time_')]
 
-    valori = ultima_riga[colonne_tempi]
-    etichette = [c.replace('avg_time_', '').replace('_', ' ').title() for c in colonne_tempi]
+    values = last_row[time_columns]
+    labels = [c.replace('avg_time_', '').replace('_', ' ').title() for c in time_columns]
 
-    dati_filtrati = [(v, l) for v, l in zip(valori, etichette) if v > 0]
-    dati_ordinati = sorted(dati_filtrati, key=lambda x: x[0], reverse=True)
-    valori_finali, etichette_finali = zip(*dati_ordinati)
+    filtered_data = [(v, l) for v, l in zip(values, labels) if v > 0]
+    ordered_data = sorted(filtered_data, key=lambda x: x[0], reverse=True)
+    final_values, original_labels = zip(*ordered_data)
+    mapping = {
+        'Executor': 'Test Executor',
+        'Designer': 'Test Designer',
+        'Deployer': 'FaaS Deployer'
+    }
+
+    final_labels = [mapping.get(nome, nome) for nome in original_labels]
 
     colors = ['#66b3ff', '#ff9999', '#99ff99', '#ffcc99', '#c2c2f0', '#ffb3e6', '#c4e17f']
 
-    explode = [0.05] * len(valori_finali)
+    explode = [0.05] * len(final_values)
 
     fig, ax = plt.subplots(figsize=(12, 8))
 
     patches, texts, autotexts = ax.pie(
-        valori_finali,
+        final_values,
         autopct=lambda p: '{:.1f}%'.format(p) if p > 2 else '',
         startangle=140,
         colors=colors,
@@ -312,9 +319,7 @@ def pie_chart():
 
     plt.setp(autotexts, size=18, weight="bold")
 
-    #plt.title('Response Time Distribution per Phase', fontsize=22, fontweight='bold', pad=20)
-
-    legend_labels = [f'{l} ({v:.1f}s)' for l, v in zip(etichette_finali, valori_finali)]
+    legend_labels = [f'{l} ({v:.1f}s)' for l, v in zip(final_labels, final_values)]
     ax.legend(
         patches,
         legend_labels,
@@ -433,5 +438,5 @@ def create_aggregated_reversed_sankey():
 
 #create_detailed_sankey_diagram(experiment)
 #analyze_and_visualize_comparison()
-#pie_chart()
-create_aggregated_reversed_sankey()
+pie_chart()
+#create_aggregated_reversed_sankey()
