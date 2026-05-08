@@ -21,6 +21,7 @@ def make_metric_plot(metric, display_name=None):
     all_models = df_csv['model'].unique()
     colors_list = plt.cm.viridis(np.linspace(0, 1, len(all_models)))
     color_map = {model: color for model, color in zip(all_models, colors_list)}
+    print(color_map)
 
     df_sorted = df_csv.sort_values(by=metric, ascending=True)
 
@@ -98,5 +99,5 @@ def make_performance_plots(csv_path='../results.csv'):
 
 
 make_metric_plot('passed', 'pass@1')
-make_metric_plot('avg_coverage (%)', 'Avg Test Coverage (%)')
-make_performance_plots()
+#make_metric_plot('avg_coverage (%)', 'Avg Test Coverage (%)')
+#make_performance_plots()

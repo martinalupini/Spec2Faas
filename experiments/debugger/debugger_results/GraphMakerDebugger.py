@@ -156,6 +156,7 @@ def plot_coder_comparison_vertical(
         coders_list=("gemini-2.5-pro", "gemini-2.0-flash", "deepseek-coder-v2"),
 ):
     df_csv = pd.read_csv(csv_path)
+    all_models = ['qwen2.5-coder:32b', 'deepseek-coder-v2', 'gemini-2.5-pro', 'qwen2.5-coder', 'gemini-2.0-flash', 'qwen3']
 
     df_csv["debugging_gain"] = (
             df_csv["number_passed_after_debugging"]
@@ -174,8 +175,9 @@ def plot_coder_comparison_vertical(
     debuggers_in_csv = sorted(
         df_csv[df_csv["debugger"] != "no debugger"]["debugger"].unique()
     )
-    colors = plt.cm.viridis(np.linspace(0, 1, len(debuggers_in_csv)))
-    color_map = {model: color for model, color in zip(debuggers_in_csv, colors)}
+    colors = plt.cm.viridis(np.linspace(0, 1, len(all_models)))
+    color_map = {model: color for model, color in zip(all_models, colors)}
+
 
     for i, coder_name in enumerate(coders_list):
         ax = axes[i]
