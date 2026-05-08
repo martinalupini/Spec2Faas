@@ -170,7 +170,47 @@ def write_csv_sankey():
 
 
 
-write_csv()
+def write_csv_messages():
+
+    file_path = "../results_messages.csv"
+
+
+    num_messages = df['number_messages_exchanged'].mean()
+    df_generated = df[df['generated']]
+    df_generated_debugged = df[df['generated'] & df['debugged']]
+    df_not_generated = df[~df['generated']]
+    df_generated_not_debugged = df[df['generated'] & ~df['debugged']]
+
+    results_data = {
+        'experiment_number': experiment,
+        'num_messages': num_messages,
+        'num_messages_generated': df_generated['number_messages_exchanged'].mean(),
+        'num_messages_not_generated': df_not_generated['number_messages_exchanged'].mean(),
+        'num_messages_generated_debugged': df_generated_debugged['number_messages_exchanged'].mean(),
+        'num_messages_generated_not_debugged': df_generated_not_debugged['number_messages_exchanged'].mean(),
+
+    }
+
+    results_df = pd.DataFrame(results_data, index=[0])
+
+    file_exists = os.path.exists(file_path)
+
+    try:
+        results_df.to_csv(file_path, mode='a', header=not file_exists, index=False)
+
+        if file_exists:
+            print(f"\nAppended a new row to '{file_path}'")
+        else:
+            print(f"\nCreated a new file and saved results to '{file_path}'")
+
+    except Exception as e:
+        print(f"\nAn error occurred while saving the file: {e}")
+
+
+
+#write_csv()
 #write_csv_sankey()
+
+write_csv_messages()
 
 
