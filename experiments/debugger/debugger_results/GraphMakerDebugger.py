@@ -151,6 +151,93 @@ def plot_coder_comparison(
     plt.savefig(output_name, bbox_inches="tight")
     plt.show()
 
+def plot_coder_comparison_vertical(
+        csv_path="../results.csv",
+        coders_list=("gemini-2.5-pro", "gemini-2.0-flash", "deepseek-coder-v2"),
+):
+    df_csv = pd.read_csv(csv_path)
+
+    df_csv["debugging_gain"] = (
+            df_csv["number_passed_after_debugging"]
+            - df_csv["number_passed_after_generation"]
+    )
+
+    fig = plt.figure(figsize=(12, 18))
+    gs = GridSpec(3, 1, figure=fig)
+
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax2 = fig.add_subplot(gs[1, 0])
+    ax3 = fig.add_subplot(gs[2, 0])
+
+    axes = [ax1, ax2, ax3]
+
+    debuggers_in_csv = sorted(
+        df_csv[df_csv["debugger"] != "no debugger"]["debugger"].unique()
+    )
+    colors = plt.cm.viridis(np.linspace(0, 1, len(debuggers_in_csv)))
+    color_map = {model: color for model, color in zip(debuggers_in_csv, colors)}
+
+    for i, coder_name in enumerate(coders_list):
+        ax = axes[i]
+
+        df_coder = df_csv[df_csv["coder"] == coder_name].copy()
+        df_plot = df_coder[df_coder["debugger"] != "no debugger"].copy()
+
+        if df_plot.empty:
+            ax.text(0.5, 0.5, f"No data for\n{coder_name}", ha="center", va="center", fontsize=18)
+            ax.set_title(f"Coder: {coder_name}", fontsize=22, weight="bold", pad=8)
+            continue
+
+        df_plot = df_plot.sort_values(by="debugging_gain", ascending=True)
+
+        debuggers_y = df_plot["debugger"].tolist()
+        gains_x = df_plot["debugging_gain"].tolist()
+        bar_colors = [color_map.get(dbg, "gray") for dbg in debuggers_y]
+
+        bars = ax.barh(debuggers_y, gains_x, color=bar_colors, height=0.6)
+
+        local_max = max(gains_x) if gains_x else 1
+        x_limit = local_max + (local_max * 0.2) + 1
+        ax.set_xlim(0, x_limit)
+
+        if local_max <= 5:
+            step = 1
+        elif local_max <= 20:
+            step = 2
+        else:
+            step = 5
+        ax.set_xticks(np.arange(0, local_max + step, step))
+
+        ax.grid(axis="x", linestyle="--", alpha=0.4)
+
+        for spine in ax.spines.values():
+            spine.set_visible(False)
+
+        ax.set_title(f"Coder: {coder_name}", fontsize=22, weight="bold", pad=20)
+        ax.set_xlabel("Corrected Functions", fontsize=18, weight="bold", labelpad=10)
+
+        ax.tick_params(axis="y", labelsize=20)
+        ax.tick_params(axis="x", labelsize=14)
+
+        for bar in bars:
+            width = bar.get_width()
+            ax.text(
+                width + (x_limit * 0.01),
+                bar.get_y() + bar.get_height() / 2,
+                f"{int(width)}",
+                ha="left",
+                va="center",
+                weight="bold",
+                fontsize=18,
+            )
+
+    plt.tight_layout(pad=4.0)
+    plt.subplots_adjust(hspace=0.4)
+
+    output_name = "../comparison_gain_vertical.pdf"
+    plt.savefig(output_name, bbox_inches="tight")
+    plt.show()
+
 def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2.5-pro'):
     df_csv = pd.read_csv(csv_path)
 
@@ -212,5 +299,5 @@ def plot_debugger_performance(csv_path='../results.csv', debugger_name='gemini-2
 
 
 #make_debugging_gain_plot()
-#plot_coder_comparison()
-plot_debugger_performance()
+plot_coder_comparison_vertical()
+#plot_debugger_performance()
