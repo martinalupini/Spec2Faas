@@ -1,0 +1,2 @@
+experiment_number,avg_bytes_prompt,avg_bytes_signature,avg_bytes_original_function,avg_bytes_final_function,avg_bytes_tests,avg_bytes_canonical_solution,avg_bytes_deployed_function,avg_bytes_execution_output
+2,318.1036585365854,86.03658536585365,967.8353658536586,930.7987804878048,1074.908536585366,618.0060975609756,913.6280487804878,185.29268292682926

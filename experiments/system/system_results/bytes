@@ -1,0 +1,40 @@
+@dataclass
+class Message:
+    content: str 318.104
+    type: str 7 ("request")
+
+
+@dataclass
+class CodeMessage:
+    specification: str  318.104
+    function_signature: str  86.037
+    memory_context: str = ""  0 (w.r.t experiments)
+
+
+@dataclass
+class ExecuteMessage:
+    specification: str  318.104
+    code: str  967.835
+    tests: str  1074.909
+    sender: str 9 (either "test designer" or "coder")
+
+
+
+@dataclass
+class DeployMessage:
+    code:str  930.799
+
+
+
+@dataclass
+class DebugMessage:
+    specification: str  318.104
+    code:str  967.835
+    error_message: str 185.293
+
+
+@dataclass
+class FaasMessage:
+    content: str approx 25 (name of the function)
+    arguments: dict  approx 55
+    error_message: str  185.292

@@ -207,10 +207,64 @@ def write_csv_messages():
         print(f"\nAn error occurred while saving the file: {e}")
 
 
+def calculate_byte_counts():
+
+    def get_element_count(cell_value):
+
+        byte_data = cell_value.encode('utf-8')
+
+        return len(byte_data)
+
+    columns_to_process = [
+        'prompt', 'signature', 'original_function',
+        'final_function', 'tests', 'canonical_solution',
+        'deployed_function', 'execution_output'
+    ]
+
+    for col in columns_to_process:
+        if col in df.columns:
+            df[col] = df[col].apply(get_element_count)
+
+    df.to_parquet("experiment_" + str(experiment) + "/results_bytes.parquet", index=False)
+
+
+def write_csv_byte():
+
+    file_path = "../results_bytes.csv"
+    df_byte = pd.read_parquet("experiment_" + str(experiment) + "/results_bytes.parquet")
+
+    results_data = {
+        'experiment_number': experiment,
+        'avg_bytes_prompt': df_byte['prompt'].mean(),
+        'avg_bytes_signature': df_byte['signature'].mean(),
+        'avg_bytes_original_function': df_byte['original_function'].mean(),
+        'avg_bytes_final_function': df_byte['final_function'].mean(),
+        'avg_bytes_tests': df_byte['tests'].mean(),
+        'avg_bytes_canonical_solution': df_byte['canonical_solution'].mean(),
+        'avg_bytes_deployed_function': df_byte['deployed_function'].mean(),
+        'avg_bytes_execution_output': df_byte['execution_output'].mean()
+    }
+
+    results_df = pd.DataFrame(results_data, index=[0])
+
+    file_exists = os.path.exists(file_path)
+
+    try:
+        results_df.to_csv(file_path, mode='a', header=not file_exists, index=False)
+
+        if file_exists:
+            print(f"\nAppended a new row to '{file_path}'")
+        else:
+            print(f"\nCreated a new file and saved results to '{file_path}'")
+
+    except Exception as e:
+        print(f"\nAn error occurred while saving the file: {e}")
+
 
 #write_csv()
 #write_csv_sankey()
-
-write_csv_messages()
+#write_csv_messages()
+#calculate_byte_counts()
+write_csv_byte()
 
 
