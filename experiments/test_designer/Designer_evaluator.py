@@ -8,6 +8,8 @@ from autogen_core.models import ModelFamily
 from autogen_ext.code_executors.docker import DockerCommandLineCodeExecutor
 from autogen_ext.models.openai import OpenAIChatCompletionClient
 from autogen_ext.models.ollama import OllamaChatCompletionClient
+from autogen_ext.models.anthropic import AnthropicChatCompletionClient
+from anthropic import AnthropicVertex
 
 from app.agents.coding_agents.TestDesigner import *
 from app.agents.coding_agents.utils.Utils import *
@@ -141,14 +143,14 @@ if __name__ == "__main__":
     else:
         prompt = False
 
-    if designer == "gemini-2.5-pro" or designer == "gemini-2.0-flash":
+    if designer == "gemini-2.5-pro" or designer == "gemini-2.0-flash" or designer =="gemini-3.1-pro-preview":
         model_client = OpenAIChatCompletionClient(
             model=designer,
             api_key=os.environ["GEMINI_API_KEY"],
             base_url="https://generativelanguage.googleapis.com/v1beta/openai/",
             max_retries = 10,
             model_info={
-                "family": ModelFamily.GEMINI_2_0_FLASH,
+                "family": ModelFamily.GEMINI_2_5_FLASH,
                 "function_calling": True,
                 "json_output": True,
                 "vision": False,
