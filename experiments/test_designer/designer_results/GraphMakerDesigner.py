@@ -18,10 +18,7 @@ def make_metric_plot(metric, display_name=None):
         print(f"Available metrics: {df_csv.columns.tolist()}")
         return
 
-    all_models = df_csv['model'].unique()
-    colors_list = plt.cm.viridis(np.linspace(0, 1, len(all_models)))
-    color_map = {model: color for model, color in zip(all_models, colors_list)}
-    print(color_map)
+
 
     df_sorted = df_csv.sort_values(by=metric, ascending=True)
 
@@ -51,7 +48,7 @@ def make_metric_plot(metric, display_name=None):
     plt.tight_layout()
 
     save_name = display_name.lower().replace(' ', '_')
-    plt.savefig(f'../comparison_{save_name}_designer.pdf', bbox_inches='tight')
+    plt.savefig(f'../comparison_{save_name}_designer_2.pdf', bbox_inches='tight')
     plt.show()
 
 
